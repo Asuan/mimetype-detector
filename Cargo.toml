@@ -1,0 +1,21 @@
+[package]
+name = "mimetype-detector"
+version = "0.1.0"
+edition = "2021"
+description = "Fast, accurate, and thread-safe MIME type detection for 100+ file formats with zero dependencies"
+license = "MIT"
+authors = ["Siargei"]
+repository = "https://github.com/your-username/mimetype-detector"
+homepage = "https://github.com/Asuan/mimetype-detector"
+documentation = "https://docs.rs/mimetype-detector"
+readme = "README.md"
+keywords = ["mime", "mimetype", "file-detection","file-type"]
+categories = ["filesystem", "parsing", "web-programming"]
+rust-version = "1.80.0"
+
+exclude = ["target/", "*.tmp", "test-data/"]
+
+[features]
+default = []
+
+[dependencies]
