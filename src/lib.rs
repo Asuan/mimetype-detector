@@ -125,10 +125,10 @@ pub fn detect(data: &[u8]) -> &'static MimeType {
 ///
 /// A `Result` containing the detected MIME type or an I/O error
 pub fn detect_reader<R: Read>(mut reader: R) -> io::Result<&'static MimeType> {
-    let mut buffer = vec![0; READ_LIMIT];
+    let mut buffer: [u8; READ_LIMIT] = [0x0; READ_LIMIT];
+    // let mut buffer = vec![0; READ_LIMIT];
     let n = reader.read(&mut buffer)?;
-    buffer.truncate(n);
-    Ok(detect(&buffer))
+    Ok(detect(&buffer[..n]))
 }
 
 /// Detects the MIME type of a file at the given path.
@@ -226,10 +226,7 @@ pub fn register_extension(extension: &str, matcher: fn(&[u8]) -> bool) {
 pub fn is_supported(mime_type: &str) -> bool {
     ensure_init();
     let normalized = normalize_mime_type(mime_type);
-    MIME_REGISTRY
-        .read()
-        .unwrap()
-        .contains_key(normalized)
+    MIME_REGISTRY.read().unwrap().contains_key(normalized)
 }
 
 /// Checks if the given data matches a specific MIME type.
@@ -274,10 +271,9 @@ pub fn match_mime(data: &[u8], mime_type: &str) -> bool {
 ///
 /// A `Result` containing `true` if the data matches, or an I/O error
 pub fn match_reader<R: Read>(mut reader: R, mime_type: &str) -> io::Result<bool> {
-    let mut buffer = vec![0; READ_LIMIT];
+    let mut buffer: [u8; READ_LIMIT] = [0x0; READ_LIMIT];
     let n = reader.read(&mut buffer)?;
-    buffer.truncate(n);
-    Ok(match_mime(&buffer, mime_type))
+    Ok(match_mime(&buffer[..n], mime_type))
 }
 
 /// Checks if a file matches a specific MIME type.
@@ -355,10 +351,9 @@ pub fn match_extension(data: &[u8], extension: &str) -> bool {
 ///
 /// A `Result` containing `true` if the data matches, or an I/O error
 pub fn match_reader_extension<R: Read>(mut reader: R, extension: &str) -> io::Result<bool> {
-    let mut buffer = vec![0; READ_LIMIT];
+    let mut buffer: [u8; READ_LIMIT] = [0x0; READ_LIMIT];
     let n = reader.read(&mut buffer)?;
-    buffer.truncate(n);
-    Ok(match_extension(&buffer, extension))
+    Ok(match_extension(&buffer[..n], extension))
 }
 
 /// Checks if a file matches a specific file extension.
