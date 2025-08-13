@@ -7,7 +7,7 @@
 //! - API functionality validation
 //! - Cross-format confusion prevention
 
-use mimetype_detector::{detect, detect_reader, equals_any, is_supported, match_mime};
+use mimetype_detector::{detect, detect_reader, equals_any, is_supported, match_mime, constants::*};
 use std::io::Cursor;
 
 // ============================================================================
@@ -19,37 +19,37 @@ fn test_image_formats() {
     // PNG detection
     let png_data = b"\x89PNG\r\n\x1a\n";
     let mime_type = detect(png_data);
-    assert_eq!(mime_type.mime(), "image/png");
+    assert_eq!(mime_type.mime(), IMAGE_PNG);
     assert_eq!(mime_type.extension(), ".png");
 
     // JPEG detection
     let jpg_data = b"\xff\xd8\xff\xe0";
     let mime_type = detect(jpg_data);
-    assert_eq!(mime_type.mime(), "image/jpeg");
+    assert_eq!(mime_type.mime(), IMAGE_JPEG);
     assert_eq!(mime_type.extension(), ".jpg");
 
     // GIF detection
     let gif_data = b"GIF89a";
     let mime_type = detect(gif_data);
-    assert_eq!(mime_type.mime(), "image/gif");
+    assert_eq!(mime_type.mime(), IMAGE_GIF);
     assert_eq!(mime_type.extension(), ".gif");
 
     // WebP detection
     let webp_data = b"RIFF\x00\x00\x00\x00WEBP";
     let mime_type = detect(webp_data);
-    assert_eq!(mime_type.mime(), "image/webp");
+    assert_eq!(mime_type.mime(), IMAGE_WEBP);
     assert_eq!(mime_type.extension(), ".webp");
 
     // BMP detection
     let bmp_data = b"BM";
     let mime_type = detect(bmp_data);
-    assert_eq!(mime_type.mime(), "image/bmp");
+    assert_eq!(mime_type.mime(), IMAGE_BMP);
     assert_eq!(mime_type.extension(), ".bmp");
 
     // TIFF detection
     let tiff_data = b"II*\x00";
     let mime_type = detect(tiff_data);
-    assert_eq!(mime_type.mime(), "image/tiff");
+    assert_eq!(mime_type.mime(), IMAGE_TIFF);
     assert_eq!(mime_type.extension(), ".tiff");
 }
 
@@ -61,7 +61,7 @@ fn test_advanced_image_formats() {
     apng_data.extend_from_slice(b"acTL"); // APNG marker
     let mime_type = detect(&apng_data);
     // APNG extends PNG, so PNG will match first in the hierarchy
-    assert!(mime_type.mime() == "image/png" || mime_type.mime() == "image/vnd.mozilla.apng");
+    assert!(mime_type.mime() == IMAGE_PNG || mime_type.mime() == IMAGE_VND_MOZILLA_APNG);
 
     // JPEG 2000 detection
     let mut jp2_data = vec![0, 0, 0, 0]; // Box size placeholder
@@ -69,22 +69,22 @@ fn test_advanced_image_formats() {
     jp2_data.resize(20, 0); // Pad to offset 20
     jp2_data.extend_from_slice(b"jp2 "); // JP2 brand
     let mime_type = detect(&jp2_data);
-    assert_eq!(mime_type.mime(), "image/jp2");
+    assert_eq!(mime_type.mime(), IMAGE_JP2);
 
     // BPG detection
     let bpg_data = b"BPG\xFB";
     let mime_type = detect(bpg_data);
-    assert_eq!(mime_type.mime(), "image/bpg");
+    assert_eq!(mime_type.mime(), IMAGE_BPG);
 
     // XCF detection
     let xcf_data = b"gimp xcf v011";
     let mime_type = detect(xcf_data);
-    assert_eq!(mime_type.mime(), "image/x-xcf");
+    assert_eq!(mime_type.mime(), IMAGE_X_XCF);
 
     // JPEG XL detection
     let jxl_data = b"\xFF\x0A";
     let mime_type = detect(jxl_data);
-    assert_eq!(mime_type.mime(), "image/jxl");
+    assert_eq!(mime_type.mime(), IMAGE_JXL);
 
     let jxl_data2 = b"\x00\x00\x00\x0CJXL \x0D\x0A\x87\x0A";
     let mime_type2 = detect(jxl_data2);
@@ -96,50 +96,50 @@ fn test_audio_formats() {
     // MP3 detection
     let mp3_data = b"ID3";
     let mime_type = detect(mp3_data);
-    assert_eq!(mime_type.mime(), "audio/mpeg");
+    assert_eq!(mime_type.mime(), AUDIO_MPEG);
     assert_eq!(mime_type.extension(), ".mp3");
 
     // WAV detection
     let wav_data = b"RIFF\x00\x00\x00\x00WAVE";
     let mime_type = detect(wav_data);
-    assert_eq!(mime_type.mime(), "audio/wav");
+    assert_eq!(mime_type.mime(), AUDIO_WAV);
     assert_eq!(mime_type.extension(), ".wav");
 
     // FLAC detection
     let flac_data = b"fLaC";
     let mime_type = detect(flac_data);
-    assert_eq!(mime_type.mime(), "audio/flac");
+    assert_eq!(mime_type.mime(), AUDIO_FLAC);
     assert_eq!(mime_type.extension(), ".flac");
 
     // AIFF detection
     let aiff_data = b"FORM\x00\x00\x00\x00AIFF";
     let mime_type = detect(aiff_data);
-    assert_eq!(mime_type.mime(), "audio/aiff");
+    assert_eq!(mime_type.mime(), AUDIO_AIFF);
 
     // APE detection
     let ape_data = b"MAC \x96\x0F\x00\x00\x34\x00\x00\x00\x18\x00\x00\x00\x90\xE3";
     let mime_type = detect(ape_data);
-    assert_eq!(mime_type.mime(), "audio/ape");
+    assert_eq!(mime_type.mime(), AUDIO_APE);
 
     // Musepack detection
     let mpc_data = b"MPCK";
     let mime_type = detect(mpc_data);
-    assert_eq!(mime_type.mime(), "audio/musepack");
+    assert_eq!(mime_type.mime(), AUDIO_MUSEPACK);
 
     // AU detection
     let au_data = b".snd\x00\x00\x00\x18";
     let mime_type = detect(au_data);
-    assert_eq!(mime_type.mime(), "audio/basic");
+    assert_eq!(mime_type.mime(), AUDIO_BASIC);
 
     // AMR detection
     let amr_data = b"#!AMR\x0A";
     let mime_type = detect(amr_data);
-    assert_eq!(mime_type.mime(), "audio/amr");
+    assert_eq!(mime_type.mime(), AUDIO_AMR);
 
     // AAC detection
     let aac_data = b"\xFF\xF1\x50\x80";
     let mime_type = detect(aac_data);
-    assert_eq!(mime_type.mime(), "audio/aac");
+    assert_eq!(mime_type.mime(), AUDIO_AAC);
 }
 
 #[test]
@@ -165,7 +165,7 @@ fn test_video_formats() {
     // RMVB detection
     let rmvb_data = b".RMF\x00\x00\x00\x12";
     let mime_type = detect(rmvb_data);
-    assert_eq!(mime_type.mime(), "application/vnd.rn-realmedia-vbr");
+    assert_eq!(mime_type.mime(), APPLICATION_VND_RN_REALMEDIA_VBR);
 }
 
 #[test]
@@ -173,13 +173,13 @@ fn test_document_formats() {
     // PDF detection
     let pdf_data = b"%PDF-1.4";
     let mime_type = detect(pdf_data);
-    assert_eq!(mime_type.mime(), "application/pdf");
+    assert_eq!(mime_type.mime(), APPLICATION_PDF);
     assert_eq!(mime_type.extension(), ".pdf");
 
     // HTML detection
     let html_data = b"<!DOCTYPE HTML>";
     let mime_type = detect(html_data);
-    assert_eq!(mime_type.mime(), "text/html; charset=utf-8");
+    assert_eq!(mime_type.mime(), TEXT_HTML);
 
     let html_data2 = b"<HTML>";
     let mime_type2 = detect(html_data2);
@@ -196,7 +196,7 @@ fn test_document_formats() {
     // XML detection
     let xml_data = b"<?xml version=\"1.0\"?>";
     let mime_type = detect(xml_data);
-    assert_eq!(mime_type.mime(), "text/xml; charset=utf-8");
+    assert_eq!(mime_type.mime(), TEXT_XML);
 
     let xml_data2 = b"  <?xml encoding=\"UTF-8\"?>";
     let mime_type2 = detect(xml_data2);
@@ -208,40 +208,40 @@ fn test_archive_formats() {
     // ZIP detection
     let zip_data = b"PK\x03\x04";
     let mime_type = detect(zip_data);
-    assert_eq!(mime_type.mime(), "application/zip");
+    assert_eq!(mime_type.mime(), APPLICATION_ZIP);
     assert_eq!(mime_type.extension(), ".zip");
 
     // 7-Zip detection
     let seven_z_data = b"7z\xbc\xaf\x27\x1c";
     let mime_type = detect(seven_z_data);
-    assert_eq!(mime_type.mime(), "application/x-7z-compressed");
+    assert_eq!(mime_type.mime(), APPLICATION_X_7Z_COMPRESSED);
     assert_eq!(mime_type.extension(), ".7z");
 
     // GZIP detection
     let gzip_data = b"\x1f\x8b";
     let mime_type = detect(gzip_data);
-    assert_eq!(mime_type.mime(), "application/gzip");
+    assert_eq!(mime_type.mime(), APPLICATION_GZIP);
     assert_eq!(mime_type.extension(), ".gz");
 
     // Enhanced GZIP detection
     let gzip_data = b"\x1F\x8B\x08\x00\x00\x00\x00\x00";
     let mime_type = detect(gzip_data);
-    assert_eq!(mime_type.mime(), "application/x-gzip");
+    assert_eq!(mime_type.mime(), APPLICATION_X_GZIP);
 
     // FITS detection
     let fits_data = b"SIMPLE  =                    T";
     let mime_type = detect(fits_data);
-    assert_eq!(mime_type.mime(), "application/fits");
+    assert_eq!(mime_type.mime(), APPLICATION_FITS);
 
     // XAR detection
     let xar_data = b"xar!\x00\x1C";
     let mime_type = detect(xar_data);
-    assert_eq!(mime_type.mime(), "application/x-xar");
+    assert_eq!(mime_type.mime(), APPLICATION_X_XAR);
 
     // WARC detection
     let warc_data = b"WARC/1.0\r\n";
     let mime_type = detect(warc_data);
-    assert_eq!(mime_type.mime(), "application/warc");
+    assert_eq!(mime_type.mime(), APPLICATION_WARC);
 }
 
 #[test]
@@ -251,20 +251,20 @@ fn test_executable_formats() {
     let mime_type = detect(exe_data);
     assert_eq!(
         mime_type.mime(),
-        "application/vnd.microsoft.portable-executable"
+        APPLICATION_VND_MICROSOFT_PORTABLE_EXECUTABLE
     );
     assert_eq!(mime_type.extension(), ".exe");
 
     // Linux ELF detection
     let elf_data = b"\x7fELF";
     let mime_type = detect(elf_data);
-    assert_eq!(mime_type.mime(), "application/x-elf");
+    assert_eq!(mime_type.mime(), APPLICATION_X_ELF);
     assert_eq!(mime_type.extension(), "");
 
     // WebAssembly detection
     let wasm_data = b"\x00asm\x01\x00\x00\x00";
     let mime_type = detect(wasm_data);
-    assert_eq!(mime_type.mime(), "application/wasm");
+    assert_eq!(mime_type.mime(), APPLICATION_WASM);
 }
 
 #[test]
@@ -273,12 +273,12 @@ fn test_font_formats() {
     let mut eot_data = vec![0; 34];
     eot_data.extend_from_slice(b"LP");
     let mime_type = detect(&eot_data);
-    assert_eq!(mime_type.mime(), "application/vnd.ms-fontobject");
+    assert_eq!(mime_type.mime(), APPLICATION_VND_MS_FONTOBJECT);
 
     // TTC detection
     let ttc_data = b"ttcf\x00\x01\x00\x00";
     let mime_type = detect(ttc_data);
-    assert_eq!(mime_type.mime(), "font/collection");
+    assert_eq!(mime_type.mime(), FONT_COLLECTION);
 }
 
 #[test]
@@ -286,17 +286,17 @@ fn test_text_encoding_formats() {
     // UTF-8 BOM detection
     let utf8_bom = b"\xEF\xBB\xBFHello World";
     let mime_type = detect(utf8_bom);
-    assert_eq!(mime_type.mime(), "text/plain; charset=utf-8");
+    assert_eq!(mime_type.mime(), TEXT_UTF8);
 
     // UTF-16 BE detection
     let utf16_be = b"\xFE\xFF\x00H\x00e\x00l\x00l\x00o";
     let mime_type2 = detect(utf16_be);
-    assert_eq!(mime_type2.mime(), "text/plain; charset=utf-16be");
+    assert_eq!(mime_type2.mime(), TEXT_UTF16_BE);
 
     // UTF-16 LE detection
     let utf16_le = b"\xFF\xFEH\x00e\x00l\x00l\x00o\x00";
     let mime_type3 = detect(utf16_le);
-    assert_eq!(mime_type3.mime(), "text/plain; charset=utf-16le");
+    assert_eq!(mime_type3.mime(), TEXT_UTF16_LE);
 }
 
 #[test]
@@ -304,7 +304,7 @@ fn test_enhanced_audio_detection() {
     // Enhanced MIDI detection
     let midi_data = b"MThd\x00\x00\x00\x06\x00\x01";
     let mime_type = detect(midi_data);
-    assert_eq!(mime_type.mime(), "audio/midi");
+    assert_eq!(mime_type.mime(), AUDIO_MIDI);
 }
 
 // ============================================================================
@@ -315,33 +315,33 @@ fn test_enhanced_audio_detection() {
 fn test_api_functions() {
     // equals_any function
     assert!(equals_any(
-        "image/png",
-        &["image/png", "image/jpeg", "image/gif"]
+        IMAGE_PNG,
+        &[IMAGE_PNG, IMAGE_JPEG, IMAGE_GIF]
     ));
     assert!(equals_any(
-        "image/jpeg",
-        &["image/png", "image/jpeg", "image/gif"]
+        IMAGE_JPEG,
+        &[IMAGE_PNG, IMAGE_JPEG, IMAGE_GIF]
     ));
     assert!(!equals_any(
-        "application/pdf",
-        &["image/png", "image/jpeg", "image/gif"]
+        APPLICATION_PDF,
+        &[IMAGE_PNG, IMAGE_JPEG, IMAGE_GIF]
     ));
 
     // match_mime function
     let png_data = b"\x89PNG\r\n\x1a\n";
-    assert!(match_mime(png_data, "image/png"));
-    assert!(!match_mime(png_data, "image/jpeg"));
+    assert!(match_mime(png_data, IMAGE_PNG));
+    assert!(!match_mime(png_data, IMAGE_JPEG));
 
     // is_supported function
-    assert!(is_supported("image/png"));
-    assert!(is_supported("application/pdf"));
+    assert!(is_supported(IMAGE_PNG));
+    assert!(is_supported(APPLICATION_PDF));
     assert!(!is_supported("fake/mimetype"));
 
     // MIME type is() method
     let png_data = b"\x89PNG\r\n\x1a\n";
     let mime_type = detect(png_data);
-    assert!(mime_type.is("image/png"));
-    assert!(!mime_type.is("image/jpeg"));
+    assert!(mime_type.is(IMAGE_PNG));
+    assert!(!mime_type.is(IMAGE_JPEG));
 }
 
 #[test]
@@ -349,7 +349,7 @@ fn test_reader_detection() {
     let png_data = b"\x89PNG\r\n\x1a\n";
     let cursor = Cursor::new(png_data);
     let mime_type = detect_reader(cursor).unwrap();
-    assert_eq!(mime_type.mime(), "image/png");
+    assert_eq!(mime_type.mime(), IMAGE_PNG);
 }
 
 // ============================================================================
@@ -361,24 +361,24 @@ fn test_edge_cases() {
     // Unknown data fallback
     let unknown_data = b"this is just some text";
     let mime_type = detect(unknown_data);
-    assert_eq!(mime_type.mime(), "text/plain; charset=utf-8");
+    assert_eq!(mime_type.mime(), TEXT_UTF8);
     assert_eq!(mime_type.extension(), ".txt");
 
     // Binary fallback
     let binary_data = b"\x00\x01\x02\x03";
     let mime_type = detect(binary_data);
-    assert_eq!(mime_type.mime(), "application/octet-stream");
+    assert_eq!(mime_type.mime(), APPLICATION_OCTET_STREAM);
 
     // Empty data
     let empty_data = b"";
     let mime_type = detect(empty_data);
-    assert_eq!(mime_type.mime(), "application/octet-stream");
+    assert_eq!(mime_type.mime(), APPLICATION_OCTET_STREAM);
 
     // Large data truncation
     let mut large_data = vec![0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]; // PNG header
     large_data.resize(5000, 0); // Make it larger than READ_LIMIT
     let mime_type = detect(&large_data);
-    assert_eq!(mime_type.mime(), "image/png");
+    assert_eq!(mime_type.mime(), IMAGE_PNG);
 }
 
 // ============================================================================
@@ -389,13 +389,13 @@ fn test_edge_cases() {
 fn test_png_negative() {
     // Should not detect as PNG
     let fake_png = b"\x89PNG\x0D\x0A\x1A"; // Missing final byte
-    assert_ne!(detect(fake_png).mime(), "image/png");
+    assert_ne!(detect(fake_png).mime(), IMAGE_PNG);
 
     let partial_png = b"\x89PNX\x0D\x0A\x1A\x0A"; // Wrong magic
-    assert_ne!(detect(partial_png).mime(), "image/png");
+    assert_ne!(detect(partial_png).mime(), IMAGE_PNG);
 
     let short_data = b"\x89PN"; // Too short
-    assert_ne!(detect(short_data).mime(), "image/png");
+    assert_ne!(detect(short_data).mime(), IMAGE_PNG);
 }
 
 #[test]
@@ -580,19 +580,19 @@ fn test_executable_negative() {
     let fake_exe = b"NZ"; // Wrong signature
     assert_ne!(
         detect(fake_exe).mime(),
-        "application/vnd.microsoft.portable-executable"
+        APPLICATION_VND_MICROSOFT_PORTABLE_EXECUTABLE
     );
 
     let partial_exe = b"M"; // Too short
     assert_ne!(
         detect(partial_exe).mime(),
-        "application/vnd.microsoft.portable-executable"
+        APPLICATION_VND_MICROSOFT_PORTABLE_EXECUTABLE
     );
 
     let wrong_exe = b"ZM"; // Wrong order
     assert_ne!(
         detect(wrong_exe).mime(),
-        "application/vnd.microsoft.portable-executable"
+        APPLICATION_VND_MICROSOFT_PORTABLE_EXECUTABLE
     );
 
     // ELF negatives
@@ -739,19 +739,19 @@ fn test_binary_vs_text_boundary() {
     // Pure binary should not be detected as text
     let binary_data = b"\x00\x01\x02\x03\x04\x05";
     let mime_type = detect(binary_data);
-    assert_eq!(mime_type.mime(), "application/octet-stream");
+    assert_eq!(mime_type.mime(), APPLICATION_OCTET_STREAM);
     assert!(!match_mime(binary_data, "text/plain; charset=utf-8"));
 
     // Control characters should not be detected as text
     let control_chars = b"\x08\x0B\x0E\x1A\x1C";
     let mime_type = detect(control_chars);
-    assert_eq!(mime_type.mime(), "application/octet-stream");
+    assert_eq!(mime_type.mime(), APPLICATION_OCTET_STREAM);
     assert!(!match_mime(control_chars, "text/plain; charset=utf-8"));
 
     // Valid text should be detected correctly
     let text_data = b"Hello, World! This is plain text.";
     let mime_type = detect(text_data);
-    assert_eq!(mime_type.mime(), "text/plain; charset=utf-8");
+    assert_eq!(mime_type.mime(), TEXT_UTF8);
     assert!(match_mime(text_data, "text/plain; charset=utf-8"));
 }
 
@@ -762,7 +762,7 @@ fn test_size_boundaries() {
     // Empty data should not match any specific format
     let empty_data = b"";
     let mime_type = detect(empty_data);
-    assert_eq!(mime_type.mime(), "application/octet-stream");
+    assert_eq!(mime_type.mime(), APPLICATION_OCTET_STREAM);
 
     // Single byte should not match multi-byte signatures
     let single_byte = b"P";

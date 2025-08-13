@@ -1,4 +1,4 @@
-use mimetype_detector::{detect, equals_any};
+use mimetype_detector::{constants::*, detect, equals_any};
 
 fn main() -> std::io::Result<()> {
     // Detect from byte slice
@@ -8,11 +8,11 @@ fn main() -> std::io::Result<()> {
     println!("Extension: {}", mime_type.extension());
 
     // Check if MIME type is one of several
-    let is_image = equals_any("image/png", &["image/png", "image/jpeg", "image/gif"]);
+    let is_image = equals_any(IMAGE_PNG, &[IMAGE_PNG, IMAGE_JPEG, IMAGE_GIF]);
     println!("Is image: {}", is_image);
 
     // Check specific MIME type
-    if mime_type.is("image/png") {
+    if mime_type.is(IMAGE_PNG) {
         println!("This is a PNG image!");
     }
 

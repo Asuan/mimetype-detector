@@ -12,6 +12,7 @@ A comprehensive Rust library for detecting MIME types and extensions based on ma
 - **Zero dependencies** - pure Rust implementation
 - **Low memory usage** - reads only file headers (up to 3KB)
 - **Enhanced detection algorithms** with sophisticated format analysis
+- **constants** for all MIME types with IDE autocomplete support
 
 ## Usage
 
@@ -19,20 +20,25 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-mimetype-detector = "0.1.0"
+mimetype-detector = "0.1.1"
 ```
 
 ### Basic Usage
 
 ```rust
-use mimetype_detector::{detect, detect_file, detect_reader};
+use mimetype_detector::{detect, detect_file, detect_reader, constants::*};
 use std::fs::File;
 
 // Detect from byte slice
 let data = b"\x89PNG\r\n\x1a\n";
 let mime_type = detect(data);
-println!("MIME type: {}", mime_type);
-println!("Extension: {}", mime_type.extension());
+println!("MIME type: {}", mime_type); // Prints: image/png
+println!("Extension: {}", mime_type.extension()); // Prints: .png
+
+// Check using type-safe constants
+if mime_type.is(IMAGE_PNG) {
+    println!("This is a PNG image!");
+}
 
 // Detect from file
 let mime_type = detect_file("image.png")?;
@@ -47,26 +53,69 @@ println!("Document type: {}", mime_type);
 ### Advanced Usage
 
 ```rust
-use mimetype_detector::{equals_any, match_mime, is_supported};
+use mimetype_detector::{equals_any, match_mime, is_supported, constants::*};
 
-// Check if MIME type is one of several
+// Using type-safe constants (recommended)
 let is_image = equals_any(
-    "image/png",
-    &["image/png", "image/jpeg", "image/gif"],
+    IMAGE_PNG,
+    &[IMAGE_PNG, IMAGE_JPEG, IMAGE_GIF],
 );
 
 // Check if data matches specific MIME type
 let png_data = b"\x89PNG\r\n\x1a\n";
-let is_png = match_mime(png_data, "image/png");
+let is_png = match_mime(png_data, IMAGE_PNG);
 
 // Check if MIME type is supported
-let supported = is_supported("application/pdf");
+let supported = is_supported(APPLICATION_PDF);
 
-// Check specific MIME type
+// Pattern matching with constants
+match mime_type.mime() {
+    IMAGE_PNG => println!("PNG image detected"),
+    IMAGE_JPEG => println!("JPEG image detected"),
+    APPLICATION_PDF => println!("PDF document detected"),
+    _ => println!("Other format: {}", mime_type),
+}
+
+// Traditional string usage still works
 if mime_type.is("image/png") {
     println!("This is a PNG image!");
 }
 ```
+
+### Type-Safe Constants
+
+The library provides public constants for all supported MIME types, offering several advantages:
+
+```rust
+use mimetype_detector::constants::*;
+
+// Type safety - prevents typos
+let mime_type = detect(data);
+if mime_type.is(IMAGE_PNG) {  // Autocomplete support
+    process_image();
+}
+
+// Organized by category
+let image_types = &[IMAGE_PNG, IMAGE_JPEG, IMAGE_GIF, IMAGE_WEBP];
+let audio_types = &[AUDIO_MP3, AUDIO_FLAC, AUDIO_WAV, AUDIO_OGG];
+let video_types = &[VIDEO_MP4, VIDEO_WEBM, VIDEO_AVI, VIDEO_MKV];
+
+// All format categories available:
+// - Images: IMAGE_PNG, IMAGE_JPEG, IMAGE_GIF, etc.
+// - Audio: AUDIO_MP3, AUDIO_FLAC, AUDIO_WAV, etc.
+// - Video: VIDEO_MP4, VIDEO_WEBM, VIDEO_AVI, etc.
+// - Documents: APPLICATION_PDF, TEXT_HTML, TEXT_XML, etc.
+// - Archives: APPLICATION_ZIP, APPLICATION_X_7Z_COMPRESSED, etc.
+// - Executables: APPLICATION_X_ELF, APPLICATION_WASM, etc.
+// - Fonts: FONT_TTF, FONT_WOFF, FONT_WOFF2, etc.
+```
+
+**Benefits:**
+
+- **Type Safety**: Compile-time checks prevent typos in MIME type strings
+- **Refactoring**: Easy to rename or update MIME types across your codebase
+- **Documentation**: Clear categorization shows all supported formats
+- **Consistency**: Single source of truth for MIME type strings
 
 ## Supported Formats
 
@@ -202,10 +251,11 @@ The library uses a sophisticated tree-based detection system that:
 
 Contributions are welcome! Areas for improvement:
 
-- Additional file format support
+- Additional file format support (remember to add constants!)
 - Performance optimizations  
 - Enhanced detection algorithms
 - Better test coverage
+- Documentation improvements
 
 ## License
 

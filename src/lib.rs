@@ -77,6 +77,9 @@ use std::sync::{LazyLock, Once, RwLock};
 pub mod mime_type;
 pub use mime_type::MimeType;
 
+pub mod constants;
+pub use constants::*;
+
 mod tree;
 use tree::ROOT;
 

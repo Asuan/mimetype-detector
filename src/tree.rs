@@ -26,6 +26,7 @@
 //! The initialization is protected by std::sync::Once to ensure single execution.
 
 use crate::mime_type::MimeType;
+use crate::constants::*;
 
 /// Root MIME type that serves as the fallback for all unrecognized binary data.
 ///
@@ -44,7 +45,7 @@ use crate::mime_type::MimeType;
 /// 10. Specialized formats
 /// 11. Generic text (UTF-8) - lowest priority fallback
 pub static ROOT: MimeType = MimeType::new(
-    "application/octet-stream",
+    APPLICATION_OCTET_STREAM,
     "",
     |_| true,
     &[
@@ -171,18 +172,18 @@ pub static ROOT: MimeType = MimeType::new(
 /// - DOCTYPE declarations and comments
 /// - Whitespace tolerance at the beginning of files
 static HTML: MimeType =
-    MimeType::new("text/html; charset=utf-8", ".html", html, &[]).with_extension_aliases(&[".htm"]);
+    MimeType::new(TEXT_HTML, ".html", html, &[]).with_extension_aliases(&[".htm"]);
 
-static XML: MimeType = MimeType::new("text/xml; charset=utf-8", ".xml", xml, &[]);
+static XML: MimeType = MimeType::new(TEXT_XML, ".xml", xml, &[]);
 
-static UTF8_BOM: MimeType = MimeType::new("text/plain; charset=utf-8", ".txt", utf8_bom, &[]);
+static UTF8_BOM: MimeType = MimeType::new(TEXT_UTF8_BOM, ".txt", utf8_bom, &[]);
 
-static UTF16_BE: MimeType = MimeType::new("text/plain; charset=utf-16be", ".txt", utf16_be, &[]);
+static UTF16_BE: MimeType = MimeType::new(TEXT_UTF16_BE, ".txt", utf16_be, &[]);
 
-static UTF16_LE: MimeType = MimeType::new("text/plain; charset=utf-16le", ".txt", utf16_le, &[]);
+static UTF16_LE: MimeType = MimeType::new(TEXT_UTF16_LE, ".txt", utf16_le, &[]);
 
-static UTF8: MimeType = MimeType::new("text/plain; charset=utf-8", ".txt", utf8, &[])
-    .with_aliases(&["text/plain"])
+static UTF8: MimeType = MimeType::new(TEXT_UTF8, ".txt", utf8, &[])
+    .with_aliases(&[TEXT_PLAIN])
     .with_extension_aliases(&[
         "",
         ".pub",
@@ -227,11 +228,11 @@ static UTF8: MimeType = MimeType::new("text/plain; charset=utf-8", ".txt", utf8,
 // ============================================================================
 
 static PDF: MimeType =
-    MimeType::new("application/pdf", ".pdf", pdf, &[]).with_aliases(&["application/x-pdf"]);
+    MimeType::new(APPLICATION_PDF, ".pdf", pdf, &[]).with_aliases(&[APPLICATION_X_PDF]);
 
-static PS: MimeType = MimeType::new("application/postscript", ".ps", ps, &[]);
+static PS: MimeType = MimeType::new(APPLICATION_POSTSCRIPT, ".ps", ps, &[]);
 
-static OLE: MimeType = MimeType::new("application/x-ole-storage", "", ole, &[])
+static OLE: MimeType = MimeType::new(APPLICATION_X_OLE_STORAGE, "", ole, &[])
     .with_extension_aliases(&[".xls", ".pub", ".ppt", ".doc"]);
 
 // ============================================================================
@@ -248,287 +249,287 @@ static OLE: MimeType = MimeType::new("application/x-ole-storage", "", ole, &[])
 ///
 /// 7Z files start with a unique 6-byte signature that makes detection reliable.
 /// This format supports multiple compression algorithms and strong encryption.
-static SEVEN_Z: MimeType = MimeType::new("application/x-7z-compressed", ".7z", seven_z, &[]);
+static SEVEN_Z: MimeType = MimeType::new(APPLICATION_X_7Z_COMPRESSED, ".7z", seven_z, &[]);
 
-static ZIP: MimeType = MimeType::new("application/zip", ".zip", zip, &[])
-    .with_aliases(&["application/x-zip", "application/x-zip-compressed"])
+static ZIP: MimeType = MimeType::new(APPLICATION_ZIP, ".zip", zip, &[])
+    .with_aliases(&[APPLICATION_X_ZIP, APPLICATION_X_ZIP_COMPRESSED])
     .with_extension_aliases(&[
         ".xlsx", ".docx", ".pptx", ".epub", ".jar", ".odt", ".ods", ".odp", ".odg", ".odf",
     ]);
 
-static RAR: MimeType = MimeType::new("application/x-rar-compressed", ".rar", rar, &[])
-    .with_aliases(&["application/x-rar"]);
+static RAR: MimeType = MimeType::new(APPLICATION_X_RAR_COMPRESSED, ".rar", rar, &[])
+    .with_aliases(&[APPLICATION_X_RAR]);
 
-static GZIP: MimeType = MimeType::new("application/gzip", ".gz", gzip, &[])
+static GZIP: MimeType = MimeType::new(APPLICATION_GZIP, ".gz", gzip, &[])
     .with_aliases(&[
-        "application/x-gzip",
-        "application/x-gunzip",
-        "application/gzipped",
-        "application/gzip-compressed",
-        "application/x-gzip-compressed",
-        "gzip/document",
+        APPLICATION_X_GZIP,
+        APPLICATION_X_GUNZIP,
+        APPLICATION_GZIPPED,
+        APPLICATION_GZIP_COMPRESSED,
+        APPLICATION_X_GZIP_COMPRESSED,
+        GZIP_DOCUMENT,
     ])
     .with_extension_aliases(&[".tgz", ".taz"]);
 
-static GZIP_PRECISE: MimeType = MimeType::new("application/x-gzip", ".gz", gzip_precise, &[]);
+static GZIP_PRECISE: MimeType = MimeType::new(APPLICATION_X_GZIP, ".gz", gzip_precise, &[]);
 
-static TAR: MimeType = MimeType::new("application/x-tar", ".tar", tar, &[]);
+static TAR: MimeType = MimeType::new(APPLICATION_X_TAR, ".tar", tar, &[]);
 
-static BZ2: MimeType = MimeType::new("application/x-bzip2", ".bz2", bz2, &[]);
+static BZ2: MimeType = MimeType::new(APPLICATION_X_BZIP2, ".bz2", bz2, &[]);
 
-static XZ: MimeType = MimeType::new("application/x-xz", ".xz", xz, &[]);
+static XZ: MimeType = MimeType::new(APPLICATION_X_XZ, ".xz", xz, &[]);
 
-static ZSTD: MimeType = MimeType::new("application/zstd", ".zst", zstd, &[]);
+static ZSTD: MimeType = MimeType::new(APPLICATION_ZSTD, ".zst", zstd, &[]);
 
-static LZIP: MimeType = MimeType::new("application/lzip", ".lz", lzip, &[]);
+static LZIP: MimeType = MimeType::new(APPLICATION_LZIP, ".lz", lzip, &[]);
 
-static CAB: MimeType = MimeType::new("application/vnd.ms-cab-compressed", ".cab", cab, &[]);
+static CAB: MimeType = MimeType::new(APPLICATION_VND_MS_CAB_COMPRESSED, ".cab", cab, &[]);
 
 static INSTALL_SHIELD_CAB: MimeType = MimeType::new(
-    "application/x-installshield",
+    APPLICATION_X_INSTALLSHIELD,
     ".cab",
     install_shield_cab,
     &[],
 );
 
-static CPIO: MimeType = MimeType::new("application/x-cpio", ".cpio", cpio, &[]);
+static CPIO: MimeType = MimeType::new(APPLICATION_X_CPIO, ".cpio", cpio, &[]);
 
-static AR: MimeType = MimeType::new("application/x-archive", ".a", ar, &[])
-    .with_aliases(&["application/x-unix-archive"])
+static AR: MimeType = MimeType::new(APPLICATION_X_ARCHIVE, ".a", ar, &[])
+    .with_aliases(&[APPLICATION_X_UNIX_ARCHIVE])
     .with_extension_aliases(&[".deb"]);
 
-static RPM: MimeType = MimeType::new("application/x-rpm", ".rpm", rpm, &[]);
+static RPM: MimeType = MimeType::new(APPLICATION_X_RPM, ".rpm", rpm, &[]);
 
-static TORRENT: MimeType = MimeType::new("application/x-bittorrent", ".torrent", torrent, &[]);
+static TORRENT: MimeType = MimeType::new(APPLICATION_X_BITTORRENT, ".torrent", torrent, &[]);
 
-static FITS: MimeType = MimeType::new("application/fits", ".fits", fits, &[]);
+static FITS: MimeType = MimeType::new(APPLICATION_FITS, ".fits", fits, &[]);
 
-static XAR: MimeType = MimeType::new("application/x-xar", ".xar", xar, &[]);
+static XAR: MimeType = MimeType::new(APPLICATION_X_XAR, ".xar", xar, &[]);
 
-static DEB: MimeType = MimeType::new("application/vnd.debian.binary-package", ".deb", deb, &[]);
+static DEB: MimeType = MimeType::new(APPLICATION_VND_DEBIAN_BINARY_PACKAGE, ".deb", deb, &[]);
 
-static WARC: MimeType = MimeType::new("application/warc", ".warc", warc, &[]);
+static WARC: MimeType = MimeType::new(APPLICATION_WARC, ".warc", warc, &[]);
 
 // ============================================================================
 // IMAGE FORMATS
 // ============================================================================
 
-static PNG: MimeType = MimeType::new("image/png", ".png", png, &[]);
+static PNG: MimeType = MimeType::new(IMAGE_PNG, ".png", png, &[]);
 
-static APNG: MimeType = MimeType::new("image/vnd.mozilla.apng", ".apng", apng, &[]);
+static APNG: MimeType = MimeType::new(IMAGE_VND_MOZILLA_APNG, ".apng", apng, &[]);
 
-static JPG: MimeType = MimeType::new("image/jpeg", ".jpg", jpg, &[])
+static JPG: MimeType = MimeType::new(IMAGE_JPEG, ".jpg", jpg, &[])
     .with_extension_aliases(&[".jpeg", ".jpe", ".jif", ".jfif", ".jfi"]);
 
-static JP2: MimeType = MimeType::new("image/jp2", ".jp2", jp2, &[]);
+static JP2: MimeType = MimeType::new(IMAGE_JP2, ".jp2", jp2, &[]);
 
-static JPX: MimeType = MimeType::new("image/jpx", ".jpx", jpx, &[]);
+static JPX: MimeType = MimeType::new(IMAGE_JPX, ".jpx", jpx, &[]);
 
-static JPM: MimeType = MimeType::new("image/jpm", ".jpm", jpm, &[]);
+static JPM: MimeType = MimeType::new(IMAGE_JPM, ".jpm", jpm, &[]);
 
-static JXS: MimeType = MimeType::new("image/jxs", ".jxs", jxs, &[]);
+static JXS: MimeType = MimeType::new(IMAGE_JXS, ".jxs", jxs, &[]);
 
-static JXR: MimeType = MimeType::new("image/jxr", ".jxr", jxr, &[]);
+static JXR: MimeType = MimeType::new(IMAGE_JXR, ".jxr", jxr, &[]);
 
-static JXL: MimeType = MimeType::new("image/jxl", ".jxl", jxl, &[]);
+static JXL: MimeType = MimeType::new(IMAGE_JXL, ".jxl", jxl, &[]);
 
-static GIF: MimeType = MimeType::new("image/gif", ".gif", gif, &[]);
+static GIF: MimeType = MimeType::new(IMAGE_GIF, ".gif", gif, &[]);
 
-static WEBP: MimeType = MimeType::new("image/webp", ".webp", webp, &[]);
+static WEBP: MimeType = MimeType::new(IMAGE_WEBP, ".webp", webp, &[]);
 
 static TIFF: MimeType =
-    MimeType::new("image/tiff", ".tiff", tiff, &[]).with_extension_aliases(&[".tif"]);
+    MimeType::new(IMAGE_TIFF, ".tiff", tiff, &[]).with_extension_aliases(&[".tif"]);
 
-static BMP: MimeType = MimeType::new("image/bmp", ".bmp", bmp, &[])
-    .with_aliases(&["image/x-bmp", "image/x-ms-bmp"])
+static BMP: MimeType = MimeType::new(IMAGE_BMP, ".bmp", bmp, &[])
+    .with_aliases(&[IMAGE_X_BMP, IMAGE_X_MS_BMP])
     .with_extension_aliases(&[".dib"]);
 
-static ICO: MimeType = MimeType::new("image/x-icon", ".ico", ico, &[]);
+static ICO: MimeType = MimeType::new(IMAGE_X_ICON, ".ico", ico, &[]);
 
-static ICNS: MimeType = MimeType::new("image/x-icns", ".icns", icns, &[]);
+static ICNS: MimeType = MimeType::new(IMAGE_X_ICNS, ".icns", icns, &[]);
 
-static PSD: MimeType = MimeType::new("image/vnd.adobe.photoshop", ".psd", psd, &[])
-    .with_aliases(&["image/x-psd", "application/photoshop"]);
+static PSD: MimeType = MimeType::new(IMAGE_VND_ADOBE_PHOTOSHOP, ".psd", psd, &[])
+    .with_aliases(&[IMAGE_X_PSD, APPLICATION_PHOTOSHOP]);
 
-static HEIC: MimeType = MimeType::new("image/heic", ".heic", heic, &[]);
+static HEIC: MimeType = MimeType::new(IMAGE_HEIC, ".heic", heic, &[]);
 
-static HEIC_SEQ: MimeType = MimeType::new("image/heic-sequence", ".heic", heic_sequence, &[]);
+static HEIC_SEQ: MimeType = MimeType::new(IMAGE_HEIC_SEQUENCE, ".heic", heic_sequence, &[]);
 
-static HEIF: MimeType = MimeType::new("image/heif", ".heif", heif, &[]);
+static HEIF: MimeType = MimeType::new(IMAGE_HEIF, ".heif", heif, &[]);
 
-static HEIF_SEQ: MimeType = MimeType::new("image/heif-sequence", ".heif", heif_sequence, &[]);
+static HEIF_SEQ: MimeType = MimeType::new(IMAGE_HEIF_SEQUENCE, ".heif", heif_sequence, &[]);
 
-static BPG: MimeType = MimeType::new("image/bpg", ".bpg", bpg, &[]);
+static BPG: MimeType = MimeType::new(IMAGE_BPG, ".bpg", bpg, &[]);
 
-static XCF: MimeType = MimeType::new("image/x-xcf", ".xcf", xcf, &[]);
+static XCF: MimeType = MimeType::new(IMAGE_X_XCF, ".xcf", xcf, &[]);
 
-static PAT: MimeType = MimeType::new("image/x-gimp-pat", ".pat", pat, &[]);
+static PAT: MimeType = MimeType::new(IMAGE_X_GIMP_PAT, ".pat", pat, &[]);
 
-static GBR: MimeType = MimeType::new("image/x-gimp-gbr", ".gbr", gbr, &[]);
+static GBR: MimeType = MimeType::new(IMAGE_X_GIMP_GBR, ".gbr", gbr, &[]);
 
-static HDR: MimeType = MimeType::new("image/vnd.radiance", ".hdr", hdr, &[]);
+static HDR: MimeType = MimeType::new(IMAGE_VND_RADIANCE, ".hdr", hdr, &[]);
 
-static XPM: MimeType = MimeType::new("image/x-xpixmap", ".xpm", xpm, &[]);
+static XPM: MimeType = MimeType::new(IMAGE_X_XPIXMAP, ".xpm", xpm, &[]);
 
-static DWG: MimeType = MimeType::new("image/vnd.dwg", ".dwg", dwg, &[]).with_aliases(&[
-    "image/x-dwg",
-    "application/acad",
-    "application/x-acad",
-    "application/autocad_dwg",
-    "application/dwg",
-    "application/x-dwg",
-    "application/x-autocad",
-    "drawing/dwg",
+static DWG: MimeType = MimeType::new(IMAGE_VND_DWG, ".dwg", dwg, &[]).with_aliases(&[
+    IMAGE_X_DWG,
+    APPLICATION_ACAD,
+    APPLICATION_X_ACAD,
+    APPLICATION_AUTOCAD_DWG,
+    APPLICATION_DWG,
+    APPLICATION_X_DWG,
+    APPLICATION_X_AUTOCAD,
+    DRAWING_DWG,
 ]);
 
-static DJVU: MimeType = MimeType::new("image/vnd.djvu", ".djvu", djvu, &[]);
+static DJVU: MimeType = MimeType::new(IMAGE_VND_DJVU, ".djvu", djvu, &[]);
 
 // ============================================================================
 // AUDIO FORMATS
 // ============================================================================
 
 static MP3: MimeType =
-    MimeType::new("audio/mpeg", ".mp3", mp3, &[]).with_aliases(&["audio/x-mpeg", "audio/mp3"]);
+    MimeType::new(AUDIO_MPEG, ".mp3", mp3, &[]).with_aliases(&[AUDIO_X_MPEG, AUDIO_MP3]);
 
-static FLAC: MimeType = MimeType::new("audio/flac", ".flac", flac, &[]);
+static FLAC: MimeType = MimeType::new(AUDIO_FLAC, ".flac", flac, &[]);
 
-static WAV: MimeType = MimeType::new("audio/wav", ".wav", wav, &[]).with_aliases(&[
-    "audio/x-wav",
-    "audio/vnd.wave",
-    "audio/wave",
+static WAV: MimeType = MimeType::new(AUDIO_WAV, ".wav", wav, &[]).with_aliases(&[
+    AUDIO_X_WAV,
+    AUDIO_VND_WAVE,
+    AUDIO_WAVE,
 ]);
 
 static AIFF: MimeType =
-    MimeType::new("audio/aiff", ".aiff", aiff, &[]).with_extension_aliases(&[".aif"]);
+    MimeType::new(AUDIO_AIFF, ".aiff", aiff, &[]).with_extension_aliases(&[".aif"]);
 
-static MIDI_PRECISE: MimeType = MimeType::new("audio/midi", ".midi", midi_precise, &[])
-    .with_aliases(&["audio/mid"])
+static MIDI_PRECISE: MimeType = MimeType::new(AUDIO_MIDI, ".midi", midi_precise, &[])
+    .with_aliases(&[AUDIO_MID])
     .with_extension_aliases(&[".mid"]);
 
-static OGG: MimeType = MimeType::new("application/ogg", ".ogg", ogg, &[])
+static OGG: MimeType = MimeType::new(APPLICATION_OGG, ".ogg", ogg, &[])
     .with_extension_aliases(&[".oga", ".opus", ".ogv"]);
 
-static APE: MimeType = MimeType::new("audio/ape", ".ape", ape, &[]);
+static APE: MimeType = MimeType::new(AUDIO_APE, ".ape", ape, &[]);
 
-static MUSEPACK: MimeType = MimeType::new("audio/musepack", ".mpc", musepack, &[]);
+static MUSEPACK: MimeType = MimeType::new(AUDIO_MUSEPACK, ".mpc", musepack, &[]);
 
 static AU: MimeType =
-    MimeType::new("audio/basic", ".au", au, &[]).with_extension_aliases(&[".snd"]);
+    MimeType::new(AUDIO_BASIC, ".au", au, &[]).with_extension_aliases(&[".snd"]);
 
-static AMR: MimeType = MimeType::new("audio/amr", ".amr", amr, &[]);
+static AMR: MimeType = MimeType::new(AUDIO_AMR, ".amr", amr, &[]);
 
-static VOC: MimeType = MimeType::new("audio/x-unknown", ".voc", voc, &[]);
+static VOC: MimeType = MimeType::new(AUDIO_X_UNKNOWN, ".voc", voc, &[]);
 
 static M3U: MimeType =
-    MimeType::new("audio/x-mpegurl", ".m3u", m3u, &[]).with_extension_aliases(&[".m3u8"]);
+    MimeType::new(AUDIO_X_MPEGURL, ".m3u", m3u, &[]).with_extension_aliases(&[".m3u8"]);
 
-static AAC: MimeType = MimeType::new("audio/aac", ".aac", aac, &[]);
+static AAC: MimeType = MimeType::new(AUDIO_AAC, ".aac", aac, &[]);
 
-static QCP: MimeType = MimeType::new("audio/qcelp", ".qcp", qcp, &[]);
+static QCP: MimeType = MimeType::new(AUDIO_QCELP, ".qcp", qcp, &[]);
 
 static AMP4: MimeType =
-    MimeType::new("audio/mp4", ".mp4", amp4, &[]).with_aliases(&["audio/x-m4a", "audio/x-mp4a"]);
+    MimeType::new(AUDIO_MP4, ".mp4", amp4, &[]).with_aliases(&[AUDIO_X_M4A, AUDIO_X_MP4A]);
 
-static M4A: MimeType = MimeType::new("audio/x-m4a", ".m4a", m4a, &[]);
+static M4A: MimeType = MimeType::new(AUDIO_X_M4A, ".m4a", m4a, &[]);
 
 // ============================================================================
 // VIDEO FORMATS
 // ============================================================================
 
-static MP4_PRECISE: MimeType = MimeType::new("video/mp4", ".mp4", mp4_precise, &[]);
+static MP4_PRECISE: MimeType = MimeType::new(VIDEO_MP4, ".mp4", mp4_precise, &[]);
 
 static WEBM: MimeType =
-    MimeType::new("video/webm", ".webm", webm, &[]).with_aliases(&["audio/webm"]);
+    MimeType::new(VIDEO_WEBM, ".webm", webm, &[]).with_aliases(&[AUDIO_WEBM]);
 
-static MKV: MimeType = MimeType::new("video/x-matroska", ".mkv", mkv, &[])
+static MKV: MimeType = MimeType::new(VIDEO_X_MATROSKA, ".mkv", mkv, &[])
     .with_extension_aliases(&[".mk3d", ".mka", ".mks"]);
 
-static AVI: MimeType = MimeType::new("video/x-msvideo", ".avi", avi, &[])
-    .with_aliases(&["video/avi", "video/msvideo"]);
+static AVI: MimeType = MimeType::new(VIDEO_X_MSVIDEO, ".avi", avi, &[])
+    .with_aliases(&[VIDEO_AVI, VIDEO_MSVIDEO]);
 
-static MPEG: MimeType = MimeType::new("video/mpeg", ".mpeg", mpeg, &[]);
+static MPEG: MimeType = MimeType::new(VIDEO_MPEG, ".mpeg", mpeg, &[]);
 
-static QUICKTIME: MimeType = MimeType::new("video/quicktime", ".mov", quicktime, &[]);
+static QUICKTIME: MimeType = MimeType::new(VIDEO_QUICKTIME, ".mov", quicktime, &[]);
 
-static MQV: MimeType = MimeType::new("video/quicktime", ".mqv", mqv, &[]);
+static MQV: MimeType = MimeType::new(VIDEO_QUICKTIME, ".mqv", mqv, &[]);
 
-static FLV: MimeType = MimeType::new("video/x-flv", ".flv", flv, &[]);
+static FLV: MimeType = MimeType::new(VIDEO_X_FLV, ".flv", flv, &[]);
 
-static ASF: MimeType = MimeType::new("video/x-ms-asf", ".asf", asf, &[])
-    .with_aliases(&["video/asf", "video/x-ms-wmv"]);
+static ASF: MimeType = MimeType::new(VIDEO_X_MS_ASF, ".asf", asf, &[])
+    .with_aliases(&[VIDEO_ASF, VIDEO_X_MS_WMV]);
 
-static M4V: MimeType = MimeType::new("video/x-m4v", ".m4v", m4v, &[]);
+static M4V: MimeType = MimeType::new(VIDEO_X_M4V, ".m4v", m4v, &[]);
 
-static RMVB: MimeType = MimeType::new("application/vnd.rn-realmedia-vbr", ".rmvb", rmvb, &[]);
+static RMVB: MimeType = MimeType::new(APPLICATION_VND_RN_REALMEDIA_VBR, ".rmvb", rmvb, &[]);
 
 // ============================================================================
 // EXECUTABLE & BINARY FORMATS
 // ============================================================================
 
 static EXE: MimeType = MimeType::new(
-    "application/vnd.microsoft.portable-executable",
+    APPLICATION_VND_MICROSOFT_PORTABLE_EXECUTABLE,
     ".exe",
     exe,
     &[],
 );
 
 static ELF: MimeType =
-    MimeType::new("application/x-elf", "", elf, &[]).with_extension_aliases(&[".so"]);
+    MimeType::new(APPLICATION_X_ELF, "", elf, &[]).with_extension_aliases(&[".so"]);
 
 static CLASS: MimeType = MimeType::new(
-    "application/x-java-applet; charset=binary",
+    APPLICATION_X_JAVA_APPLET_BINARY,
     ".class",
     class,
     &[],
 )
-.with_aliases(&["application/x-java-applet"]);
+.with_aliases(&[APPLICATION_X_JAVA_APPLET]);
 
-static WASM: MimeType = MimeType::new("application/wasm", ".wasm", wasm, &[]);
+static WASM: MimeType = MimeType::new(APPLICATION_WASM, ".wasm", wasm, &[]);
 
 // ============================================================================
 // FONT FORMATS
 // ============================================================================
 
-static TTF: MimeType = MimeType::new("font/ttf", ".ttf", ttf, &[]).with_aliases(&[
-    "font/sfnt",
-    "application/x-font-ttf",
-    "application/font-sfnt",
+static TTF: MimeType = MimeType::new(FONT_TTF, ".ttf", ttf, &[]).with_aliases(&[
+    FONT_SFNT,
+    APPLICATION_X_FONT_TTF,
+    APPLICATION_FONT_SFNT,
 ]);
 
-static WOFF: MimeType = MimeType::new("font/woff", ".woff", woff, &[]);
+static WOFF: MimeType = MimeType::new(FONT_WOFF, ".woff", woff, &[]);
 
-static WOFF2: MimeType = MimeType::new("font/woff2", ".woff2", woff2, &[]);
+static WOFF2: MimeType = MimeType::new(FONT_WOFF2, ".woff2", woff2, &[]);
 
-static OTF: MimeType = MimeType::new("font/otf", ".otf", otf, &[]);
+static OTF: MimeType = MimeType::new(FONT_OTF, ".otf", otf, &[]);
 
-static EOT: MimeType = MimeType::new("application/vnd.ms-fontobject", ".eot", eot, &[]);
+static EOT: MimeType = MimeType::new(APPLICATION_VND_MS_FONTOBJECT, ".eot", eot, &[]);
 
-static TTC: MimeType = MimeType::new("font/collection", ".ttc", ttc, &[]);
+static TTC: MimeType = MimeType::new(FONT_COLLECTION, ".ttc", ttc, &[]);
 
 // ============================================================================
 // WEB & MULTIMEDIA FORMATS
 // ============================================================================
 
-static SWF: MimeType = MimeType::new("application/x-shockwave-flash", ".swf", swf, &[]);
+static SWF: MimeType = MimeType::new(APPLICATION_X_SHOCKWAVE_FLASH, ".swf", swf, &[]);
 
-static CRX: MimeType = MimeType::new("application/x-chrome-extension", ".crx", crx, &[]);
+static CRX: MimeType = MimeType::new(APPLICATION_X_CHROME_EXTENSION, ".crx", crx, &[]);
 
 // ============================================================================
 // SPECIALIZED FORMATS
 // ============================================================================
 
-static DCM: MimeType = MimeType::new("application/dicom", ".dcm", dcm, &[]);
+static DCM: MimeType = MimeType::new(APPLICATION_DICOM, ".dcm", dcm, &[]);
 
-static MOBI: MimeType = MimeType::new("application/x-mobipocket-ebook", ".mobi", mobi, &[]);
+static MOBI: MimeType = MimeType::new(APPLICATION_X_MOBIPOCKET_EBOOK, ".mobi", mobi, &[]);
 
-static LIT: MimeType = MimeType::new("application/x-ms-reader", ".lit", lit, &[]);
+static LIT: MimeType = MimeType::new(APPLICATION_X_MS_READER, ".lit", lit, &[]);
 
-static SQLITE3: MimeType = MimeType::new("application/x-sqlite3", ".sqlite", sqlite, &[]);
+static SQLITE3: MimeType = MimeType::new(APPLICATION_X_SQLITE3, ".sqlite", sqlite, &[]);
 
-static FASOO: MimeType = MimeType::new("application/x-fasoo", "", fasoo, &[]);
+static FASOO: MimeType = MimeType::new(APPLICATION_X_FASOO, "", fasoo, &[]);
 
 static PGP_NET_SHARE: MimeType =
-    MimeType::new("application/x-pgp-net-share", "", pgp_net_share, &[]);
+    MimeType::new(APPLICATION_X_PGP_NET_SHARE, "", pgp_net_share, &[]);
 
 // ============================================================================
 // INITIALIZATION FUNCTION
