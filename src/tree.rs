@@ -25,8 +25,8 @@
 //! All operations are thread-safe through the use of static data with 'static lifetime.
 //! The initialization is protected by std::sync::Once to ensure single execution.
 
-use crate::mime_type::MimeType;
 use crate::constants::*;
+use crate::mime_type::MimeType;
 
 /// Root MIME type that serves as the fallback for all unrecognized binary data.
 ///
@@ -49,108 +49,123 @@ pub static ROOT: MimeType = MimeType::new(
     "",
     |_| true,
     &[
-        &HTML,
-        &XML,
+        // Go ordering: xpm, sevenZ, zip, pdf, fdf, ole, ps, psd, p7s, ogg, png, jpg, jxl, jp2, jpx,
+        // jpm, jxs, gif, webp, exe, elf, ar, tar, xar, bz2, fits, tiff, bmp, lotus, ico,
+        // mp3, flac, midi, ape, musePack, amr, wav, aiff, au, mpeg, quickTime, mp4, webM,
+        // avi, flv, mkv, asf, aac, voc, m3u, rmvb, gzip, class, swf, crx, ttf, woff,
+        // woff2, otf, ttc, eot, wasm, shx, dbf, dcm, rar, djvu, mobi, lit, bpg, cbor,
+        // sqlite3, dwg, nes, lnk, macho, qcp, icns, hdr, mrc, mdb, accdb, zstd, cab,
+        // rpm, xz, lzip, torrent, cpio, tzif, xcf, pat, gbr, glb, cabIS, jxr, parquet, text
+        &XPM,
+        &SEVEN_Z,
+        &ZIP,
         &PDF,
-        &PS,
+        &FDF, // PDF variant
+        &OLE,
+        // Text encoding formats need to be in root for early detection
         &UTF8_BOM,
         &UTF16_BE,
         &UTF16_LE,
-        &SEVEN_Z,
-        &ZIP,
-        &WASM,
-        &RAR,
-        &GZIP_PRECISE,
-        &OLE,
+        &PS,
         &PSD,
+        &PBM,
+        &PGM,
+        &PPM,
+        &PAM,
+        &P7S, // PKCS7 signature
         &OGG,
         &PNG,
-        &APNG,
         &JPG,
+        &JXL,
         &JP2,
         &JPX,
         &JPM,
+        &JXS,
         &GIF,
         &WEBP,
-        &BPG,
-        &XCF,
-        &PAT,
-        &GBR,
-        &HDR,
-        &XPM,
-        &JXS,
-        &JXR,
-        &JXL,
+        &EXE,
+        &ELF,
+        &AR,
+        &TAR,
+        &XAR,
+        &BZ2,
+        &FITS,
         &TIFF,
         &BMP,
+        &LOTUS123,
         &ICO,
-        &AIFF,
         &MP3,
+        &FLAC,
+        &MIDI,
         &APE,
         &MUSEPACK,
-        &AU,
         &AMR,
-        &VOC,
-        &M3U,
-        &AAC,
-        &QCP,
-        &FLAC,
-        &MIDI_PRECISE,
         &WAV,
+        &AIFF,
+        &AU,
         &MPEG,
         &QUICKTIME,
         &MQV,
         &MP4_PRECISE,
-        &RMVB,
         &WEBM,
         &AVI,
         &FLV,
         &MKV,
         &ASF,
-        &AMP4,
-        &M4A,
-        &M4V,
+        &AAC,
+        &VOC,
+        &M3U,
+        &RMVB,
+        &GZIP,
         &CLASS,
         &SWF,
         &CRX,
-        &EOT,
-        &TTC,
+        &TTF,
         &WOFF,
         &WOFF2,
         &OTF,
+        &TTC,
+        &EOT,
+        &WASM,
+        &SHX,
+        &DBF,
         &DCM,
+        &RAR,
         &DJVU,
         &MOBI,
         &LIT,
+        &BPG,
+        &CBOR_FORMAT,
         &SQLITE3,
         &DWG,
+        &NES,
+        &LNK,
+        &MACHO,
+        &QCP,
         &ICNS,
-        &HEIC,
-        &HEIC_SEQ,
-        &HEIF,
-        &HEIF_SEQ,
+        &HDR,
+        &HDF,
+        &MRC,
+        &MDB,
+        &ACCDB,
         &ZSTD,
         &CAB,
-        &INSTALL_SHIELD_CAB,
+        &CHM,
         &RPM,
         &XZ,
         &LZIP,
         &TORRENT,
         &CPIO,
-        &TTF,
-        &FITS,
-        &XAR,
-        &DEB,
-        &WARC,
-        &TAR,
-        &EXE,
-        &ELF,
-        &AR,
-        &BZ2,
-        &GZIP,
-        &FASOO,
-        &PGP_NET_SHARE,
-        &UTF8,
+        &TZIF,
+        &XCF,
+        &PAT,
+        &GBR,
+        &GLB,
+        &INSTALL_SHIELD_CAB, // cabIS in Go
+        &JXR,
+        &PARQUET,
+        // Keep text last because it is the slowest check (matches Go comment)
+        &UTF8, // text in Go
     ],
 );
 
@@ -174,54 +189,123 @@ pub static ROOT: MimeType = MimeType::new(
 static HTML: MimeType =
     MimeType::new(TEXT_HTML, ".html", html, &[]).with_extension_aliases(&[".htm"]);
 
-static XML: MimeType = MimeType::new(TEXT_XML, ".xml", xml, &[]);
+static XML: MimeType = MimeType::new(
+    TEXT_XML,
+    ".xml",
+    xml,
+    &[
+        &RSS, &ATOM, &X3D, &KML, &XLIFF, &COLLADA, &GML, &GPX, &TCX, &AMF, &THREEMF, &XFDF, &OWL2,
+        &XHTML,
+    ],
+)
+.with_aliases(&[APPLICATION_XML]);
 
 static UTF8_BOM: MimeType = MimeType::new(TEXT_UTF8_BOM, ".txt", utf8_bom, &[]);
 
-static UTF16_BE: MimeType = MimeType::new(TEXT_UTF16_BE, ".txt", utf16_be, &[]);
+static UTF16_BE: MimeType = MimeType::new(
+    TEXT_UTF16_BE,
+    ".txt",
+    utf16_be,
+    &[
+        &HTML_UTF16_BE,
+        &XML_UTF16_BE,
+        &SVG_UTF16_BE,
+        &JSON_UTF16_BE,
+        &CSV_UTF16_BE,
+        &TSV_UTF16_BE,
+        &SRT_UTF16_BE,
+        &VTT_UTF16_BE,
+        &VCARD_UTF16_BE,
+        &ICALENDAR_UTF16_BE,
+        &RTF_UTF16_BE,
+    ],
+);
 
-static UTF16_LE: MimeType = MimeType::new(TEXT_UTF16_LE, ".txt", utf16_le, &[]);
+static UTF16_LE: MimeType = MimeType::new(
+    TEXT_UTF16_LE,
+    ".txt",
+    utf16_le,
+    &[
+        &HTML_UTF16_LE,
+        &XML_UTF16_LE,
+        &SVG_UTF16_LE,
+        &JSON_UTF16_LE,
+        &CSV_UTF16_LE,
+        &TSV_UTF16_LE,
+        &SRT_UTF16_LE,
+        &VTT_UTF16_LE,
+        &VCARD_UTF16_LE,
+        &ICALENDAR_UTF16_LE,
+        &RTF_UTF16_LE,
+    ],
+);
 
-static UTF8: MimeType = MimeType::new(TEXT_UTF8, ".txt", utf8, &[])
-    .with_aliases(&[TEXT_PLAIN])
-    .with_extension_aliases(&[
-        "",
-        ".pub",
-        ".html",
-        ".htm",
-        ".shtml",
-        ".svg",
-        ".xml",
-        ".rss",
-        ".atom",
-        ".x3d",
-        ".kml",
-        ".xlf",
-        ".dae",
-        ".gml",
-        ".gpx",
-        ".tcx",
-        ".amf",
-        "3mf",
-        ".php",
-        ".js",
-        ".lua",
-        ".pl",
-        ".py",
-        ".json",
-        ".geojson",
-        ".ndjson",
-        ".rtf",
-        ".tcl",
-        ".csv",
-        ".tsv",
-        ".vcf",
-        ".vcard",
-        ".ics",
-        ".ical",
-        ".icalendar",
-        ".warc",
-    ]);
+static UTF8: MimeType = MimeType::new(
+    TEXT_UTF8,
+    ".txt",
+    utf8,
+    &[
+        &HTML,
+        &XML,
+        &PHP,
+        &JAVASCRIPT,
+        &PYTHON,
+        &PERL,
+        &RUBY,
+        &LUA,
+        &SHELL,
+        &TCL,
+        &JSON,
+        &CSV_FORMAT,
+        &TSV,
+        &RTF,
+        &SRT,
+        &VTT,
+        &VCARD,
+        &ICALENDAR,
+        &SVG,
+        &WARC,
+    ],
+)
+.with_aliases(&[TEXT_PLAIN])
+.with_extension_aliases(&[
+    "",
+    ".pub",
+    ".html",
+    ".htm",
+    ".shtml",
+    ".svg",
+    ".xml",
+    ".rss",
+    ".atom",
+    ".x3d",
+    ".kml",
+    ".xlf",
+    ".dae",
+    ".gml",
+    ".gpx",
+    ".tcx",
+    ".amf",
+    "3mf",
+    ".php",
+    ".js",
+    ".lua",
+    ".pl",
+    ".py",
+    ".json",
+    ".geojson",
+    ".ndjson",
+    ".rtf",
+    ".tcl",
+    ".csv",
+    ".tsv",
+    ".vcf",
+    ".vcard",
+    ".ics",
+    ".ical",
+    ".icalendar",
+    ".warc",
+]);
 
 // ============================================================================
 // DOCUMENT FORMATS
@@ -230,10 +314,19 @@ static UTF8: MimeType = MimeType::new(TEXT_UTF8, ".txt", utf8, &[])
 static PDF: MimeType =
     MimeType::new(APPLICATION_PDF, ".pdf", pdf, &[]).with_aliases(&[APPLICATION_X_PDF]);
 
+static FDF: MimeType = MimeType::new(APPLICATION_VND_FDF, ".fdf", fdf, &[]);
+
 static PS: MimeType = MimeType::new(APPLICATION_POSTSCRIPT, ".ps", ps, &[]);
 
-static OLE: MimeType = MimeType::new(APPLICATION_X_OLE_STORAGE, "", ole, &[])
-    .with_extension_aliases(&[".xls", ".pub", ".ppt", ".doc"]);
+static OLE: MimeType = MimeType::new(
+    APPLICATION_X_OLE_STORAGE,
+    "",
+    ole,
+    &[&MSI, &AAF, &MSG, &XLS, &PUB, &PPT, &DOC, &ONENOTE],
+)
+.with_extension_aliases(&[".xls", ".pub", ".ppt", ".doc", ".chm", ".one"]);
+
+static AAF: MimeType = MimeType::new(APPLICATION_X_AAF, ".aaf", aaf, &[]);
 
 // ============================================================================
 // ARCHIVE & COMPRESSION FORMATS
@@ -251,11 +344,20 @@ static OLE: MimeType = MimeType::new(APPLICATION_X_OLE_STORAGE, "", ole, &[])
 /// This format supports multiple compression algorithms and strong encryption.
 static SEVEN_Z: MimeType = MimeType::new(APPLICATION_X_7Z_COMPRESSED, ".7z", seven_z, &[]);
 
-static ZIP: MimeType = MimeType::new(APPLICATION_ZIP, ".zip", zip, &[])
-    .with_aliases(&[APPLICATION_X_ZIP, APPLICATION_X_ZIP_COMPRESSED])
-    .with_extension_aliases(&[
-        ".xlsx", ".docx", ".pptx", ".epub", ".jar", ".odt", ".ods", ".odp", ".odg", ".odf",
-    ]);
+static ZIP: MimeType = MimeType::new(
+    APPLICATION_ZIP,
+    ".zip",
+    zip,
+    &[
+        &DOCX, &XLSX, &PPTX, &VSDX, &EPUB, &JAR, &APK, &ODT, &ODS, &ODP, &ODG, &ODF, &ODC, &SXC,
+        &KMZ,
+    ],
+)
+.with_aliases(&[APPLICATION_X_ZIP, APPLICATION_X_ZIP_COMPRESSED])
+.with_extension_aliases(&[
+    ".xlsx", ".docx", ".pptx", ".vsdx", ".epub", ".jar", ".odt", ".ods", ".odp", ".odg", ".odf",
+    ".sxc", ".kmz",
+]);
 
 static RAR: MimeType = MimeType::new(APPLICATION_X_RAR_COMPRESSED, ".rar", rar, &[])
     .with_aliases(&[APPLICATION_X_RAR]);
@@ -271,8 +373,6 @@ static GZIP: MimeType = MimeType::new(APPLICATION_GZIP, ".gz", gzip, &[])
     ])
     .with_extension_aliases(&[".tgz", ".taz"]);
 
-static GZIP_PRECISE: MimeType = MimeType::new(APPLICATION_X_GZIP, ".gz", gzip_precise, &[]);
-
 static TAR: MimeType = MimeType::new(APPLICATION_X_TAR, ".tar", tar, &[]);
 
 static BZ2: MimeType = MimeType::new(APPLICATION_X_BZIP2, ".bz2", bz2, &[]);
@@ -281,20 +381,17 @@ static XZ: MimeType = MimeType::new(APPLICATION_X_XZ, ".xz", xz, &[]);
 
 static ZSTD: MimeType = MimeType::new(APPLICATION_ZSTD, ".zst", zstd, &[]);
 
-static LZIP: MimeType = MimeType::new(APPLICATION_LZIP, ".lz", lzip, &[]);
+static LZIP: MimeType =
+    MimeType::new(APPLICATION_LZIP, ".lz", lzip, &[]).with_aliases(&[APPLICATION_X_LZIP]);
 
 static CAB: MimeType = MimeType::new(APPLICATION_VND_MS_CAB_COMPRESSED, ".cab", cab, &[]);
 
-static INSTALL_SHIELD_CAB: MimeType = MimeType::new(
-    APPLICATION_X_INSTALLSHIELD,
-    ".cab",
-    install_shield_cab,
-    &[],
-);
+static INSTALL_SHIELD_CAB: MimeType =
+    MimeType::new(APPLICATION_X_INSTALLSHIELD, ".cab", install_shield_cab, &[]);
 
 static CPIO: MimeType = MimeType::new(APPLICATION_X_CPIO, ".cpio", cpio, &[]);
 
-static AR: MimeType = MimeType::new(APPLICATION_X_ARCHIVE, ".a", ar, &[])
+static AR: MimeType = MimeType::new(APPLICATION_X_ARCHIVE, ".a", ar, &[&DEB])
     .with_aliases(&[APPLICATION_X_UNIX_ARCHIVE])
     .with_extension_aliases(&[".deb"]);
 
@@ -302,7 +399,8 @@ static RPM: MimeType = MimeType::new(APPLICATION_X_RPM, ".rpm", rpm, &[]);
 
 static TORRENT: MimeType = MimeType::new(APPLICATION_X_BITTORRENT, ".torrent", torrent, &[]);
 
-static FITS: MimeType = MimeType::new(APPLICATION_FITS, ".fits", fits, &[]);
+static FITS: MimeType =
+    MimeType::new(APPLICATION_FITS, ".fits", fits, &[]).with_aliases(&[IMAGE_FITS]);
 
 static XAR: MimeType = MimeType::new(APPLICATION_X_XAR, ".xar", xar, &[]);
 
@@ -311,10 +409,88 @@ static DEB: MimeType = MimeType::new(APPLICATION_VND_DEBIAN_BINARY_PACKAGE, ".de
 static WARC: MimeType = MimeType::new(APPLICATION_WARC, ".warc", warc, &[]);
 
 // ============================================================================
+// UTF-16 TEXT FORMAT VARIANTS
+// ============================================================================
+
+/// HTML format for UTF-16 Big Endian
+static HTML_UTF16_BE: MimeType = MimeType::new(TEXT_HTML_UTF16, ".html", html_utf16_be, &[]);
+
+/// HTML format for UTF-16 Little Endian  
+static HTML_UTF16_LE: MimeType = MimeType::new(TEXT_HTML_UTF16, ".html", html_utf16_le, &[]);
+
+/// XML format for UTF-16 Big Endian
+static XML_UTF16_BE: MimeType =
+    MimeType::new(TEXT_XML_UTF16, ".xml", xml_utf16_be, &[]).with_aliases(&[APPLICATION_XML_UTF16]);
+
+/// XML format for UTF-16 Little Endian
+static XML_UTF16_LE: MimeType =
+    MimeType::new(TEXT_XML_UTF16, ".xml", xml_utf16_le, &[]).with_aliases(&[APPLICATION_XML_UTF16]);
+
+/// SVG format for UTF-16 Big Endian
+static SVG_UTF16_BE: MimeType = MimeType::new(IMAGE_SVG_XML_UTF16, ".svg", svg_utf16_be, &[]);
+
+/// SVG format for UTF-16 Little Endian
+static SVG_UTF16_LE: MimeType = MimeType::new(IMAGE_SVG_XML_UTF16, ".svg", svg_utf16_le, &[]);
+
+/// JSON format for UTF-16 Big Endian
+static JSON_UTF16_BE: MimeType = MimeType::new(APPLICATION_JSON_UTF16, ".json", json_utf16_be, &[]);
+
+/// JSON format for UTF-16 Little Endian
+static JSON_UTF16_LE: MimeType = MimeType::new(APPLICATION_JSON_UTF16, ".json", json_utf16_le, &[]);
+
+/// CSV format for UTF-16 Big Endian
+static CSV_UTF16_BE: MimeType = MimeType::new(TEXT_CSV_UTF16, ".csv", csv_utf16_be, &[]);
+
+/// CSV format for UTF-16 Little Endian
+static CSV_UTF16_LE: MimeType = MimeType::new(TEXT_CSV_UTF16, ".csv", csv_utf16_le, &[]);
+
+/// TSV format for UTF-16 Big Endian
+static TSV_UTF16_BE: MimeType =
+    MimeType::new(TEXT_TAB_SEPARATED_VALUES_UTF16, ".tsv", tsv_utf16_be, &[]);
+
+/// TSV format for UTF-16 Little Endian
+static TSV_UTF16_LE: MimeType =
+    MimeType::new(TEXT_TAB_SEPARATED_VALUES_UTF16, ".tsv", tsv_utf16_le, &[]);
+
+/// SRT subtitle format for UTF-16 Big Endian
+static SRT_UTF16_BE: MimeType =
+    MimeType::new(APPLICATION_X_SUBRIP_UTF16, ".srt", srt_utf16_be, &[]);
+
+/// SRT subtitle format for UTF-16 Little Endian
+static SRT_UTF16_LE: MimeType =
+    MimeType::new(APPLICATION_X_SUBRIP_UTF16, ".srt", srt_utf16_le, &[]);
+
+/// VTT subtitle format for UTF-16 Big Endian
+static VTT_UTF16_BE: MimeType = MimeType::new(TEXT_VTT_UTF16, ".vtt", vtt_utf16_be, &[]);
+
+/// VTT subtitle format for UTF-16 Little Endian
+static VTT_UTF16_LE: MimeType = MimeType::new(TEXT_VTT_UTF16, ".vtt", vtt_utf16_le, &[]);
+
+/// vCard format for UTF-16 Big Endian
+static VCARD_UTF16_BE: MimeType = MimeType::new(TEXT_VCARD_UTF16, ".vcf", vcard_utf16_be, &[]);
+
+/// vCard format for UTF-16 Little Endian
+static VCARD_UTF16_LE: MimeType = MimeType::new(TEXT_VCARD_UTF16, ".vcf", vcard_utf16_le, &[]);
+
+/// iCalendar format for UTF-16 Big Endian
+static ICALENDAR_UTF16_BE: MimeType =
+    MimeType::new(TEXT_CALENDAR_UTF16, ".ics", icalendar_utf16_be, &[]);
+
+/// iCalendar format for UTF-16 Little Endian
+static ICALENDAR_UTF16_LE: MimeType =
+    MimeType::new(TEXT_CALENDAR_UTF16, ".ics", icalendar_utf16_le, &[]);
+
+/// RTF format for UTF-16 Big Endian
+static RTF_UTF16_BE: MimeType = MimeType::new(TEXT_RTF_UTF16, ".rtf", rtf_utf16_be, &[]);
+
+/// RTF format for UTF-16 Little Endian
+static RTF_UTF16_LE: MimeType = MimeType::new(TEXT_RTF_UTF16, ".rtf", rtf_utf16_le, &[]);
+
+// ============================================================================
 // IMAGE FORMATS
 // ============================================================================
 
-static PNG: MimeType = MimeType::new(IMAGE_PNG, ".png", png, &[]);
+static PNG: MimeType = MimeType::new(IMAGE_PNG, ".png", png, &[&APNG]);
 
 static APNG: MimeType = MimeType::new(IMAGE_VND_MOZILLA_APNG, ".apng", apng, &[]);
 
@@ -325,11 +501,12 @@ static JP2: MimeType = MimeType::new(IMAGE_JP2, ".jp2", jp2, &[]);
 
 static JPX: MimeType = MimeType::new(IMAGE_JPX, ".jpx", jpx, &[]);
 
-static JPM: MimeType = MimeType::new(IMAGE_JPM, ".jpm", jpm, &[]);
+static JPM: MimeType = MimeType::new(IMAGE_JPM, ".jpm", jpm, &[]).with_aliases(&[VIDEO_JPM]);
 
 static JXS: MimeType = MimeType::new(IMAGE_JXS, ".jxs", jxs, &[]);
 
-static JXR: MimeType = MimeType::new(IMAGE_JXR, ".jxr", jxr, &[]);
+static JXR: MimeType =
+    MimeType::new(IMAGE_JXR, ".jxr", jxr, &[]).with_aliases(&[IMAGE_VND_MS_PHOTO]);
 
 static JXL: MimeType = MimeType::new(IMAGE_JXL, ".jxl", jxl, &[]);
 
@@ -350,6 +527,14 @@ static ICNS: MimeType = MimeType::new(IMAGE_X_ICNS, ".icns", icns, &[]);
 
 static PSD: MimeType = MimeType::new(IMAGE_VND_ADOBE_PHOTOSHOP, ".psd", psd, &[])
     .with_aliases(&[IMAGE_X_PSD, APPLICATION_PHOTOSHOP]);
+
+static PBM: MimeType = MimeType::new(IMAGE_X_PORTABLE_BITMAP, ".pbm", pbm, &[]);
+
+static PGM: MimeType = MimeType::new(IMAGE_X_PORTABLE_GRAYMAP, ".pgm", pgm, &[]);
+
+static PPM: MimeType = MimeType::new(IMAGE_X_PORTABLE_PIXMAP, ".ppm", ppm, &[]);
+
+static PAM: MimeType = MimeType::new(IMAGE_X_PORTABLE_ARBITRARYMAP, ".pam", pam, &[]);
 
 static HEIC: MimeType = MimeType::new(IMAGE_HEIC, ".heic", heic, &[]);
 
@@ -402,50 +587,71 @@ static WAV: MimeType = MimeType::new(AUDIO_WAV, ".wav", wav, &[]).with_aliases(&
 static AIFF: MimeType =
     MimeType::new(AUDIO_AIFF, ".aiff", aiff, &[]).with_extension_aliases(&[".aif"]);
 
-static MIDI_PRECISE: MimeType = MimeType::new(AUDIO_MIDI, ".midi", midi_precise, &[])
+static MIDI: MimeType = MimeType::new(AUDIO_MIDI, ".midi", midi, &[])
     .with_aliases(&[AUDIO_MID])
     .with_extension_aliases(&[".mid"]);
 
-static OGG: MimeType = MimeType::new(APPLICATION_OGG, ".ogg", ogg, &[])
+static OGG: MimeType = MimeType::new(APPLICATION_OGG, ".ogg", ogg, &[&OGG_AUDIO, &OGG_VIDEO])
     .with_extension_aliases(&[".oga", ".opus", ".ogv"]);
+
+static OGG_AUDIO: MimeType = MimeType::new(AUDIO_OGG, ".oga", ogg_audio, &[]);
+
+static OGG_VIDEO: MimeType = MimeType::new(VIDEO_OGG, ".ogv", ogg_video, &[]);
 
 static APE: MimeType = MimeType::new(AUDIO_APE, ".ape", ape, &[]);
 
 static MUSEPACK: MimeType = MimeType::new(AUDIO_MUSEPACK, ".mpc", musepack, &[]);
 
-static AU: MimeType =
-    MimeType::new(AUDIO_BASIC, ".au", au, &[]).with_extension_aliases(&[".snd"]);
+static AU: MimeType = MimeType::new(AUDIO_BASIC, ".au", au, &[]).with_extension_aliases(&[".snd"]);
 
-static AMR: MimeType = MimeType::new(AUDIO_AMR, ".amr", amr, &[]);
+static AMR: MimeType = MimeType::new(AUDIO_AMR, ".amr", amr, &[]).with_aliases(&[AUDIO_AMR_NB]);
 
 static VOC: MimeType = MimeType::new(AUDIO_X_UNKNOWN, ".voc", voc, &[]);
 
-static M3U: MimeType =
-    MimeType::new(AUDIO_X_MPEGURL, ".m3u", m3u, &[]).with_extension_aliases(&[".m3u8"]);
+static M3U: MimeType = MimeType::new(AUDIO_X_MPEGURL, ".m3u", m3u, &[])
+    .with_aliases(&[AUDIO_MPEGURL])
+    .with_extension_aliases(&[".m3u8"]);
 
 static AAC: MimeType = MimeType::new(AUDIO_AAC, ".aac", aac, &[]);
 
 static QCP: MimeType = MimeType::new(AUDIO_QCELP, ".qcp", qcp, &[]);
 
+static M4A: MimeType = MimeType::new(AUDIO_X_M4A, ".m4a", m4a, &[]);
+
 static AMP4: MimeType =
     MimeType::new(AUDIO_MP4, ".mp4", amp4, &[]).with_aliases(&[AUDIO_X_M4A, AUDIO_X_MP4A]);
-
-static M4A: MimeType = MimeType::new(AUDIO_X_M4A, ".m4a", m4a, &[]);
 
 // ============================================================================
 // VIDEO FORMATS
 // ============================================================================
 
-static MP4_PRECISE: MimeType = MimeType::new(VIDEO_MP4, ".mp4", mp4_precise, &[]);
+static MP4_PRECISE: MimeType = MimeType::new(
+    VIDEO_MP4,
+    ".mp4",
+    mp4_precise,
+    &[
+        &AVIF_FORMAT,
+        &THREE_GPP,
+        &THREE_GPP2,
+        &AMP4,
+        &M4A,
+        &M4V,
+        &HEIC,
+        &HEIC_SEQ,
+        &HEIF,
+        &HEIF_SEQ,
+        &MJ2,
+        &DVB,
+    ],
+);
 
-static WEBM: MimeType =
-    MimeType::new(VIDEO_WEBM, ".webm", webm, &[]).with_aliases(&[AUDIO_WEBM]);
+static WEBM: MimeType = MimeType::new(VIDEO_WEBM, ".webm", webm, &[]).with_aliases(&[AUDIO_WEBM]);
 
 static MKV: MimeType = MimeType::new(VIDEO_X_MATROSKA, ".mkv", mkv, &[])
     .with_extension_aliases(&[".mk3d", ".mka", ".mks"]);
 
-static AVI: MimeType = MimeType::new(VIDEO_X_MSVIDEO, ".avi", avi, &[])
-    .with_aliases(&[VIDEO_AVI, VIDEO_MSVIDEO]);
+static AVI: MimeType =
+    MimeType::new(VIDEO_X_MSVIDEO, ".avi", avi, &[]).with_aliases(&[VIDEO_AVI, VIDEO_MSVIDEO]);
 
 static MPEG: MimeType = MimeType::new(VIDEO_MPEG, ".mpeg", mpeg, &[]);
 
@@ -455,8 +661,8 @@ static MQV: MimeType = MimeType::new(VIDEO_QUICKTIME, ".mqv", mqv, &[]);
 
 static FLV: MimeType = MimeType::new(VIDEO_X_FLV, ".flv", flv, &[]);
 
-static ASF: MimeType = MimeType::new(VIDEO_X_MS_ASF, ".asf", asf, &[])
-    .with_aliases(&[VIDEO_ASF, VIDEO_X_MS_WMV]);
+static ASF: MimeType =
+    MimeType::new(VIDEO_X_MS_ASF, ".asf", asf, &[]).with_aliases(&[VIDEO_ASF, VIDEO_X_MS_WMV]);
 
 static M4V: MimeType = MimeType::new(VIDEO_X_M4V, ".m4v", m4v, &[]);
 
@@ -473,16 +679,24 @@ static EXE: MimeType = MimeType::new(
     &[],
 );
 
-static ELF: MimeType =
-    MimeType::new(APPLICATION_X_ELF, "", elf, &[]).with_extension_aliases(&[".so"]);
-
-static CLASS: MimeType = MimeType::new(
-    APPLICATION_X_JAVA_APPLET_BINARY,
-    ".class",
-    class,
-    &[],
+static ELF: MimeType = MimeType::new(
+    APPLICATION_X_ELF,
+    "",
+    elf,
+    &[&ELF_OBJ, &ELF_EXE, &ELF_LIB, &ELF_DUMP],
 )
-.with_aliases(&[APPLICATION_X_JAVA_APPLET]);
+.with_extension_aliases(&[".so"]);
+
+static ELF_OBJ: MimeType = MimeType::new(APPLICATION_X_OBJECT, "", elf_obj, &[]);
+
+static ELF_EXE: MimeType = MimeType::new(APPLICATION_X_EXECUTABLE, "", elf_exe, &[]);
+
+static ELF_LIB: MimeType = MimeType::new(APPLICATION_X_SHAREDLIB, ".so", elf_lib, &[]);
+
+static ELF_DUMP: MimeType = MimeType::new(APPLICATION_X_COREDUMP, "", elf_dump, &[]);
+
+static CLASS: MimeType = MimeType::new(APPLICATION_X_JAVA_APPLET_BINARY, ".class", class, &[])
+    .with_aliases(&[APPLICATION_X_JAVA_APPLET]);
 
 static WASM: MimeType = MimeType::new(APPLICATION_WASM, ".wasm", wasm, &[]);
 
@@ -514,6 +728,8 @@ static SWF: MimeType = MimeType::new(APPLICATION_X_SHOCKWAVE_FLASH, ".swf", swf,
 
 static CRX: MimeType = MimeType::new(APPLICATION_X_CHROME_EXTENSION, ".crx", crx, &[]);
 
+static P7S: MimeType = MimeType::new(APPLICATION_PKCS7_SIGNATURE, ".p7s", p7s, &[]);
+
 // ============================================================================
 // SPECIALIZED FORMATS
 // ============================================================================
@@ -524,12 +740,383 @@ static MOBI: MimeType = MimeType::new(APPLICATION_X_MOBIPOCKET_EBOOK, ".mobi", m
 
 static LIT: MimeType = MimeType::new(APPLICATION_X_MS_READER, ".lit", lit, &[]);
 
-static SQLITE3: MimeType = MimeType::new(APPLICATION_X_SQLITE3, ".sqlite", sqlite, &[]);
+static SQLITE3: MimeType = MimeType::new(APPLICATION_VND_SQLITE3, ".sqlite", sqlite, &[])
+    .with_aliases(&[APPLICATION_X_SQLITE3]);
 
 static FASOO: MimeType = MimeType::new(APPLICATION_X_FASOO, "", fasoo, &[]);
 
-static PGP_NET_SHARE: MimeType =
-    MimeType::new(APPLICATION_X_PGP_NET_SHARE, "", pgp_net_share, &[]);
+static PGP_NET_SHARE: MimeType = MimeType::new(APPLICATION_X_PGP_NET_SHARE, "", pgp_net_share, &[]);
+
+// ============================================================================
+// MICROSOFT OFFICE & DOCUMENT FORMATS
+// ============================================================================
+
+static DOCX: MimeType = MimeType::new(
+    APPLICATION_VND_OPENXML_WORDPROCESSINGML_DOCUMENT,
+    ".docx",
+    docx,
+    &[],
+);
+
+static XLSX: MimeType = MimeType::new(
+    APPLICATION_VND_OPENXML_SPREADSHEETML_SHEET,
+    ".xlsx",
+    xlsx,
+    &[],
+);
+
+static PPTX: MimeType = MimeType::new(
+    APPLICATION_VND_OPENXML_PRESENTATIONML_PRESENTATION,
+    ".pptx",
+    pptx,
+    &[],
+);
+
+static VSDX: MimeType = MimeType::new(
+    APPLICATION_VND_MS_VISIO_DRAWING_MAIN_XML,
+    ".vsdx",
+    vsdx,
+    &[],
+);
+
+static EPUB: MimeType = MimeType::new(APPLICATION_EPUB_ZIP, ".epub", epub, &[]);
+
+static JAR: MimeType = MimeType::new(APPLICATION_JAVA_ARCHIVE, ".jar", jar, &[]).with_aliases(&[
+    APPLICATION_JAR,
+    APPLICATION_JAR_ARCHIVE,
+    APPLICATION_X_JAVA_ARCHIVE,
+]);
+
+static APK: MimeType = MimeType::new(APPLICATION_VND_ANDROID_PACKAGE_ARCHIVE, ".apk", apk, &[]);
+
+static DOC: MimeType = MimeType::new(APPLICATION_MSWORD, ".doc", doc, &[]);
+
+static XLS: MimeType = MimeType::new(APPLICATION_VND_MS_EXCEL, ".xls", xls, &[]);
+
+static PPT: MimeType = MimeType::new(APPLICATION_VND_MS_POWERPOINT, ".ppt", ppt, &[]);
+
+static CHM: MimeType = MimeType::new(APPLICATION_VND_MS_HTMLHELP, ".chm", chm, &[]);
+
+static ONENOTE: MimeType = MimeType::new(APPLICATION_ONENOTE, ".one", onenote, &[]);
+
+static PUB: MimeType = MimeType::new(APPLICATION_VND_MS_PUBLISHER, ".pub", pub_format, &[]);
+
+static MSG: MimeType = MimeType::new(APPLICATION_VND_MS_OUTLOOK, ".msg", msg, &[]);
+
+static MSI: MimeType = MimeType::new(APPLICATION_X_MS_INSTALLER, ".msi", msi, &[]);
+
+// ============================================================================
+// OPEN DOCUMENT FORMATS
+// ============================================================================
+
+static ODT: MimeType = MimeType::new(
+    APPLICATION_VND_OASIS_OPENDOCUMENT_TEXT,
+    ".odt",
+    odt,
+    &[&OTT],
+)
+.with_aliases(&["application/x-vnd.oasis.opendocument.text"]);
+
+static ODS: MimeType = MimeType::new(
+    APPLICATION_VND_OASIS_OPENDOCUMENT_SPREADSHEET,
+    ".ods",
+    ods,
+    &[&OTS],
+)
+.with_aliases(&["application/x-vnd.oasis.opendocument.spreadsheet"]);
+
+static ODP: MimeType = MimeType::new(
+    APPLICATION_VND_OASIS_OPENDOCUMENT_PRESENTATION,
+    ".odp",
+    odp,
+    &[&OTP],
+)
+.with_aliases(&["application/x-vnd.oasis.opendocument.presentation"]);
+
+static ODG: MimeType = MimeType::new(
+    APPLICATION_VND_OASIS_OPENDOCUMENT_GRAPHICS,
+    ".odg",
+    odg,
+    &[&OTG],
+)
+.with_aliases(&["application/x-vnd.oasis.opendocument.graphics"]);
+
+static ODF: MimeType = MimeType::new(
+    APPLICATION_VND_OASIS_OPENDOCUMENT_FORMULA,
+    ".odf",
+    odf_format,
+    &[],
+)
+.with_aliases(&["application/x-vnd.oasis.opendocument.formula"]);
+
+static ODC: MimeType = MimeType::new(APPLICATION_VND_OASIS_OPENDOCUMENT_CHART, ".odc", odc, &[])
+    .with_aliases(&["application/x-vnd.oasis.opendocument.chart"]);
+
+static OTT: MimeType = MimeType::new(
+    APPLICATION_VND_OASIS_OPENDOCUMENT_TEXT_TEMPLATE,
+    ".ott",
+    ott,
+    &[],
+)
+.with_aliases(&["application/x-vnd.oasis.opendocument.text-template"]);
+
+static OTS: MimeType = MimeType::new(
+    APPLICATION_VND_OASIS_OPENDOCUMENT_SPREADSHEET_TEMPLATE,
+    ".ots",
+    ots,
+    &[],
+)
+.with_aliases(&["application/x-vnd.oasis.opendocument.spreadsheet-template"]);
+
+static OTP: MimeType = MimeType::new(
+    APPLICATION_VND_OASIS_OPENDOCUMENT_PRESENTATION_TEMPLATE,
+    ".otp",
+    otp,
+    &[],
+)
+.with_aliases(&["application/x-vnd.oasis.opendocument.presentation-template"]);
+
+static OTG: MimeType = MimeType::new(
+    APPLICATION_VND_OASIS_OPENDOCUMENT_GRAPHICS_TEMPLATE,
+    ".otg",
+    otg,
+    &[],
+)
+.with_aliases(&["application/x-vnd.oasis.opendocument.graphics-template"]);
+
+static SXC: MimeType = MimeType::new(APPLICATION_VND_SUN_XML_CALC, ".sxc", sxc, &[]);
+
+static KMZ: MimeType = MimeType::new(APPLICATION_VND_GOOGLE_EARTH_KMZ, ".kmz", kmz, &[]);
+
+// ============================================================================
+// DATABASE FORMATS
+// ============================================================================
+
+static MDB: MimeType = MimeType::new(APPLICATION_X_MSACCESS, ".mdb", mdb, &[]);
+
+static ACCDB: MimeType = MimeType::new(APPLICATION_X_MSACCESS, ".accdb", accdb, &[]);
+
+static DBF: MimeType = MimeType::new(APPLICATION_X_DBF, ".dbf", dbf, &[]);
+
+static LOTUS123: MimeType = MimeType::new(APPLICATION_VND_LOTUS_1_2_3, ".123", lotus123, &[]);
+
+static MRC: MimeType = MimeType::new(APPLICATION_MARC, ".mrc", marc, &[]);
+
+// ============================================================================
+// PROGRAMMING & TEXT FORMATS
+// ============================================================================
+
+static PHP: MimeType = MimeType::new(TEXT_X_PHP, ".php", php, &[]);
+
+static JAVASCRIPT: MimeType =
+    MimeType::new(TEXT_JAVASCRIPT, ".js", javascript, &[]).with_aliases(&[APPLICATION_JAVASCRIPT]);
+
+static PYTHON: MimeType = MimeType::new(TEXT_X_PYTHON, ".py", python, &[])
+    .with_aliases(&[TEXT_X_SCRIPT_PYTHON, APPLICATION_X_PYTHON]);
+
+static PERL: MimeType = MimeType::new(TEXT_X_PERL, ".pl", perl, &[]);
+
+static RUBY: MimeType =
+    MimeType::new(TEXT_X_RUBY, ".rb", ruby, &[]).with_aliases(&[APPLICATION_X_RUBY]);
+
+static LUA: MimeType = MimeType::new(TEXT_X_LUA, ".lua", lua, &[]);
+
+static SHELL: MimeType = MimeType::new(TEXT_X_SHELLSCRIPT, ".sh", shell, &[]).with_aliases(&[
+    TEXT_X_SH,
+    APPLICATION_X_SHELLSCRIPT,
+    APPLICATION_X_SH,
+]);
+
+static TCL: MimeType =
+    MimeType::new(TEXT_X_TCL, ".tcl", tcl, &[]).with_aliases(&[APPLICATION_X_TCL]);
+
+static JSON: MimeType = MimeType::new(
+    APPLICATION_JSON,
+    ".json",
+    json,
+    &[&GEOJSON, &NDJSON, &HAR, &GLTF],
+);
+
+static GEOJSON: MimeType = MimeType::new(APPLICATION_GEO_JSON, ".geojson", geojson, &[]);
+
+static NDJSON: MimeType = MimeType::new(APPLICATION_X_NDJSON, ".ndjson", ndjson, &[]);
+
+static CSV_FORMAT: MimeType = MimeType::new(TEXT_CSV, ".csv", csv_format, &[]);
+
+static TSV: MimeType = MimeType::new(TEXT_TAB_SEPARATED_VALUES, ".tsv", tsv, &[]);
+
+static RTF: MimeType = MimeType::new(TEXT_RTF, ".rtf", rtf, &[]).with_aliases(&[APPLICATION_RTF]);
+
+static SRT: MimeType = MimeType::new(APPLICATION_X_SUBRIP, ".srt", srt, &[])
+    .with_aliases(&[APPLICATION_X_SRT, TEXT_X_SRT]);
+
+static VTT: MimeType = MimeType::new(TEXT_VTT, ".vtt", vtt, &[]);
+
+static VCARD: MimeType = MimeType::new(TEXT_VCARD, ".vcf", vcard, &[]);
+
+static ICALENDAR: MimeType = MimeType::new(TEXT_CALENDAR, ".ics", icalendar, &[]);
+
+static SVG: MimeType = MimeType::new(IMAGE_SVG_XML, ".svg", svg, &[]);
+
+// ============================================================================
+// XML-BASED FORMATS
+// ============================================================================
+
+static RSS: MimeType =
+    MimeType::new(APPLICATION_RSS_XML, ".rss", rss, &[]).with_aliases(&[TEXT_RSS]);
+
+static ATOM: MimeType = MimeType::new(APPLICATION_ATOM_XML, ".atom", atom, &[]);
+
+static X3D: MimeType = MimeType::new(MODEL_X3D_XML, ".x3d", x3d, &[]);
+
+static KML: MimeType = MimeType::new(APPLICATION_VND_GOOGLE_EARTH_KML_XML, ".kml", kml, &[]);
+
+static XLIFF: MimeType = MimeType::new(APPLICATION_X_XLIFF_XML, ".xlf", xliff, &[]);
+
+static COLLADA: MimeType = MimeType::new(MODEL_VND_COLLADA_XML, ".dae", collada, &[]);
+
+static GML: MimeType = MimeType::new(APPLICATION_GML_XML, ".gml", gml, &[]);
+
+static GPX: MimeType = MimeType::new(APPLICATION_GPX_XML, ".gpx", gpx, &[]);
+
+static TCX: MimeType = MimeType::new(APPLICATION_VND_GARMIN_TCX_XML, ".tcx", tcx, &[]);
+
+static AMF: MimeType = MimeType::new(APPLICATION_X_AMF, ".amf", amf, &[]);
+
+static THREEMF: MimeType = MimeType::new(
+    APPLICATION_VND_MS_PACKAGE_3DMANUFACTURING_3DMODEL_XML,
+    ".3mf",
+    threemf,
+    &[],
+);
+
+static XFDF: MimeType = MimeType::new(APPLICATION_VND_ADOBE_XFDF, ".xfdf", xfdf, &[]);
+
+static OWL2: MimeType = MimeType::new(APPLICATION_OWL_XML, ".owl", owl2, &[]);
+
+static XHTML: MimeType = MimeType::new(APPLICATION_XHTML_XML, ".html", xhtml, &[]);
+
+static HAR: MimeType = MimeType::new(APPLICATION_JSON_HAR, ".har", har, &[]);
+
+// ============================================================================
+// 3D & GEOSPATIAL FORMATS
+// ============================================================================
+
+static SHP: MimeType = MimeType::new(APPLICATION_VND_SHP, ".shp", shp, &[]);
+
+static SHX: MimeType = MimeType::new(APPLICATION_VND_SHX, ".shx", shx, &[&SHP]);
+
+static GLB: MimeType = MimeType::new(MODEL_GLTF_BINARY, ".glb", glb, &[]);
+
+static GLTF: MimeType = MimeType::new(MODEL_GLTF_JSON, ".gltf", gltf, &[]);
+
+// ============================================================================
+// GAMING FORMATS
+// ============================================================================
+
+static NES: MimeType = MimeType::new(APPLICATION_VND_NINTENDO_SNES_ROM, ".nes", nes, &[]);
+
+// ============================================================================
+// ADDITIONAL VIDEO FORMATS
+// ============================================================================
+
+static THREE_GPP: MimeType =
+    MimeType::new(VIDEO_3GPP, ".3gp", three_gpp, &[]).with_aliases(&[VIDEO_3GP, AUDIO_3GPP]);
+
+static THREE_GPP2: MimeType =
+    MimeType::new(VIDEO_3GPP2, ".3g2", three_gpp2, &[]).with_aliases(&[VIDEO_3G2, AUDIO_3GPP2]);
+
+static MJ2: MimeType = MimeType::new(VIDEO_MJ2, ".mj2", mj2, &[]);
+
+static DVB: MimeType = MimeType::new(VIDEO_VND_DVB_FILE, ".dvb", dvb, &[]);
+
+static AVIF_FORMAT: MimeType = MimeType::new(IMAGE_AVIF, ".avif", avif_format, &[]);
+
+// ============================================================================
+// MISCELLANEOUS FORMATS
+// ============================================================================
+
+static HDF: MimeType = MimeType::new(APPLICATION_X_HDF, ".hdf", hdf, &[]);
+
+static CBOR_FORMAT: MimeType = MimeType::new(APPLICATION_CBOR, ".cbor", cbor_format, &[]);
+
+static PARQUET: MimeType = MimeType::new(APPLICATION_VND_APACHE_PARQUET, ".parquet", parquet, &[])
+    .with_aliases(&[APPLICATION_X_PARQUET]);
+
+static LNK: MimeType = MimeType::new(APPLICATION_X_MS_SHORTCUT, ".lnk", lnk, &[]);
+
+static MACHO: MimeType = MimeType::new(APPLICATION_X_MACH_BINARY, ".macho", macho, &[]);
+
+static TZIF: MimeType = MimeType::new(APPLICATION_TZIF, "", tzif, &[]);
+
+// ============================================================================
+// XML FORMAT DETECTION FUNCTIONS
+// ============================================================================
+
+fn rss(input: &[u8]) -> bool {
+    xml(input) && input.windows(4).any(|w| w == b"<rss")
+}
+
+fn atom(input: &[u8]) -> bool {
+    xml(input) && input.windows(5).any(|w| w == b"<feed")
+}
+
+fn x3d(input: &[u8]) -> bool {
+    xml(input) && input.windows(4).any(|w| w == b"<X3D")
+}
+
+fn kml(input: &[u8]) -> bool {
+    xml(input) && input.windows(4).any(|w| w == b"<kml")
+}
+
+fn xliff(input: &[u8]) -> bool {
+    xml(input) && input.windows(6).any(|w| w == b"<xliff")
+}
+
+fn collada(input: &[u8]) -> bool {
+    xml(input) && input.windows(8).any(|w| w == b"<COLLADA")
+}
+
+fn gml(input: &[u8]) -> bool {
+    xml(input) && input.windows(4).any(|w| w == b"<gml")
+}
+
+fn gpx(input: &[u8]) -> bool {
+    xml(input) && input.windows(4).any(|w| w == b"<gpx")
+}
+
+fn tcx(input: &[u8]) -> bool {
+    xml(input) && input.windows(20).any(|w| w == b"TrainingCenterDataba")
+}
+
+fn amf(input: &[u8]) -> bool {
+    xml(input) && input.windows(4).any(|w| w == b"<amf")
+}
+
+fn threemf(input: &[u8]) -> bool {
+    xml(input) && input.windows(6).any(|w| w == b"<model")
+}
+
+fn xfdf(input: &[u8]) -> bool {
+    xml(input) && input.windows(5).any(|w| w == b"<xfdf")
+}
+
+fn owl2(input: &[u8]) -> bool {
+    xml(input) && (input.windows(4).any(|w| w == b"<owl") || input.windows(3).any(|w| w == b"<RDF"))
+}
+
+fn xhtml(input: &[u8]) -> bool {
+    xml(input)
+        && input
+            .windows(26)
+            .any(|w| w == b"http://www.w3.org/1999/xht")
+}
+
+fn har(input: &[u8]) -> bool {
+    json(input)
+        && input.windows(5).any(|w| w == b"\"log\"")
+        && input.windows(9).any(|w| w == b"\"version\"")
+}
 
 // ============================================================================
 // INITIALIZATION FUNCTION
@@ -568,21 +1155,23 @@ pub fn init_tree() {
 
     // Documents
     PDF.register();
+    FDF.register();
     PS.register();
     OLE.register();
+    AAF.register();
 
     // Archives and compression
     SEVEN_Z.register();
     ZIP.register();
     RAR.register();
     GZIP.register();
-    GZIP_PRECISE.register();
     TAR.register();
     BZ2.register();
     XZ.register();
     ZSTD.register();
     LZIP.register();
     CAB.register();
+    CHM.register();
     INSTALL_SHIELD_CAB.register();
     CPIO.register();
     AR.register();
@@ -610,6 +1199,10 @@ pub fn init_tree() {
     ICO.register();
     ICNS.register();
     PSD.register();
+    PBM.register();
+    PGM.register();
+    PPM.register();
+    PAM.register();
     HEIC.register();
     HEIC_SEQ.register();
     HEIF.register();
@@ -628,8 +1221,10 @@ pub fn init_tree() {
     FLAC.register();
     WAV.register();
     AIFF.register();
-    MIDI_PRECISE.register();
+    MIDI.register();
     OGG.register();
+    OGG_AUDIO.register();
+    OGG_VIDEO.register();
     APE.register();
     MUSEPACK.register();
     AU.register();
@@ -638,8 +1233,6 @@ pub fn init_tree() {
     M3U.register();
     AAC.register();
     QCP.register();
-    AMP4.register();
-    M4A.register();
 
     // Video
     MP4_PRECISE.register();
@@ -657,6 +1250,10 @@ pub fn init_tree() {
     // Executables
     EXE.register();
     ELF.register();
+    ELF_OBJ.register();
+    ELF_EXE.register();
+    ELF_LIB.register();
+    ELF_DUMP.register();
     CLASS.register();
     WASM.register();
 
@@ -671,6 +1268,7 @@ pub fn init_tree() {
     // Web & Multimedia
     SWF.register();
     CRX.register();
+    P7S.register();
 
     // Specialized
     DCM.register();
@@ -679,6 +1277,127 @@ pub fn init_tree() {
     SQLITE3.register();
     FASOO.register();
     PGP_NET_SHARE.register();
+
+    // Microsoft Office and Document Formats
+    DOCX.register();
+    XLSX.register();
+    PPTX.register();
+    VSDX.register();
+    APK.register();
+    JAR.register();
+    EPUB.register();
+    ODT.register();
+    ODS.register();
+    ODP.register();
+    ODG.register();
+    ODF.register();
+    ODC.register();
+    OTT.register();
+    OTS.register();
+    OTP.register();
+    OTG.register();
+    SXC.register();
+    KMZ.register();
+    DOC.register();
+    XLS.register();
+    PPT.register();
+    ONENOTE.register();
+    PUB.register();
+    MSG.register();
+    MSI.register();
+
+    // Database formats
+    MDB.register();
+    ACCDB.register();
+    DBF.register();
+    LOTUS123.register();
+    MRC.register();
+
+    // Programming and text formats
+    PHP.register();
+    JAVASCRIPT.register();
+    PYTHON.register();
+    PERL.register();
+    RUBY.register();
+    LUA.register();
+    SHELL.register();
+    TCL.register();
+    JSON.register();
+    GEOJSON.register();
+    HAR.register();
+    NDJSON.register();
+    CSV_FORMAT.register();
+    TSV.register();
+    RTF.register();
+    SRT.register();
+    VTT.register();
+    VCARD.register();
+    ICALENDAR.register();
+    SVG.register();
+
+    // XML-based formats
+    RSS.register();
+    ATOM.register();
+    X3D.register();
+    KML.register();
+    XLIFF.register();
+    COLLADA.register();
+    GML.register();
+    GPX.register();
+    TCX.register();
+    AMF.register();
+    THREEMF.register();
+    XFDF.register();
+    OWL2.register();
+    XHTML.register();
+
+    // 3D and Geospatial
+    SHP.register();
+    SHX.register();
+    GLB.register();
+    GLTF.register();
+
+    // Gaming
+    NES.register();
+
+    // Additional video
+    THREE_GPP.register();
+    THREE_GPP2.register();
+    MJ2.register();
+    DVB.register();
+    AVIF_FORMAT.register();
+
+    // Miscellaneous
+    HDF.register();
+    CBOR_FORMAT.register();
+    PARQUET.register();
+    LNK.register();
+    MACHO.register();
+    TZIF.register();
+
+    // UTF-16 Text Format Variants
+    HTML_UTF16_BE.register();
+    HTML_UTF16_LE.register();
+    XML_UTF16_BE.register();
+    XML_UTF16_LE.register();
+    SVG_UTF16_BE.register();
+    SVG_UTF16_LE.register();
+    JSON_UTF16_BE.register();
+    JSON_UTF16_LE.register();
+    CSV_UTF16_BE.register();
+    CSV_UTF16_LE.register();
+    TSV_UTF16_BE.register();
+    TSV_UTF16_LE.register();
+    SRT_UTF16_BE.register();
+    SRT_UTF16_LE.register();
+    VTT_UTF16_BE.register();
+    VTT_UTF16_LE.register();
+    VCARD_UTF16_BE.register();
+    VCARD_UTF16_LE.register();
+    ICALENDAR_UTF16_BE.register();
+    ICALENDAR_UTF16_LE.register();
+    RTF_UTF16_BE.register();
+    RTF_UTF16_LE.register();
 
     // Text (lowest priority, catches everything else)
     UTF8.register();
@@ -918,10 +1637,6 @@ fn ttc(input: &[u8]) -> bool {
     input.starts_with(b"ttcf")
 }
 
-fn gzip_precise(input: &[u8]) -> bool {
-    input.starts_with(b"\x1F\x8B\x08")
-}
-
 fn mp4_precise(input: &[u8]) -> bool {
     if input.len() < 12 {
         return false;
@@ -932,28 +1647,12 @@ fn mp4_precise(input: &[u8]) -> bool {
         return false;
     }
 
-    if &input[4..8] != b"ftyp" {
-        return false;
-    }
-
-    // Check for MP4 brand in the ftyp box
-    let mut pos = 8;
-    while pos + 3 < box_size.min(input.len()) {
-        if pos == 12 {
-            // Skip version number
-            pos += 4;
-            continue;
-        }
-        if pos + 3 < input.len() && &input[pos..pos + 3] == b"mp4" {
-            return true;
-        }
-        pos += 4;
-    }
-    false
+    // Detect all ISOBMFF files (MP4, 3GPP, etc.) by checking for ftyp box
+    &input[4..8] == b"ftyp"
 }
 
-fn midi_precise(input: &[u8]) -> bool {
-    input.starts_with(b"MThd\x00\x00\x00\x06")
+fn midi(input: &[u8]) -> bool {
+    input.starts_with(b"MThd")
 }
 
 fn skip_whitespace(input: &[u8]) -> &[u8] {
@@ -983,8 +1682,49 @@ fn psd(input: &[u8]) -> bool {
     input.starts_with(b"8BPS")
 }
 
+fn pbm(input: &[u8]) -> bool {
+    input.starts_with(b"P1") || input.starts_with(b"P4")
+}
+
+fn pgm(input: &[u8]) -> bool {
+    input.starts_with(b"P2") || input.starts_with(b"P5")
+}
+
+fn ppm(input: &[u8]) -> bool {
+    input.starts_with(b"P3") || input.starts_with(b"P6")
+}
+
+fn pam(input: &[u8]) -> bool {
+    input.starts_with(b"P7")
+}
+
 fn ogg(input: &[u8]) -> bool {
     input.starts_with(b"OggS")
+}
+
+fn ogg_audio(input: &[u8]) -> bool {
+    if input.len() < 37 {
+        return false;
+    }
+
+    // Check for audio codecs at offset 28
+    let offset_28 = &input[28..];
+    offset_28.starts_with(b"\x7fFLAC")
+        || offset_28.starts_with(b"\x01vorbis")
+        || offset_28.starts_with(b"OpusHead")
+        || offset_28.starts_with(b"Speex   ")
+}
+
+fn ogg_video(input: &[u8]) -> bool {
+    if input.len() < 37 {
+        return false;
+    }
+
+    // Check for video codecs at offset 28
+    let offset_28 = &input[28..];
+    offset_28.starts_with(b"\x80theora")
+        || offset_28.starts_with(b"fishead\x00")
+        || offset_28.starts_with(b"\x01video\x00\x00\x00") // OGM video
 }
 
 fn class(input: &[u8]) -> bool {
@@ -1484,4 +2224,1514 @@ fn tar_checksum(record: &[u8]) -> (i64, i64) {
     }
 
     (unsigned_sum, signed_sum)
+}
+
+// ============================================================================
+// MICROSOFT OFFICE & DOCUMENT FORMAT DETECTORS
+// ============================================================================
+
+/// Microsoft Office 2007+ formats are ZIP archives with specific internal structure
+fn docx(input: &[u8]) -> bool {
+    msoxml(input, &[(b"word/", true)], 100)
+}
+
+fn xlsx(input: &[u8]) -> bool {
+    msoxml(input, &[(b"xl/", true)], 100)
+}
+
+fn pptx(input: &[u8]) -> bool {
+    msoxml(input, &[(b"ppt/", true)], 100)
+}
+
+fn vsdx(input: &[u8]) -> bool {
+    msoxml(input, &[(b"visio/", true)], 100)
+}
+
+fn epub(input: &[u8]) -> bool {
+    // EPUB uses offset-based detection like Go implementation
+    // Go: Epub = offset([]byte("mimetypeapplication/epub+zip"), 30)
+    if input.len() < 30 + 28 {
+        return false;
+    }
+    let expected = b"mimetypeapplication/epub+zip";
+    &input[30..30 + expected.len()] == expected
+}
+
+fn jar(input: &[u8]) -> bool {
+    executable_jar(input)
+        || zip_has(
+            input,
+            &[(b"META-INF/MANIFEST.MF", false), (b"META-INF/", true)],
+            1,
+        )
+}
+
+/// An executable Jar has a 0xCAFE flag enabled in the first zip entry.
+/// The rule from file/file is:
+/// >(26.s+30) leshort 0xcafe Java archive data (JAR)
+fn executable_jar(input: &[u8]) -> bool {
+    if input.len() < 30 {
+        return false;
+    }
+
+    // Advance to position 0x1A (26)
+    let offset_pos = 26;
+    if offset_pos + 2 > input.len() {
+        return false;
+    }
+
+    // Read uint16 offset (little-endian)
+    let offset = u16::from_le_bytes([input[offset_pos], input[offset_pos + 1]]) as usize;
+
+    // Advance by offset + 2 from position 30 (after ZIP header)
+    let cafe_pos = 30 + offset;
+    if cafe_pos + 2 > input.len() {
+        return false;
+    }
+
+    // Read uint16 and check if it equals 0xCAFE
+    let cafe_value = u16::from_le_bytes([input[cafe_pos], input[cafe_pos + 1]]);
+    cafe_value == 0xCAFE
+}
+
+fn apk(input: &[u8]) -> bool {
+    zip_has(
+        input,
+        &[
+            (b"AndroidManifest.xml", false),
+            (
+                b"META-INF/com/android/build/gradle/app-metadata.properties",
+                false,
+            ),
+            (b"classes.dex", false),
+            (b"resources.arsc", false),
+            (b"res/drawable", true),
+        ],
+        100,
+    )
+}
+
+/// OLE-based legacy Microsoft Office formats
+fn doc(input: &[u8]) -> bool {
+    if !ole(input) {
+        return false;
+    }
+
+    // CLSID-only matching (matching Go implementation exactly)
+    let clsids = [
+        // Microsoft Word 97-2003 Document (Word.Document.8)
+        [
+            0x06, 0x09, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x46,
+        ],
+        // Microsoft Word 6.0-7.0 Document (Word.Document.6)
+        [
+            0x00, 0x09, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x46,
+        ],
+        // Microsoft Word Picture (Word.Picture.8)
+        [
+            0x07, 0x09, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x46,
+        ],
+    ];
+
+    for clsid in &clsids {
+        if ole_matches_clsid(input, clsid) {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn xls(input: &[u8]) -> bool {
+    if !ole(input) {
+        return false;
+    }
+
+    // Try CLSID matching first (primary method from Go implementation)
+    if ole_matches_clsid(input, &[0x10, 0x08, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00])
+        || ole_matches_clsid(input, &[0x20, 0x08, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00])
+    {
+        return true;
+    }
+
+    let lin = input.len();
+
+    // Check for XLS sub-headers at offset 512 (from Go implementation)
+    if lin >= 520 {
+        let xls_sub_headers = [
+            &[0x09, 0x08, 0x10, 0x00, 0x00, 0x06, 0x05, 0x00][..],
+            &[0xFD, 0xFF, 0xFF, 0xFF, 0x10][..],
+            &[0xFD, 0xFF, 0xFF, 0xFF, 0x1F][..],
+            &[0xFD, 0xFF, 0xFF, 0xFF, 0x22][..],
+            &[0xFD, 0xFF, 0xFF, 0xFF, 0x23][..],
+            &[0xFD, 0xFF, 0xFF, 0xFF, 0x28][..],
+            &[0xFD, 0xFF, 0xFF, 0xFF, 0x29][..],
+        ];
+
+        for &header in &xls_sub_headers {
+            if input.len() > 512 + header.len() && input[512..].starts_with(header) {
+                return true;
+            }
+        }
+    }
+
+    // Check for UTF-16 encoded "Workbook" string at offset 1152
+    if lin > 1152 {
+        let end = (lin).min(4096);
+        let search_range = &input[1152..end];
+        // UTF-16LE encoded "Workbook": W\x00k\x00s\x00S\x00S\x00W\x00o\x00r\x00k\x00B\x00o\x00o\x00k
+        if search_range
+            .windows(22)
+            .any(|w| w == b"W\x00k\x00s\x00S\x00S\x00W\x00o\x00r\x00k\x00B\x00o\x00o\x00k")
+        {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn ppt(input: &[u8]) -> bool {
+    if !ole(input) {
+        return false;
+    }
+
+    // Try CLSID matching first (from Go implementation)
+    if ole_matches_clsid(
+        input,
+        &[
+            0x10, 0x8d, 0x81, 0x64, 0x9b, 0x4f, 0xcf, 0x11, 0x86, 0xea, 0x00, 0xaa, 0x00, 0xb9,
+            0x29, 0xe8,
+        ],
+    ) || ole_matches_clsid(
+        input,
+        &[
+            0x70, 0xae, 0x7b, 0xea, 0x3b, 0xfb, 0xcd, 0x11, 0xa9, 0x03, 0x00, 0xaa, 0x00, 0x51,
+            0x0e, 0xa3,
+        ],
+    ) {
+        return true;
+    }
+
+    let lin = input.len();
+    if lin < 520 {
+        return false;
+    }
+
+    // Check for PPT sub-headers at offset 512 (from Go implementation)
+    let ppt_sub_headers = [
+        &[0xA0, 0x46, 0x1D, 0xF0][..],
+        &[0x00, 0x6E, 0x1E, 0xF0][..],
+        &[0x0F, 0x00, 0xE8, 0x03][..],
+    ];
+
+    for &header in &ppt_sub_headers {
+        if input.len() > 512 + header.len() && input[512..].starts_with(header) {
+            return true;
+        }
+    }
+
+    // Check for specific PPT pattern
+    if input.len() > 519
+        && input[512..516] == [0xFD, 0xFF, 0xFF, 0xFF]
+        && input[518] == 0x00
+        && input[519] == 0x00
+    {
+        return true;
+    }
+
+    // Check for UTF-16 encoded "PowerPoint Document" string at offset 1152
+    if lin > 1152 {
+        let end = lin.min(4096);
+        let search_range = &input[1152..end];
+        // UTF-16LE encoded "PowerPoint Document": P\x00o\x00w\x00e\x00r\x00P\x00o\x00i\x00n\x00t\x00 D\x00o\x00c\x00u\x00m\x00e\x00n\x00t
+        search_range.windows(38).any(|w| {
+            w == b"P\x00o\x00w\x00e\x00r\x00P\x00o\x00i\x00n\x00t\x00 D\x00o\x00c\x00u\x00m\x00e\x00n\x00t"
+        })
+    } else {
+        false
+    }
+}
+
+fn pub_format(input: &[u8]) -> bool {
+    if !ole(input) {
+        return false;
+    }
+
+    // CLSID-only matching (matching Go implementation exactly)
+    ole_matches_clsid(
+        input,
+        &[
+            0x01, 0x12, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x46,
+        ],
+    )
+}
+
+fn msg(input: &[u8]) -> bool {
+    if !ole(input) {
+        return false;
+    }
+
+    // CLSID-only matching (matching Go implementation exactly)
+    ole_matches_clsid(
+        input,
+        &[
+            0x0B, 0x0D, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x46,
+        ],
+    )
+}
+
+fn chm(input: &[u8]) -> bool {
+    input.starts_with(b"ITSF\x03\x00\x00\x00")
+}
+
+fn onenote(input: &[u8]) -> bool {
+    if !ole(input) {
+        return false;
+    }
+
+    // OneNote CLSID
+    ole_matches_clsid(
+        input,
+        &[
+            0x43, 0xAD, 0x43, 0x36, 0x5E, 0x47, 0x96, 0x48, 0x8B, 0x42, 0x04, 0x40, 0xE7, 0x87,
+            0xC9, 0x30,
+        ],
+    )
+}
+
+fn msi(input: &[u8]) -> bool {
+    if !ole(input) {
+        return false;
+    }
+
+    // CLSID-only matching (matching Go implementation exactly)
+    ole_matches_clsid(
+        input,
+        &[
+            0x84, 0x10, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x46,
+        ],
+    )
+}
+
+// ============================================================================
+// OPEN DOCUMENT FORMAT DETECTORS
+// ============================================================================
+
+fn odt(input: &[u8]) -> bool {
+    // ODT uses offset-based detection like Go implementation
+    // Go: Odt = offset([]byte("mimetypeapplication/vnd.oasis.opendocument.text"), 30)
+    if input.len() < 30 + 48 {
+        return false;
+    }
+    let expected = b"mimetypeapplication/vnd.oasis.opendocument.text";
+    &input[30..30 + expected.len()] == expected
+}
+
+fn ods(input: &[u8]) -> bool {
+    // ODS uses offset-based detection like Go implementation
+    // Go: Ods = offset([]byte("mimetypeapplication/vnd.oasis.opendocument.spreadsheet"), 30)
+    if input.len() < 30 + 55 {
+        return false;
+    }
+    let expected = b"mimetypeapplication/vnd.oasis.opendocument.spreadsheet";
+    &input[30..30 + expected.len()] == expected
+}
+
+fn odp(input: &[u8]) -> bool {
+    // ODP uses offset-based detection like Go implementation
+    // Go: Odp = offset([]byte("mimetypeapplication/vnd.oasis.opendocument.presentation"), 30)
+    if input.len() < 30 + 56 {
+        return false;
+    }
+    let expected = b"mimetypeapplication/vnd.oasis.opendocument.presentation";
+    &input[30..30 + expected.len()] == expected
+}
+
+fn odg(input: &[u8]) -> bool {
+    // ODG uses offset-based detection like Go implementation
+    // Go: Odg = offset([]byte("mimetypeapplication/vnd.oasis.opendocument.graphics"), 30)
+    if input.len() < 30 + 52 {
+        return false;
+    }
+    let expected = b"mimetypeapplication/vnd.oasis.opendocument.graphics";
+    &input[30..30 + expected.len()] == expected
+}
+
+fn odf_format(input: &[u8]) -> bool {
+    // ODF uses offset-based detection like Go implementation
+    // Go: Odf = offset([]byte("mimetypeapplication/vnd.oasis.opendocument.formula"), 30)
+    if input.len() < 30 + 51 {
+        return false;
+    }
+    let expected = b"mimetypeapplication/vnd.oasis.opendocument.formula";
+    &input[30..30 + expected.len()] == expected
+}
+
+fn odc(input: &[u8]) -> bool {
+    // ODC uses offset-based detection like Go implementation
+    // Go: Odc = offset([]byte("mimetypeapplication/vnd.oasis.opendocument.chart"), 30)
+    if input.len() < 30 + 49 {
+        return false;
+    }
+    let expected = b"mimetypeapplication/vnd.oasis.opendocument.chart";
+    &input[30..30 + expected.len()] == expected
+}
+
+fn ott(input: &[u8]) -> bool {
+    // OTT uses offset-based detection like Go implementation
+    // Go: Ott = offset([]byte("mimetypeapplication/vnd.oasis.opendocument.text-template"), 30)
+    if input.len() < 30 + 57 {
+        return false;
+    }
+    let expected = b"mimetypeapplication/vnd.oasis.opendocument.text-template";
+    &input[30..30 + expected.len()] == expected
+}
+
+fn ots(input: &[u8]) -> bool {
+    // OTS uses offset-based detection like Go implementation
+    // Go: Ots = offset([]byte("mimetypeapplication/vnd.oasis.opendocument.spreadsheet-template"), 30)
+    if input.len() < 30 + 64 {
+        return false;
+    }
+    let expected = b"mimetypeapplication/vnd.oasis.opendocument.spreadsheet-template";
+    &input[30..30 + expected.len()] == expected
+}
+
+fn otp(input: &[u8]) -> bool {
+    // OTP uses offset-based detection like Go implementation
+    // Go: Otp = offset([]byte("mimetypeapplication/vnd.oasis.opendocument.presentation-template"), 30)
+    if input.len() < 30 + 65 {
+        return false;
+    }
+    let expected = b"mimetypeapplication/vnd.oasis.opendocument.presentation-template";
+    &input[30..30 + expected.len()] == expected
+}
+
+fn otg(input: &[u8]) -> bool {
+    // OTG uses offset-based detection like Go implementation
+    // Go: Otg = offset([]byte("mimetypeapplication/vnd.oasis.opendocument.graphics-template"), 30)
+    if input.len() < 30 + 61 {
+        return false;
+    }
+    let expected = b"mimetypeapplication/vnd.oasis.opendocument.graphics-template";
+    &input[30..30 + expected.len()] == expected
+}
+
+fn sxc(input: &[u8]) -> bool {
+    // SXC uses offset-based detection like Go implementation
+    // Go: Sxc = offset([]byte("mimetypeapplication/vnd.sun.xml.calc"), 30)
+    if input.len() < 30 + 37 {
+        return false;
+    }
+    let expected = b"mimetypeapplication/vnd.sun.xml.calc";
+    &input[30..30 + expected.len()] == expected
+}
+
+fn kmz(input: &[u8]) -> bool {
+    // KMZ uses zip_has to look for doc.kml file like Go implementation
+    // Go: KMZ returns zipHas(raw, zipEntries{{"doc.kml"}}, 100)
+    zip_has(input, &[(b"doc.kml", false)], 100)
+}
+
+// ============================================================================
+// DATABASE FORMAT DETECTORS
+// ============================================================================
+
+fn mdb(input: &[u8]) -> bool {
+    if input.len() < 32 {
+        return false;
+    }
+    &input[4..19] == b"Standard Jet DB"
+}
+
+fn accdb(input: &[u8]) -> bool {
+    if input.len() < 32 {
+        return false;
+    }
+    &input[4..19] == b"Standard ACE DB"
+}
+
+fn dbf(input: &[u8]) -> bool {
+    if input.len() < 32 {
+        return false;
+    }
+    // dBase file types - but must be followed by binary data, not text
+    let is_dbf_type = matches!(
+        input[0],
+        0x02 | 0x03 | 0x04 | 0x05 | 0x30 | 0x31 | 0x32 | 0x83 | 0x8B | 0x8E | 0xF5
+    );
+
+    if !is_dbf_type {
+        return false;
+    }
+
+    // Check that this looks like binary data, not text
+    // DBF files have specific header structures with mostly binary data
+    let has_text_chars = input[1..16]
+        .iter()
+        .any(|&b| (0x20..=0x7E).contains(&b) && b != 0x00);
+    !has_text_chars
+}
+
+fn lotus123(input: &[u8]) -> bool {
+    if input.len() < 8 {
+        return false;
+    }
+    let version = u32::from_le_bytes([input[4], input[5], input[6], input[7]]);
+    matches!(version, 0x00000200 | 0x00001a00)
+}
+
+fn marc(input: &[u8]) -> bool {
+    if input.len() < 24 {
+        return false;
+    }
+    // MARC leader validation
+    input[10] == b'2' && input[11] == b'2' && &input[20..24] == b"4500"
+}
+
+// ============================================================================
+// PROGRAMMING & TEXT FORMAT DETECTORS
+// ============================================================================
+
+fn php(input: &[u8]) -> bool {
+    input.starts_with(b"<?php")
+        || input.starts_with(b"<?\n")
+        || input.starts_with(b"<?\r")
+        || input.starts_with(b"<? ")
+}
+
+fn javascript(input: &[u8]) -> bool {
+    // Check for shebang
+    input.starts_with(b"#!/usr/bin/env node") || 
+    input.starts_with(b"#!/usr/bin/node") ||
+    // Check for common JS patterns at start
+    input.starts_with(b"/*") ||
+    input.starts_with(b"//") ||
+    has_js_keywords(input)
+}
+
+fn python(input: &[u8]) -> bool {
+    input.starts_with(b"#!/usr/bin/env python")
+        || input.starts_with(b"#!/usr/bin/python")
+        || input.starts_with(b"#!python")
+        || input.starts_with(b"# -*- coding:")
+}
+
+fn perl(input: &[u8]) -> bool {
+    input.starts_with(b"#!/usr/bin/env perl")
+        || input.starts_with(b"#!/usr/bin/perl")
+        || input.starts_with(b"#!perl")
+}
+
+fn ruby(input: &[u8]) -> bool {
+    input.starts_with(b"#!/usr/bin/env ruby")
+        || input.starts_with(b"#!/usr/bin/ruby")
+        || input.starts_with(b"#!ruby")
+}
+
+fn lua(input: &[u8]) -> bool {
+    input.starts_with(b"#!/usr/bin/env lua")
+        || input.starts_with(b"#!/usr/bin/lua")
+        || input.starts_with(b"#!lua")
+        || input.starts_with(b"\x1bLua") // Lua bytecode
+}
+
+fn shell(input: &[u8]) -> bool {
+    input.starts_with(b"#!/bin/sh")
+        || input.starts_with(b"#!/bin/bash")
+        || input.starts_with(b"#!/usr/bin/env bash")
+        || input.starts_with(b"#!/bin/zsh")
+}
+
+fn tcl(input: &[u8]) -> bool {
+    input.starts_with(b"#!/usr/bin/env tclsh")
+        || input.starts_with(b"#!/usr/bin/tclsh")
+        || input.starts_with(b"#!tclsh")
+}
+
+fn json(input: &[u8]) -> bool {
+    let trimmed = skip_whitespace(input);
+    (trimmed.starts_with(b"{") || trimmed.starts_with(b"[")) && is_valid_json(trimmed)
+}
+
+fn geojson(input: &[u8]) -> bool {
+    json(input)
+        && input.windows(6).any(|w| w == b"\"type\"")
+        && input.windows(19).any(|w| w == b"\"FeatureCollection\"")
+        && input.windows(10).any(|w| w == b"\"features\"")
+}
+
+fn ndjson(input: &[u8]) -> bool {
+    let lines: Vec<&[u8]> = input.split(|&b| b == b'\n').collect();
+    lines.len() > 1
+        && lines
+            .iter()
+            .take(3)
+            .all(|line| if line.is_empty() { true } else { json(line) })
+}
+
+fn csv_format(input: &[u8]) -> bool {
+    if input.is_empty() {
+        return false;
+    }
+
+    let sample = &input[..input.len().min(1024)];
+    let lines: Vec<&[u8]> = sample.split(|&b| b == b'\n').take(5).collect();
+
+    if lines.len() < 2 {
+        return false;
+    }
+
+    // Check if lines have consistent comma counts
+    let first_commas = lines[0].iter().filter(|&&b| b == b',').count();
+    if first_commas == 0 {
+        return false;
+    }
+
+    lines
+        .iter()
+        .skip(1)
+        .all(|line| line.iter().filter(|&&b| b == b',').count() == first_commas)
+}
+
+fn tsv(input: &[u8]) -> bool {
+    if input.is_empty() {
+        return false;
+    }
+
+    let sample = &input[..input.len().min(1024)];
+    let lines: Vec<&[u8]> = sample.split(|&b| b == b'\n').take(5).collect();
+
+    if lines.len() < 2 {
+        return false;
+    }
+
+    // Check if lines have consistent tab counts
+    let first_tabs = lines[0].iter().filter(|&&b| b == b'\t').count();
+    if first_tabs == 0 {
+        return false;
+    }
+
+    lines
+        .iter()
+        .skip(1)
+        .all(|line| line.iter().filter(|&&b| b == b'\t').count() == first_tabs)
+}
+
+fn rtf(input: &[u8]) -> bool {
+    input.starts_with(b"{\\rtf")
+}
+
+fn srt(input: &[u8]) -> bool {
+    let text = skip_whitespace(input);
+    if text.starts_with(b"1\n") || text.starts_with(b"1\r\n") {
+        // Look for timestamp pattern in the next line
+        let lines: Vec<&[u8]> = text.split(|&b| b == b'\n').collect();
+        if lines.len() >= 2 {
+            let timestamp_line = lines[1];
+            // Look for SRT timestamp pattern: 00:00:00,000 --> 00:00:00,000
+            timestamp_line.windows(5).any(|w| w == b" --> ")
+        } else {
+            false
+        }
+    } else {
+        false
+    }
+}
+
+fn vtt(input: &[u8]) -> bool {
+    if input.starts_with(b"WEBVTT") {
+        // Check that it's followed by a line ending, space, or end of file
+        if input.len() == 6 {
+            return true;
+        }
+        matches!(input[6], b'\n' | b'\r' | b' ' | b'\t')
+    } else if input.starts_with(b"\xEF\xBB\xBFWEBVTT") {
+        // UTF-8 BOM + WEBVTT
+        if input.len() == 9 {
+            return true;
+        }
+        matches!(input[9], b'\n' | b'\r' | b' ' | b'\t')
+    } else {
+        false
+    }
+}
+
+fn vcard(input: &[u8]) -> bool {
+    let upper = to_uppercase_slice(input, 32);
+    upper.starts_with(b"BEGIN:VCARD")
+}
+
+fn icalendar(input: &[u8]) -> bool {
+    let upper = to_uppercase_slice(input, 32);
+    upper.starts_with(b"BEGIN:VCALENDAR")
+}
+
+fn svg(input: &[u8]) -> bool {
+    let trimmed = skip_whitespace(input);
+    if trimmed.starts_with(b"<?xml") {
+        // Look for SVG namespace in XML
+        trimmed.windows(4).any(|w| w == b"<svg")
+            || trimmed
+                .windows(26)
+                .any(|w| w == b"http://www.w3.org/2000/svg")
+    } else {
+        trimmed.starts_with(b"<svg")
+    }
+}
+
+// ============================================================================
+// 3D & GEOSPATIAL FORMAT DETECTORS
+// ============================================================================
+
+fn shp(input: &[u8]) -> bool {
+    if input.len() < 100 {
+        return false;
+    }
+    // ESRI Shapefile header
+    let file_code = u32::from_be_bytes([input[0], input[1], input[2], input[3]]);
+    file_code == 9994
+}
+
+fn shx(input: &[u8]) -> bool {
+    input.starts_with(b"\x00\x00\x27\x0A")
+}
+
+fn glb(input: &[u8]) -> bool {
+    input.starts_with(b"glTF\x02\x00\x00\x00") || input.starts_with(b"glTF\x01\x00\x00\x00")
+}
+
+fn gltf(input: &[u8]) -> bool {
+    json(input)
+        && input.windows(8).any(|w| w == b"\"scenes\"")
+        && input.windows(7).any(|w| w == b"\"nodes\"")
+        && input.windows(7).any(|w| w == b"\"asset\"")
+}
+
+// ============================================================================
+// GAMING FORMAT DETECTORS
+// ============================================================================
+
+fn nes(input: &[u8]) -> bool {
+    input.starts_with(b"NES\x1A")
+}
+
+// ============================================================================
+// ADDITIONAL VIDEO FORMAT DETECTORS
+// ============================================================================
+
+fn three_gpp(input: &[u8]) -> bool {
+    if input.len() < 12 {
+        return false;
+    }
+    if &input[4..8] != b"ftyp" {
+        return false;
+    }
+
+    let brand = &input[8..12];
+    matches!(
+        brand,
+        b"3gp4" | b"3gp5" | b"3gp6" | b"3gp7" | b"3gp8" | b"3gp9" | b"3gpa" | b"3gpp"
+    )
+}
+
+fn three_gpp2(input: &[u8]) -> bool {
+    if input.len() < 12 {
+        return false;
+    }
+    if &input[4..8] != b"ftyp" {
+        return false;
+    }
+
+    let brand = &input[8..12];
+    matches!(
+        brand,
+        b"3g24" | b"3g25" | b"3g26" | b"3g27" | b"3g28" | b"3g29" | b"3g2a" | b"3g2b" | b"3g2c"
+    )
+}
+
+fn mj2(input: &[u8]) -> bool {
+    if input.len() < 12 {
+        return false;
+    }
+    if &input[4..8] != b"ftyp" {
+        return false;
+    }
+
+    let brand = &input[8..12];
+    matches!(brand, b"mj2s" | b"mjp2")
+}
+
+fn dvb(input: &[u8]) -> bool {
+    if input.len() < 12 {
+        return false;
+    }
+    if &input[4..8] != b"ftyp" {
+        return false;
+    }
+
+    &input[8..12] == b"dvb1"
+}
+
+fn avif_format(input: &[u8]) -> bool {
+    if input.len() < 12 {
+        return false;
+    }
+    if &input[4..8] != b"ftyp" {
+        return false;
+    }
+
+    let brand = &input[8..12];
+    matches!(brand, b"avif" | b"avis")
+}
+
+// ============================================================================
+// MISCELLANEOUS FORMAT DETECTORS
+// ============================================================================
+
+fn hdf(input: &[u8]) -> bool {
+    input.starts_with(b"\x89HDF\r\n\x1a\n") || input.starts_with(b"\x0e\x03\x13\x01")
+}
+
+fn cbor_format(input: &[u8]) -> bool {
+    input.starts_with(b"\xd9\xd9\xf7")
+}
+
+fn parquet(input: &[u8]) -> bool {
+    input.starts_with(b"PAR1")
+}
+
+fn lnk(input: &[u8]) -> bool {
+    input.starts_with(b"L\x00\x00\x00\x01\x14\x02\x00")
+}
+
+fn macho(input: &[u8]) -> bool {
+    if input.len() < 4 {
+        return false;
+    }
+
+    let magic = u32::from_le_bytes([input[0], input[1], input[2], input[3]]);
+    matches!(
+        magic,
+        0xfeedface | 0xfeedfacf | 0xcafebabe | 0xcffaedfe | 0xcefaedfe
+    )
+}
+
+fn tzif(input: &[u8]) -> bool {
+    input.starts_with(b"TZif")
+}
+
+// ============================================================================
+// UTF-16 FORMAT DETECTION FUNCTIONS
+// ============================================================================
+
+/// Helper function to skip UTF-16 BOM and convert to string
+fn utf16_to_text(input: &[u8], big_endian: bool) -> Option<String> {
+    // Skip BOM if present
+    let content = if big_endian && input.starts_with(&[0xFE, 0xFF]) {
+        &input[2..]
+    } else if !big_endian && input.starts_with(&[0xFF, 0xFE]) {
+        &input[2..]
+    } else {
+        input
+    };
+
+    utf16_to_string(content, big_endian)
+}
+
+/// HTML detection for UTF-16 Big Endian
+fn html_utf16_be(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, true) {
+        detect_html_content(&text)
+    } else {
+        false
+    }
+}
+
+/// HTML detection for UTF-16 Little Endian
+fn html_utf16_le(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, false) {
+        detect_html_content(&text)
+    } else {
+        false
+    }
+}
+
+/// XML detection for UTF-16 Big Endian
+fn xml_utf16_be(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, true) {
+        detect_xml_content(&text)
+    } else {
+        false
+    }
+}
+
+/// XML detection for UTF-16 Little Endian
+fn xml_utf16_le(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, false) {
+        detect_xml_content(&text)
+    } else {
+        false
+    }
+}
+
+/// SVG detection for UTF-16 Big Endian
+fn svg_utf16_be(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, true) {
+        detect_svg_content(&text)
+    } else {
+        false
+    }
+}
+
+/// SVG detection for UTF-16 Little Endian
+fn svg_utf16_le(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, false) {
+        detect_svg_content(&text)
+    } else {
+        false
+    }
+}
+
+/// JSON detection for UTF-16 Big Endian
+fn json_utf16_be(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, true) {
+        detect_json_content(&text)
+    } else {
+        false
+    }
+}
+
+/// JSON detection for UTF-16 Little Endian
+fn json_utf16_le(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, false) {
+        detect_json_content(&text)
+    } else {
+        false
+    }
+}
+
+/// CSV detection for UTF-16 Big Endian
+fn csv_utf16_be(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, true) {
+        detect_csv_content(&text)
+    } else {
+        false
+    }
+}
+
+/// CSV detection for UTF-16 Little Endian
+fn csv_utf16_le(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, false) {
+        detect_csv_content(&text)
+    } else {
+        false
+    }
+}
+
+/// TSV detection for UTF-16 Big Endian
+fn tsv_utf16_be(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, true) {
+        detect_tsv_content(&text)
+    } else {
+        false
+    }
+}
+
+/// TSV detection for UTF-16 Little Endian
+fn tsv_utf16_le(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, false) {
+        detect_tsv_content(&text)
+    } else {
+        false
+    }
+}
+
+/// SRT subtitle detection for UTF-16 Big Endian
+fn srt_utf16_be(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, true) {
+        detect_srt_content(&text)
+    } else {
+        false
+    }
+}
+
+/// SRT subtitle detection for UTF-16 Little Endian
+fn srt_utf16_le(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, false) {
+        detect_srt_content(&text)
+    } else {
+        false
+    }
+}
+
+/// VTT subtitle detection for UTF-16 Big Endian
+fn vtt_utf16_be(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, true) {
+        detect_vtt_content(&text)
+    } else {
+        false
+    }
+}
+
+/// VTT subtitle detection for UTF-16 Little Endian
+fn vtt_utf16_le(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, false) {
+        detect_vtt_content(&text)
+    } else {
+        false
+    }
+}
+
+/// vCard detection for UTF-16 Big Endian
+fn vcard_utf16_be(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, true) {
+        detect_vcard_content(&text)
+    } else {
+        false
+    }
+}
+
+/// vCard detection for UTF-16 Little Endian
+fn vcard_utf16_le(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, false) {
+        detect_vcard_content(&text)
+    } else {
+        false
+    }
+}
+
+/// iCalendar detection for UTF-16 Big Endian
+fn icalendar_utf16_be(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, true) {
+        detect_icalendar_content(&text)
+    } else {
+        false
+    }
+}
+
+/// iCalendar detection for UTF-16 Little Endian
+fn icalendar_utf16_le(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, false) {
+        detect_icalendar_content(&text)
+    } else {
+        false
+    }
+}
+
+/// RTF detection for UTF-16 Big Endian
+fn rtf_utf16_be(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, true) {
+        detect_rtf_content(&text)
+    } else {
+        false
+    }
+}
+
+/// RTF detection for UTF-16 Little Endian
+fn rtf_utf16_le(input: &[u8]) -> bool {
+    if let Some(text) = utf16_to_text(input, false) {
+        detect_rtf_content(&text)
+    } else {
+        false
+    }
+}
+
+// ============================================================================
+// SHARED CONTENT DETECTION FUNCTIONS (ENCODING-AGNOSTIC)
+// ============================================================================
+
+/// Shared HTML content detection that works with any encoding after normalization
+fn detect_html_content(text: &str) -> bool {
+    const HTML_TAGS: &[&str] = &[
+        "<!DOCTYPE HTML",
+        "<HTML",
+        "<HEAD",
+        "<SCRIPT",
+        "<IFRAME",
+        "<H1",
+        "<DIV",
+        "<FONT",
+        "<TABLE",
+        "<A",
+        "<STYLE",
+        "<TITLE",
+        "<B",
+        "<BODY",
+        "<BR",
+        "<P",
+    ];
+
+    let upper_text = text.to_uppercase();
+    for tag in HTML_TAGS {
+        if upper_text.starts_with(tag) {
+            // Check for proper tag termination
+            if text.len() > tag.len() {
+                let next_char = text.chars().nth(tag.len()).unwrap_or(' ');
+                if next_char == ' ' || next_char == '>' || next_char == '\t' || next_char == '\n' {
+                    return true;
+                }
+            }
+        }
+    }
+    false
+}
+
+/// Shared XML content detection that works with any encoding after normalization  
+fn detect_xml_content(text: &str) -> bool {
+    text.trim_start().starts_with("<?xml")
+}
+
+/// Shared SVG content detection that works with any encoding after normalization
+fn detect_svg_content(text: &str) -> bool {
+    let trimmed = text.trim_start();
+    if trimmed.starts_with("<?xml") {
+        // Look for SVG namespace in XML
+        trimmed.contains("<svg") || trimmed.contains("http://www.w3.org/2000/svg")
+    } else {
+        trimmed.starts_with("<svg")
+    }
+}
+
+/// Shared JSON content detection that works with any encoding after normalization
+fn detect_json_content(text: &str) -> bool {
+    let trimmed = text.trim_start();
+    (trimmed.starts_with('{') || trimmed.starts_with('[')) && is_valid_json_text(trimmed)
+}
+
+/// Shared CSV content detection that works with any encoding after normalization
+fn detect_csv_content(text: &str) -> bool {
+    let lines: Vec<&str> = text.lines().take(5).collect();
+    if lines.len() < 2 {
+        return false;
+    }
+
+    // Check if lines have consistent comma counts
+    let first_commas = lines[0].chars().filter(|&c| c == ',').count();
+    if first_commas == 0 {
+        return false;
+    }
+
+    lines
+        .iter()
+        .skip(1)
+        .all(|line| line.chars().filter(|&c| c == ',').count() == first_commas)
+}
+
+/// Shared TSV content detection that works with any encoding after normalization
+fn detect_tsv_content(text: &str) -> bool {
+    let lines: Vec<&str> = text.lines().take(5).collect();
+    if lines.len() < 2 {
+        return false;
+    }
+
+    // Check if lines have consistent tab counts
+    let first_tabs = lines[0].chars().filter(|&c| c == '\t').count();
+    if first_tabs == 0 {
+        return false;
+    }
+
+    lines
+        .iter()
+        .skip(1)
+        .all(|line| line.chars().filter(|&c| c == '\t').count() == first_tabs)
+}
+
+/// Shared SRT content detection that works with any encoding after normalization
+fn detect_srt_content(text: &str) -> bool {
+    let trimmed = text.trim_start();
+    if trimmed.starts_with("1\n") || trimmed.starts_with("1\r\n") {
+        // Look for timestamp pattern in the next line
+        let lines: Vec<&str> = trimmed.lines().collect();
+        if lines.len() >= 2 {
+            let timestamp_line = lines[1];
+            // Look for SRT timestamp pattern: 00:00:00,000 --> 00:00:00,000
+            timestamp_line.contains(" --> ")
+        } else {
+            false
+        }
+    } else {
+        false
+    }
+}
+
+/// Shared VTT content detection that works with any encoding after normalization
+fn detect_vtt_content(text: &str) -> bool {
+    let trimmed = text.trim_start();
+    trimmed.starts_with("WEBVTT")
+        && (trimmed.len() == 6 || trimmed.chars().nth(6).map_or(false, |c| c.is_whitespace()))
+}
+
+/// Shared vCard content detection that works with any encoding after normalization
+fn detect_vcard_content(text: &str) -> bool {
+    text.trim_start().to_uppercase().starts_with("BEGIN:VCARD")
+}
+
+/// Shared iCalendar content detection that works with any encoding after normalization
+fn detect_icalendar_content(text: &str) -> bool {
+    text.trim_start()
+        .to_uppercase()
+        .starts_with("BEGIN:VCALENDAR")
+}
+
+/// Shared RTF content detection that works with any encoding after normalization
+fn detect_rtf_content(text: &str) -> bool {
+    text.starts_with("{\\rtf")
+}
+
+/// Helper function for JSON validation on text
+fn is_valid_json_text(text: &str) -> bool {
+    // Very basic JSON validation - just check for balanced braces/brackets
+    let mut brace_count = 0;
+    let mut bracket_count = 0;
+    let mut in_string = false;
+    let mut escape_next = false;
+
+    for c in text.chars().take(512) {
+        if escape_next {
+            escape_next = false;
+            continue;
+        }
+
+        match c {
+            '\\' if in_string => escape_next = true,
+            '"' => in_string = !in_string,
+            '{' if !in_string => brace_count += 1,
+            '}' if !in_string => brace_count -= 1,
+            '[' if !in_string => bracket_count += 1,
+            ']' if !in_string => bracket_count -= 1,
+            _ => {}
+        }
+
+        if brace_count < 0 || bracket_count < 0 {
+            return false;
+        }
+    }
+
+    // Must be balanced and have at least one brace or bracket
+    brace_count == 0 && bracket_count == 0 && (text.contains('{') || text.contains('['))
+}
+
+/// Convert UTF-16 bytes to UTF-8 string for content detection
+fn utf16_to_string(input: &[u8], big_endian: bool) -> Option<String> {
+    if input.len() < 2 {
+        return None;
+    }
+
+    let mut chars = Vec::new();
+    let mut i = 0;
+
+    while i + 1 < input.len() {
+        let code_unit = if big_endian {
+            u16::from_be_bytes([input[i], input[i + 1]])
+        } else {
+            u16::from_le_bytes([input[i], input[i + 1]])
+        };
+
+        chars.push(code_unit);
+        i += 2;
+    }
+
+    String::from_utf16(&chars).ok()
+}
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/// Check if ZIP archive contains any files matching the given entries
+fn zip_has(input: &[u8], search_for: &[(&[u8], bool)], stop_after: usize) -> bool {
+    let mut iter = ZipIterator::new(input);
+
+    for _ in 0..stop_after {
+        if let Some(entry_name) = iter.next() {
+            for &(name, is_dir) in search_for {
+                if is_dir && entry_name.starts_with(name) {
+                    return true;
+                }
+                if !is_dir && entry_name == name {
+                    return true;
+                }
+            }
+        } else {
+            break;
+        }
+    }
+    false
+}
+
+/// Enhanced Office XML format detection that validates the first entry
+/// Matches the Go implementation's msoxml() function exactly
+fn msoxml(input: &[u8], search_for: &[(&[u8], bool)], stop_after: usize) -> bool {
+    let mut iter = ZipIterator::new(input);
+
+    let expected_first_entries = [
+        "[Content_Types].xml".as_bytes(),
+        "_rels/.rels".as_bytes(),
+        "docProps".as_bytes(),
+        "customXml".as_bytes(),
+        "[trash]".as_bytes(),
+    ];
+    for i in 0..stop_after {
+        if let Some(entry_name) = iter.next() {
+            // Check if this entry matches what we're looking for
+            for &(name, is_dir) in search_for {
+                if is_dir && entry_name.starts_with(name) {
+                    return true;
+                }
+                if !is_dir && entry_name == name {
+                    return true;
+                }
+            }
+
+            // If this is the first entry, validate it's a proper Office document
+            if i == 0 && !expected_first_entries.contains(&entry_name) {
+                return false;
+            }
+        } else {
+            break;
+        }
+    }
+    false
+}
+
+/// ZIP iterator for parsing ZIP file entries
+struct ZipIterator<'a> {
+    data: &'a [u8],
+    pos: usize,
+}
+
+impl<'a> ZipIterator<'a> {
+    fn new(data: &'a [u8]) -> Self {
+        Self { data, pos: 0 }
+    }
+
+    fn next(&mut self) -> Option<&'a [u8]> {
+        // Look for ZIP local file header signature "PK\x03\x04"
+        let pk_signature = b"PK\x03\x04";
+
+        if let Some(pk_pos) = self.data[self.pos..]
+            .windows(4)
+            .position(|w| w == pk_signature)
+        {
+            let header_start = self.pos + pk_pos;
+
+            // Parse ZIP local file header
+            // Structure: signature(4) + version(2) + flags(2) + method(2) +
+            //           time(2) + date(2) + crc32(4) + compressed_size(4) +
+            //           uncompressed_size(4) + filename_length(2) + extra_length(2)
+
+            if header_start + 30 > self.data.len() {
+                return None;
+            }
+
+            // Skip to filename length field (at offset 26 from signature)
+            let filename_len_pos = header_start + 26;
+            if filename_len_pos + 4 > self.data.len() {
+                return None;
+            }
+
+            let filename_length =
+                u16::from_le_bytes([self.data[filename_len_pos], self.data[filename_len_pos + 1]])
+                    as usize;
+
+            let extra_length = u16::from_le_bytes([
+                self.data[filename_len_pos + 2],
+                self.data[filename_len_pos + 3],
+            ]) as usize;
+
+            // Extract filename
+            let filename_start = header_start + 30; // Fixed header size
+            if filename_start + filename_length > self.data.len() {
+                return None;
+            }
+
+            let filename = &self.data[filename_start..filename_start + filename_length];
+
+            // Move position past this entry
+            self.pos = filename_start + filename_length + extra_length;
+
+            return Some(filename);
+        }
+
+        None
+    }
+}
+
+/// Check if OLE compound document matches a specific CLSID
+/// Based on Go implementation: matchOleClsid function
+fn ole_matches_clsid(input: &[u8], clsid: &[u8]) -> bool {
+    // Microsoft Compound files v3 have a sector length of 512, while v4 has 4096.
+    // Change sector offset depending on file version.
+    let sector_length = if input.len() >= 28 && input[26] == 0x04 && input[27] == 0x00 {
+        4096
+    } else {
+        512
+    };
+
+    if input.len() < sector_length {
+        return false;
+    }
+
+    // SecID of first sector of the directory stream (offset 48-51)
+    if input.len() < 52 {
+        return false;
+    }
+
+    let first_sec_id = u32::from_le_bytes([input[48], input[49], input[50], input[51]]) as usize;
+
+    // Expected offset of CLSID for root storage object
+    let clsid_offset = sector_length * (1 + first_sec_id) + 80;
+
+    // Check if CLSID matches (handle partial matches for shorter CLSIDs)
+    let match_length = clsid.len().min(16);
+
+    if input.len() < clsid_offset + match_length {
+        return false;
+    }
+
+    let actual_clsid = &input[clsid_offset..clsid_offset + match_length];
+    actual_clsid == clsid
+}
+
+/// Check if input contains JavaScript keywords
+fn has_js_keywords(input: &[u8]) -> bool {
+    let keywords: [&[u8]; 7] = [
+        b"function",
+        b"var ",
+        b"let ",
+        b"const ",
+        b"class ",
+        b"import ",
+        b"export ",
+    ];
+    let sample = &input[..input.len().min(256)];
+    keywords
+        .iter()
+        .any(|&keyword| sample.windows(keyword.len()).any(|w| w == keyword))
+}
+
+/// Simple JSON validation
+fn is_valid_json(input: &[u8]) -> bool {
+    // Very basic JSON validation - just check for balanced braces/brackets
+    let mut brace_count = 0;
+    let mut bracket_count = 0;
+    let mut in_string = false;
+    let mut escape_next = false;
+
+    for &byte in input.iter().take(512) {
+        // Limit check to first 512 bytes
+        if escape_next {
+            escape_next = false;
+            continue;
+        }
+
+        match byte {
+            b'\\' if in_string => escape_next = true,
+            b'"' => in_string = !in_string,
+            b'{' if !in_string => brace_count += 1,
+            b'}' if !in_string => brace_count -= 1,
+            b'[' if !in_string => bracket_count += 1,
+            b']' if !in_string => bracket_count -= 1,
+            _ => {}
+        }
+
+        if brace_count < 0 || bracket_count < 0 {
+            return false;
+        }
+    }
+
+    // Must be balanced and have at least one brace or bracket
+    brace_count == 0 && bracket_count == 0 && (input.contains(&b'{') || input.contains(&b'['))
+}
+
+/// Convert slice to uppercase for case-insensitive comparison
+fn to_uppercase_slice(input: &[u8], max_len: usize) -> Vec<u8> {
+    input
+        .iter()
+        .take(max_len)
+        .map(|&b| b.to_ascii_uppercase())
+        .collect()
+}
+
+// ============================================================================
+// ELF SUBTYPE DETECTORS
+// ============================================================================
+
+/// ELF Object File (ET_REL)
+fn elf_obj(input: &[u8]) -> bool {
+    if input.len() < 18 {
+        return false;
+    }
+    elf(input) && input[16] == 1 && input[17] == 0
+}
+
+/// ELF Executable (ET_EXEC)
+fn elf_exe(input: &[u8]) -> bool {
+    if input.len() < 18 {
+        return false;
+    }
+    elf(input) && input[16] == 2 && input[17] == 0
+}
+
+/// ELF Shared Library (ET_DYN)
+fn elf_lib(input: &[u8]) -> bool {
+    if input.len() < 18 {
+        return false;
+    }
+    elf(input) && input[16] == 3 && input[17] == 0
+}
+
+/// ELF Core Dump (ET_CORE)
+fn elf_dump(input: &[u8]) -> bool {
+    if input.len() < 18 {
+        return false;
+    }
+    elf(input) && input[16] == 4 && input[17] == 0
+}
+
+// ============================================================================
+// MISSING FORMAT DETECTORS
+// ============================================================================
+
+/// FDF (Forms Data Format) - PDF variant
+fn fdf(input: &[u8]) -> bool {
+    input.starts_with(b"%FDF-")
+}
+
+/// P7S (PKCS#7 Signature)
+fn p7s(input: &[u8]) -> bool {
+    input.starts_with(b"-----BEGIN PKCS7-----")
+}
+
+/// AAF (Advanced Authoring Format)
+fn aaf(input: &[u8]) -> bool {
+    if !ole(input) {
+        return false;
+    }
+
+    // AAF uses a specific CLSID to distinguish from other OLE formats
+    // This prevents it from matching generic OLE or other Office documents
+    let aaf_clsids = [
+        // AAF specific CLSIDs (placeholder - real AAF would have specific CLSIDs)
+        [
+            0xAA, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x46,
+        ],
+    ];
+
+    for clsid in &aaf_clsids {
+        if ole_matches_clsid(input, clsid) {
+            return true;
+        }
+    }
+
+    false
 }
