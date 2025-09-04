@@ -8,6 +8,10 @@ Used prefixes:
 `Deleted`
 `BREAKING`
 
+## unrealized
+* Updated: improve html tag check
+
+
 ## 0.2.1 - 2025-09-03
 
 * Added: ZIP child format detection (Office documents, JAR, APK, etc.)

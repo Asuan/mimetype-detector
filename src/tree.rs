@@ -1558,54 +1558,40 @@ fn utf16_le(input: &[u8]) -> bool {
 /// The detection is more robust than simple string matching and follows
 /// the WHATWG MIME Sniffing Standard for accurate HTML identification.
 fn html(input: &[u8]) -> bool {
-    const HTML_TAGS: &[&[u8]] = &[
-        b"<!DOCTYPE HTML",
-        b"<HTML",
-        b"<HEAD",
-        b"<SCRIPT",
-        b"<IFRAME",
-        b"<H1",
-        b"<DIV",
-        b"<FONT",
-        b"<TABLE",
-        b"<A",
-        b"<STYLE",
-        b"<TITLE",
-        b"<B",
-        b"<BODY",
-        b"<BR",
-        b"<P",
+    // Use lowercase tags for efficient case-insensitive comparison with eq_ignore_ascii_case
+    const HTML_TAGS_LOWER: &[&[u8]] = &[
+        b"<!doctype html",
+        b"<html",
+        b"<head",
+        b"<script",
+        b"<iframe",
+        b"<h1",
+        b"<div",
+        b"<font",
+        b"<table",
+        b"<a",
+        b"<style",
+        b"<title",
+        b"<b",
+        b"<body",
+        b"<br",
+        b"<p",
     ];
 
-    let input = skip_whitespace(input);
-    for tag in HTML_TAGS {
-        if input.len() >= tag.len() {
-            let mut matches = true;
-            for (i, &expected) in tag.iter().enumerate() {
-                let actual = input[i];
-                let normalized = if expected.is_ascii_uppercase() {
-                    actual.to_ascii_uppercase()
-                } else {
-                    actual
-                };
-                if normalized != expected {
-                    matches = false;
-                    break;
+    let input = input.trim_ascii_start();
+    for &tag in HTML_TAGS_LOWER {
+        if input.len() >= tag.len() && input[..tag.len()].eq_ignore_ascii_case(tag) {
+            // Check for proper tag termination if there are more bytes
+            if input.len() > tag.len() {
+                if is_tag_terminating(input[tag.len()]) {
+                    return true;
                 }
-            }
-            if matches {
-                // Check for proper tag termination if there are more bytes
-                if input.len() > tag.len() {
-                    if is_tag_terminating(input[tag.len()]) {
-                        return true;
-                    }
-                } else {
-                    // Tag matches exactly at end of input - only valid for self-contained tags like comments
-                    if tag == b"<!--" {
-                        return true;
-                    }
-                    // For regular tags, we need proper termination
+            } else {
+                // Tag matches exactly at end of input - rare but valid for some cases
+                if tag == b"<!--" {
+                    return true;
                 }
+                // For regular tags, we need proper termination
             }
         }
     }
@@ -1613,7 +1599,7 @@ fn html(input: &[u8]) -> bool {
 }
 
 fn xml(input: &[u8]) -> bool {
-    let input = skip_whitespace(input);
+    let input = input.trim_ascii_start();
     input.starts_with(b"<?xml")
 }
 
@@ -1653,17 +1639,6 @@ fn mp4_precise(input: &[u8]) -> bool {
 
 fn midi(input: &[u8]) -> bool {
     input.starts_with(b"MThd")
-}
-
-fn skip_whitespace(input: &[u8]) -> &[u8] {
-    let mut start = 0;
-    while start < input.len() {
-        match input[start] {
-            b'\t' | b'\n' | 0x0C | b'\r' | b' ' => start += 1,
-            _ => break,
-        }
-    }
-    &input[start..]
 }
 
 fn is_tag_terminating(byte: u8) -> bool {
@@ -2757,7 +2732,7 @@ fn tcl(input: &[u8]) -> bool {
 }
 
 fn json(input: &[u8]) -> bool {
-    let trimmed = skip_whitespace(input);
+    let trimmed = input.trim_ascii_start();
     (trimmed.starts_with(b"{") || trimmed.starts_with(b"[")) && is_valid_json(trimmed)
 }
 
@@ -2830,7 +2805,7 @@ fn rtf(input: &[u8]) -> bool {
 }
 
 fn srt(input: &[u8]) -> bool {
-    let text = skip_whitespace(input);
+    let text = input.trim_ascii_start();
     if text.starts_with(b"1\n") || text.starts_with(b"1\r\n") {
         // Look for timestamp pattern in the next line
         let lines: Vec<&[u8]> = text.split(|&b| b == b'\n').collect();
@@ -2875,7 +2850,7 @@ fn icalendar(input: &[u8]) -> bool {
 }
 
 fn svg(input: &[u8]) -> bool {
-    let trimmed = skip_whitespace(input);
+    let trimmed = input.trim_ascii_start();
     if trimmed.starts_with(b"<?xml") {
         // Look for SVG namespace in XML
         trimmed.windows(4).any(|w| w == b"<svg")
