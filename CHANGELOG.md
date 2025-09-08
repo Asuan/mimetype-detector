@@ -8,9 +8,10 @@ Used prefixes:
 `Deleted`
 `BREAKING`
 
-## unrealized
-* Updated: improve html tag check
+## 0.2.2 - 2025-09-08
 
+* Updated: improve xml like tag check
+* Updated: methods with path for file changed from `&str`` to`<P: AsRef<Path>>`
 
 ## 0.2.1 - 2025-09-03
 

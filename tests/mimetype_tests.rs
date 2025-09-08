@@ -219,12 +219,15 @@ fn test_detect_tar() {
     let checksum = data.iter().take(148).map(|&b| b as u32).sum::<u32>()
         + (b' ' as u32) * 8  // 8 spaces for checksum field
         + data.iter().skip(156).map(|&b| b as u32).sum::<u32>();
-    let checksum_str = format!("{:06o}\0 ", checksum);
+    let checksum_str = format!("{checksum:06o}\0 ");
     data[148..156].copy_from_slice(checksum_str.as_bytes());
 
     let mime_type = detect(&data);
     assert_eq!(mime_type.mime(), APPLICATION_X_TAR);
     assert_eq!(mime_type.extension(), ".tar");
+    // Test is() method
+    assert!(mime_type.is(APPLICATION_X_TAR));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
 }
 
 #[test]

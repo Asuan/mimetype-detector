@@ -1583,7 +1583,8 @@ fn html(input: &[u8]) -> bool {
         if input.len() >= tag.len() && input[..tag.len()].eq_ignore_ascii_case(tag) {
             // Check for proper tag termination if there are more bytes
             if input.len() > tag.len() {
-                if is_tag_terminating(input[tag.len()]) {
+                let byte = input[tag.len()];
+                if byte == b' ' || byte == b'>' {
                     return true;
                 }
             } else {
@@ -1639,10 +1640,6 @@ fn mp4_precise(input: &[u8]) -> bool {
 
 fn midi(input: &[u8]) -> bool {
     input.starts_with(b"MThd")
-}
-
-fn is_tag_terminating(byte: u8) -> bool {
-    byte == b' ' || byte == b'>'
 }
 
 fn ole(input: &[u8]) -> bool {
@@ -3009,10 +3006,14 @@ fn tzif(input: &[u8]) -> bool {
 
 /// Helper function to skip UTF-16 BOM and convert to string
 fn utf16_to_text(input: &[u8], big_endian: bool) -> Option<String> {
+    // UTF-16 BOM constants
+    const UTF16_BE_BOM: &[u8] = &[0xFE, 0xFF];
+    const UTF16_LE_BOM: &[u8] = &[0xFF, 0xFE];
+
     // Skip BOM if present
-    let content = if big_endian && input.starts_with(&[0xFE, 0xFF]) {
-        &input[2..]
-    } else if !big_endian && input.starts_with(&[0xFF, 0xFE]) {
+    let content = if (big_endian && input.starts_with(UTF16_BE_BOM))
+        || (!big_endian && input.starts_with(UTF16_LE_BOM))
+    {
         &input[2..]
     } else {
         input
@@ -3340,8 +3341,16 @@ fn detect_srt_content(text: &str) -> bool {
 /// Shared VTT content detection that works with any encoding after normalization
 fn detect_vtt_content(text: &str) -> bool {
     let trimmed = text.trim_start();
-    trimmed.starts_with("WEBVTT")
-        && (trimmed.len() == 6 || trimmed.chars().nth(6).map_or(false, |c| c.is_whitespace()))
+    if !trimmed.starts_with("WEBVTT") {
+        return false;
+    }
+
+    // WEBVTT must be followed by whitespace or end of string
+    trimmed.len() == 6
+        || trimmed
+            .as_bytes()
+            .get(6)
+            .is_some_and(|&b| b.is_ascii_whitespace())
 }
 
 /// Shared vCard content detection that works with any encoding after normalization
@@ -3396,23 +3405,21 @@ fn is_valid_json_text(text: &str) -> bool {
 
 /// Convert UTF-16 bytes to UTF-8 string for content detection
 fn utf16_to_string(input: &[u8], big_endian: bool) -> Option<String> {
-    if input.len() < 2 {
+    // Input must have even length for UTF-16
+    if input.len() < 2 || input.len() % 2 != 0 {
         return None;
     }
 
-    let mut chars = Vec::new();
-    let mut i = 0;
-
-    while i + 1 < input.len() {
-        let code_unit = if big_endian {
-            u16::from_be_bytes([input[i], input[i + 1]])
-        } else {
-            u16::from_le_bytes([input[i], input[i + 1]])
-        };
-
-        chars.push(code_unit);
-        i += 2;
-    }
+    let chars: Vec<u16> = input
+        .chunks_exact(2)
+        .map(|chunk| {
+            if big_endian {
+                u16::from_be_bytes([chunk[0], chunk[1]])
+            } else {
+                u16::from_le_bytes([chunk[0], chunk[1]])
+            }
+        })
+        .collect();
 
     String::from_utf16(&chars).ok()
 }

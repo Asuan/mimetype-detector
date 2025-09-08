@@ -72,6 +72,7 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, Read};
+use std::path::Path;
 use std::sync::{LazyLock, Once, RwLock};
 
 pub mod mime_type;
@@ -129,7 +130,6 @@ pub fn detect(data: &[u8]) -> &'static MimeType {
 /// A `Result` containing the detected MIME type or an I/O error
 pub fn detect_reader<R: Read>(mut reader: R) -> io::Result<&'static MimeType> {
     let mut buffer: [u8; READ_LIMIT] = [0x0; READ_LIMIT];
-    // let mut buffer = vec![0; READ_LIMIT];
     let n = reader.read(&mut buffer)?;
     Ok(detect(&buffer[..n]))
 }
@@ -140,12 +140,12 @@ pub fn detect_reader<R: Read>(mut reader: R) -> io::Result<&'static MimeType> {
 ///
 /// # Arguments
 ///
-/// * `path` - The file system path to the file to analyze
+/// * `path` - The file system path to the file to analyze (accepts &str, String, Path, PathBuf, etc.)
 ///
 /// # Returns
 ///
 /// A `Result` containing the detected MIME type or an I/O error
-pub fn detect_file(path: &str) -> io::Result<&'static MimeType> {
+pub fn detect_file<P: AsRef<Path>>(path: P) -> io::Result<&'static MimeType> {
     let file = File::open(path)?;
     detect_reader(file)
 }
@@ -286,13 +286,13 @@ pub fn match_reader<R: Read>(mut reader: R, mime_type: &str) -> io::Result<bool>
 ///
 /// # Arguments
 ///
-/// * `path` - The file system path to the file
+/// * `path` - The file system path to the file (accepts &str, String, Path, PathBuf, etc.)
 /// * `mime_type` - The MIME type to match against
 ///
 /// # Returns
 ///
 /// A `Result` containing `true` if the file matches, or an I/O error
-pub fn match_file(path: &str, mime_type: &str) -> io::Result<bool> {
+pub fn match_file<P: AsRef<Path>>(path: P, mime_type: &str) -> io::Result<bool> {
     let file = File::open(path)?;
     match_reader(file, mime_type)
 }
@@ -366,13 +366,13 @@ pub fn match_reader_extension<R: Read>(mut reader: R, extension: &str) -> io::Re
 ///
 /// # Arguments
 ///
-/// * `path` - The file system path to the file
+/// * `path` - The file system path to the file (accepts &str, String, Path, PathBuf, etc.)
 /// * `extension` - The file extension to match against
 ///
 /// # Returns
 ///
 /// A `Result` containing `true` if the file matches, or an I/O error
-pub fn match_file_extension(path: &str, extension: &str) -> io::Result<bool> {
+pub fn match_file_extension<P: AsRef<Path>>(path: P, extension: &str) -> io::Result<bool> {
     let file = File::open(path)?;
     match_reader_extension(file, extension)
 }

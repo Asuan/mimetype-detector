@@ -15,7 +15,7 @@ A fast Rust library for detecting MIME types and file extensions from content, s
 
 ```toml
 [dependencies]
-mimetype-detector = "0.1.2"
+mimetype-detector = "0.2.2"
 ```
 
 ## Quick Start
@@ -29,13 +29,15 @@ let mime_type = detect(data);
 println!("{} -> {}", mime_type.mime(), mime_type.extension());
 // Output: image/png -> .png
 
-// Detect from file
-let mime_type = detect_file("document.pdf")?;
-
-// Type-safe constants
 if mime_type.is(IMAGE_PNG) {
     println!("PNG image detected!");
 }
+
+// Detect from file (accepts various path types)
+let mime_type = detect_file("document.pdf")?;  // &str
+// let mime_type = detect_file(path_buf)?;      // PathBuf
+// let mime_type = detect_file(&path)?;         // &Path
+
 ```
 
 ## Advanced Usage
@@ -162,7 +164,7 @@ match detected.mime() {
 ### Core Functions
 
 - `detect(data: &[u8]) -> &'static MimeType`
-- `detect_file(path: &str) -> io::Result<&'static MimeType>`
+- `detect_file<P: AsRef<Path>>(path: P) -> io::Result<&'static MimeType>`
 - `detect_reader<R: Read>(reader: R) -> io::Result<&'static MimeType>`
 
 ### Utilities
@@ -191,4 +193,3 @@ MIT License
 ## Credits
 
 Rust port of the Go [mimetype](https://github.com/gabriel-vasile/mimetype) library with enhancements.
-
