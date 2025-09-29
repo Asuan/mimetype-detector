@@ -2741,60 +2741,30 @@ fn geojson(input: &[u8]) -> bool {
 }
 
 fn ndjson(input: &[u8]) -> bool {
-    let lines: Vec<&[u8]> = input.split(|&b| b == b'\n').collect();
-    lines.len() > 1
-        && lines
-            .iter()
-            .take(3)
-            .all(|line| if line.is_empty() { true } else { json(line) })
+    let lines = input.split(|&b| b == b'\n');
+    let mut line_count = 0;
+    let mut valid_lines = 0;
+
+    for line in lines.take(3) {
+        line_count += 1;
+        if line.is_empty() || json(line) {
+            valid_lines += 1;
+        } else {
+            return false;
+        }
+    }
+
+    line_count > 1 && valid_lines == line_count
 }
 
 fn csv_format(input: &[u8]) -> bool {
-    if input.is_empty() {
-        return false;
-    }
-
-    let sample = &input[..input.len().min(1024)];
-    let lines: Vec<&[u8]> = sample.split(|&b| b == b'\n').take(5).collect();
-
-    if lines.len() < 2 {
-        return false;
-    }
-
-    // Check if lines have consistent comma counts
-    let first_commas = lines[0].iter().filter(|&&b| b == b',').count();
-    if first_commas == 0 {
-        return false;
-    }
-
-    lines
-        .iter()
-        .skip(1)
-        .all(|line| line.iter().filter(|&&b| b == b',').count() == first_commas)
+    let lines = input.split(|&b| b == b'\n').take(5);
+    detect_csv_generic(lines, |line| count_byte(line, b','))
 }
 
 fn tsv(input: &[u8]) -> bool {
-    if input.is_empty() {
-        return false;
-    }
-
-    let sample = &input[..input.len().min(1024)];
-    let lines: Vec<&[u8]> = sample.split(|&b| b == b'\n').take(5).collect();
-
-    if lines.len() < 2 {
-        return false;
-    }
-
-    // Check if lines have consistent tab counts
-    let first_tabs = lines[0].iter().filter(|&&b| b == b'\t').count();
-    if first_tabs == 0 {
-        return false;
-    }
-
-    lines
-        .iter()
-        .skip(1)
-        .all(|line| line.iter().filter(|&&b| b == b'\t').count() == first_tabs)
+    let lines = input.split(|&b| b == b'\n').take(5);
+    detect_csv_generic(lines, |line| count_byte(line, b'\t'))
 }
 
 fn rtf(input: &[u8]) -> bool {
@@ -2805,9 +2775,13 @@ fn srt(input: &[u8]) -> bool {
     let text = input.trim_ascii_start();
     if text.starts_with(b"1\n") || text.starts_with(b"1\r\n") {
         // Look for timestamp pattern in the next line
-        let lines: Vec<&[u8]> = text.split(|&b| b == b'\n').collect();
-        if lines.len() >= 2 {
-            let timestamp_line = lines[1];
+        let mut lines = text.split(|&b| b == b'\n');
+
+        // Skip first line (should be "1")
+        lines.next();
+
+        // Check second line for timestamp pattern
+        if let Some(timestamp_line) = lines.next() {
             // Look for SRT timestamp pattern: 00:00:00,000 --> 00:00:00,000
             timestamp_line.windows(5).any(|w| w == b" --> ")
         } else {
@@ -2837,13 +2811,11 @@ fn vtt(input: &[u8]) -> bool {
 }
 
 fn vcard(input: &[u8]) -> bool {
-    let upper = to_uppercase_slice(input, 32);
-    upper.starts_with(b"BEGIN:VCARD")
+    case_insensitive_starts_with(input, b"BEGIN:VCARD")
 }
 
 fn icalendar(input: &[u8]) -> bool {
-    let upper = to_uppercase_slice(input, 32);
-    upper.starts_with(b"BEGIN:VCALENDAR")
+    case_insensitive_starts_with(input, b"BEGIN:VCALENDAR")
 }
 
 fn svg(input: &[u8]) -> bool {
@@ -3284,40 +3256,14 @@ fn detect_json_content(text: &str) -> bool {
 
 /// Shared CSV content detection that works with any encoding after normalization
 fn detect_csv_content(text: &str) -> bool {
-    let lines: Vec<&str> = text.lines().take(5).collect();
-    if lines.len() < 2 {
-        return false;
-    }
-
-    // Check if lines have consistent comma counts
-    let first_commas = lines[0].chars().filter(|&c| c == ',').count();
-    if first_commas == 0 {
-        return false;
-    }
-
-    lines
-        .iter()
-        .skip(1)
-        .all(|line| line.chars().filter(|&c| c == ',').count() == first_commas)
+    let lines = text.lines().take(5);
+    detect_csv_generic(lines, |line| count_char(line, ','))
 }
 
 /// Shared TSV content detection that works with any encoding after normalization
 fn detect_tsv_content(text: &str) -> bool {
-    let lines: Vec<&str> = text.lines().take(5).collect();
-    if lines.len() < 2 {
-        return false;
-    }
-
-    // Check if lines have consistent tab counts
-    let first_tabs = lines[0].chars().filter(|&c| c == '\t').count();
-    if first_tabs == 0 {
-        return false;
-    }
-
-    lines
-        .iter()
-        .skip(1)
-        .all(|line| line.chars().filter(|&c| c == '\t').count() == first_tabs)
+    let lines = text.lines().take(5);
+    detect_csv_generic(lines, |line| count_char(line, '\t'))
 }
 
 /// Shared SRT content detection that works with any encoding after normalization
@@ -3325,9 +3271,13 @@ fn detect_srt_content(text: &str) -> bool {
     let trimmed = text.trim_start();
     if trimmed.starts_with("1\n") || trimmed.starts_with("1\r\n") {
         // Look for timestamp pattern in the next line
-        let lines: Vec<&str> = trimmed.lines().collect();
-        if lines.len() >= 2 {
-            let timestamp_line = lines[1];
+        let mut lines = trimmed.lines();
+
+        // Skip first line (should be "1")
+        lines.next();
+
+        // Check second line for timestamp pattern
+        if let Some(timestamp_line) = lines.next() {
             // Look for SRT timestamp pattern: 00:00:00,000 --> 00:00:00,000
             timestamp_line.contains(" --> ")
         } else {
@@ -3427,6 +3377,61 @@ fn utf16_to_string(input: &[u8], big_endian: bool) -> Option<String> {
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
+
+/// Optimized byte counting function
+/// Uses SIMD-friendly operations for better performance than iterator.filter().count()
+#[inline]
+fn count_byte(slice: &[u8], target: u8) -> usize {
+    slice.iter().fold(0, |acc, &b| acc + (b == target) as usize)
+}
+
+/// Optimized character counting function
+/// Uses fold for better performance than chars().filter().count()
+#[inline]
+fn count_char(text: &str, target: char) -> usize {
+    text.chars().fold(0, |acc, c| acc + (c == target) as usize)
+}
+
+/// Case-insensitive starts_with for byte slices
+/// Avoids allocation by comparing bytes directly
+#[inline]
+fn case_insensitive_starts_with(haystack: &[u8], needed: &[u8]) -> bool {
+    if haystack.len() >= needed.len() {
+        haystack[..needed.len()].eq_ignore_ascii_case(needed)
+    } else {
+        false
+    }
+}
+
+/// Generic CSV detection helper that works with any line iterator
+/// T: Iterator over lines (either &[u8] or &str)
+/// F: Function to count separator in a line
+#[inline]
+fn detect_csv_generic<T, F>(mut lines: T, count_separator: F) -> bool
+where
+    T: Iterator,
+    F: Fn(T::Item) -> usize,
+{
+    let first_line = match lines.next() {
+        Some(line) => line,
+        None => return false,
+    };
+
+    let first_separators = count_separator(first_line);
+    if first_separators == 0 {
+        return false;
+    }
+
+    let mut line_count = 1;
+    for line in lines {
+        line_count += 1;
+        if count_separator(line) != first_separators {
+            return false;
+        }
+    }
+
+    line_count >= 2
+}
 
 /// Check if ZIP archive contains any files matching the given entries
 fn zip_has(input: &[u8], search_for: &[(&[u8], bool)], stop_after: usize) -> bool {
@@ -3632,15 +3637,6 @@ fn is_valid_json(input: &[u8]) -> bool {
 
     // Must be balanced and have at least one brace or bracket
     brace_count == 0 && bracket_count == 0 && (input.contains(&b'{') || input.contains(&b'['))
-}
-
-/// Convert slice to uppercase for case-insensitive comparison
-fn to_uppercase_slice(input: &[u8], max_len: usize) -> Vec<u8> {
-    input
-        .iter()
-        .take(max_len)
-        .map(|&b| b.to_ascii_uppercase())
-        .collect()
 }
 
 // ============================================================================

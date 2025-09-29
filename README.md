@@ -15,7 +15,7 @@ A fast Rust library for detecting MIME types and file extensions from content, s
 
 ```toml
 [dependencies]
-mimetype-detector = "0.2.2"
+mimetype-detector = "0.2.3"
 ```
 
 ## Quick Start

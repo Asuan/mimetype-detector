@@ -8,6 +8,10 @@ Used prefixes:
 `Deleted`
 `BREAKING`
 
+## 0.2.3 - 2025-09-29
+
+* Updated: improve few checks (CSV,TSV, NDJSON, VCARD) improve performance only
+
 ## 0.2.2 - 2025-09-08
 
 * Updated: improve xml like tag check
