@@ -1054,55 +1054,55 @@ static TZIF: MimeType = MimeType::new(APPLICATION_TZIF, "", tzif, &[]);
 // ============================================================================
 
 fn rss(input: &[u8]) -> bool {
-    xml(input) && input.windows(4).any(|w| w == b"<rss")
+    detect_xml_with_tag(input, b"<rss")
 }
 
 fn atom(input: &[u8]) -> bool {
-    xml(input) && input.windows(5).any(|w| w == b"<feed")
+    detect_xml_with_tag(input, b"<feed")
 }
 
 fn x3d(input: &[u8]) -> bool {
-    xml(input) && input.windows(4).any(|w| w == b"<X3D")
+    detect_xml_with_tag(input, b"<X3D")
 }
 
 fn kml(input: &[u8]) -> bool {
-    xml(input) && input.windows(4).any(|w| w == b"<kml")
+    detect_xml_with_tag(input, b"<kml")
 }
 
 fn xliff(input: &[u8]) -> bool {
-    xml(input) && input.windows(6).any(|w| w == b"<xliff")
+    detect_xml_with_tag(input, b"<xliff")
 }
 
 fn collada(input: &[u8]) -> bool {
-    xml(input) && input.windows(8).any(|w| w == b"<COLLADA")
+    detect_xml_with_tag(input, b"<COLLADA")
 }
 
 fn gml(input: &[u8]) -> bool {
-    xml(input) && input.windows(4).any(|w| w == b"<gml")
+    detect_xml_with_tag(input, b"<gml")
 }
 
 fn gpx(input: &[u8]) -> bool {
-    xml(input) && input.windows(4).any(|w| w == b"<gpx")
+    detect_xml_with_tag(input, b"<gpx")
 }
 
 fn tcx(input: &[u8]) -> bool {
-    xml(input) && input.windows(20).any(|w| w == b"TrainingCenterDataba")
+    detect_xml_with_tag(input, b"TrainingCenterDataba")
 }
 
 fn amf(input: &[u8]) -> bool {
-    xml(input) && input.windows(4).any(|w| w == b"<amf")
+    detect_xml_with_tag(input, b"<amf")
 }
 
 fn threemf(input: &[u8]) -> bool {
-    xml(input) && input.windows(6).any(|w| w == b"<model")
+    detect_xml_with_tag(input, b"<model")
 }
 
 fn xfdf(input: &[u8]) -> bool {
-    xml(input) && input.windows(5).any(|w| w == b"<xfdf")
+    detect_xml_with_tag(input, b"<xfdf")
 }
 
 fn owl2(input: &[u8]) -> bool {
-    xml(input) && (input.windows(4).any(|w| w == b"<owl") || input.windows(3).any(|w| w == b"<RDF"))
+    xml(input) && (input.windows(4).any(|w| w == b"<owl") || input.windows(4).any(|w| w == b"<RDF"))
 }
 
 fn xhtml(input: &[u8]) -> bool {
@@ -1580,7 +1580,7 @@ fn html(input: &[u8]) -> bool {
 
     let input = input.trim_ascii_start();
     for &tag in HTML_TAGS_LOWER {
-        if input.len() >= tag.len() && input[..tag.len()].eq_ignore_ascii_case(tag) {
+        if case_insensitive_starts_with(input, tag) {
             // Check for proper tag termination if there are more bytes
             if input.len() > tag.len() {
                 let byte = input[tag.len()];
@@ -1942,13 +1942,13 @@ fn dwg(input: &[u8]) -> bool {
         return false;
     }
 
-    let dwg_versions: [&[u8; 4]; 15] = [
+    const DWG_VERSIONS: [&[u8; 4]; 15] = [
         b"1.40", b"1.50", b"2.10", b"1002", b"1003", b"1004", b"1006", b"1009", b"1012", b"1014",
         b"1015", b"1018", b"1021", b"1024", b"1032",
     ];
 
     let ver = &input[2..6];
-    dwg_versions.iter().any(|version| ver.eq(*version))
+    DWG_VERSIONS.iter().any(|version| ver.eq(*version))
 }
 
 // Additional audio format detectors
@@ -2290,25 +2290,22 @@ fn doc(input: &[u8]) -> bool {
     }
 
     // CLSID-only matching (matching Go implementation exactly)
-    let clsids = [
-        // Microsoft Word 97-2003 Document (Word.Document.8)
-        [
-            0x06, 0x09, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x46,
-        ],
-        // Microsoft Word 6.0-7.0 Document (Word.Document.6)
-        [
-            0x00, 0x09, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x46,
-        ],
-        // Microsoft Word Picture (Word.Picture.8)
-        [
-            0x07, 0x09, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x46,
-        ],
+    const WORD_97_2003_CLSID: &[u8] = &[
+        0x06, 0x09, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x46,
+    ];
+    const WORD_6_7_CLSID: &[u8] = &[
+        0x00, 0x09, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x46,
+    ];
+    const WORD_PICTURE_CLSID: &[u8] = &[
+        0x07, 0x09, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x46,
     ];
 
-    for clsid in &clsids {
+    const CLSIDS: [&[u8]; 3] = [WORD_97_2003_CLSID, WORD_6_7_CLSID, WORD_PICTURE_CLSID];
+
+    for clsid in &CLSIDS {
         if ole_matches_clsid(input, clsid) {
             return true;
         }
@@ -2323,9 +2320,10 @@ fn xls(input: &[u8]) -> bool {
     }
 
     // Try CLSID matching first (primary method from Go implementation)
-    if ole_matches_clsid(input, &[0x10, 0x08, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00])
-        || ole_matches_clsid(input, &[0x20, 0x08, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00])
-    {
+    const EXCEL_V5_CLSID: &[u8] = &[0x10, 0x08, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00];
+    const EXCEL_V7_CLSID: &[u8] = &[0x20, 0x08, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00];
+
+    if ole_matches_clsid(input, EXCEL_V5_CLSID) || ole_matches_clsid(input, EXCEL_V7_CLSID) {
         return true;
     }
 
@@ -2333,17 +2331,17 @@ fn xls(input: &[u8]) -> bool {
 
     // Check for XLS sub-headers at offset 512 (from Go implementation)
     if lin >= 520 {
-        let xls_sub_headers = [
-            &[0x09, 0x08, 0x10, 0x00, 0x00, 0x06, 0x05, 0x00][..],
-            &[0xFD, 0xFF, 0xFF, 0xFF, 0x10][..],
-            &[0xFD, 0xFF, 0xFF, 0xFF, 0x1F][..],
-            &[0xFD, 0xFF, 0xFF, 0xFF, 0x22][..],
-            &[0xFD, 0xFF, 0xFF, 0xFF, 0x23][..],
-            &[0xFD, 0xFF, 0xFF, 0xFF, 0x28][..],
-            &[0xFD, 0xFF, 0xFF, 0xFF, 0x29][..],
+        const XLS_SUB_HEADERS: [&[u8]; 7] = [
+            &[0x09, 0x08, 0x10, 0x00, 0x00, 0x06, 0x05, 0x00],
+            &[0xFD, 0xFF, 0xFF, 0xFF, 0x10],
+            &[0xFD, 0xFF, 0xFF, 0xFF, 0x1F],
+            &[0xFD, 0xFF, 0xFF, 0xFF, 0x22],
+            &[0xFD, 0xFF, 0xFF, 0xFF, 0x23],
+            &[0xFD, 0xFF, 0xFF, 0xFF, 0x28],
+            &[0xFD, 0xFF, 0xFF, 0xFF, 0x29],
         ];
 
-        for &header in &xls_sub_headers {
+        for &header in &XLS_SUB_HEADERS {
             if input.len() > 512 + header.len() && input[512..].starts_with(header) {
                 return true;
             }
@@ -2372,19 +2370,16 @@ fn ppt(input: &[u8]) -> bool {
     }
 
     // Try CLSID matching first (from Go implementation)
-    if ole_matches_clsid(
-        input,
-        &[
-            0x10, 0x8d, 0x81, 0x64, 0x9b, 0x4f, 0xcf, 0x11, 0x86, 0xea, 0x00, 0xaa, 0x00, 0xb9,
-            0x29, 0xe8,
-        ],
-    ) || ole_matches_clsid(
-        input,
-        &[
-            0x70, 0xae, 0x7b, 0xea, 0x3b, 0xfb, 0xcd, 0x11, 0xa9, 0x03, 0x00, 0xaa, 0x00, 0x51,
-            0x0e, 0xa3,
-        ],
-    ) {
+    const PPT_V4_CLSID: &[u8; 16] = &[
+        0x10, 0x8d, 0x81, 0x64, 0x9b, 0x4f, 0xcf, 0x11, 0x86, 0xea, 0x00, 0xaa, 0x00, 0xb9, 0x29,
+        0xe8,
+    ];
+    const PPT_V7_CLSID: &[u8; 16] = &[
+        0x70, 0xae, 0x7b, 0xea, 0x3b, 0xfb, 0xcd, 0x11, 0xa9, 0x03, 0x00, 0xaa, 0x00, 0x51, 0x0e,
+        0xa3,
+    ];
+
+    if ole_matches_clsid(input, PPT_V4_CLSID) || ole_matches_clsid(input, PPT_V7_CLSID) {
         return true;
     }
 
@@ -2394,13 +2389,13 @@ fn ppt(input: &[u8]) -> bool {
     }
 
     // Check for PPT sub-headers at offset 512 (from Go implementation)
-    let ppt_sub_headers = [
-        &[0xA0, 0x46, 0x1D, 0xF0][..],
-        &[0x00, 0x6E, 0x1E, 0xF0][..],
-        &[0x0F, 0x00, 0xE8, 0x03][..],
+    const PPT_SUB_HEADERS: [&[u8]; 3] = [
+        &[0xA0, 0x46, 0x1D, 0xF0],
+        &[0x00, 0x6E, 0x1E, 0xF0],
+        &[0x0F, 0x00, 0xE8, 0x03],
     ];
 
-    for &header in &ppt_sub_headers {
+    for &header in &PPT_SUB_HEADERS {
         if input.len() > 512 + header.len() && input[512..].starts_with(header) {
             return true;
         }
@@ -2429,33 +2424,19 @@ fn ppt(input: &[u8]) -> bool {
 }
 
 fn pub_format(input: &[u8]) -> bool {
-    if !ole(input) {
-        return false;
-    }
-
-    // CLSID-only matching (matching Go implementation exactly)
-    ole_matches_clsid(
-        input,
-        &[
-            0x01, 0x12, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x46,
-        ],
-    )
+    const PUBLISHER_CLSID: &[u8; 16] = &[
+        0x01, 0x12, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x46,
+    ];
+    detect_ole_with_clsid(input, PUBLISHER_CLSID)
 }
 
 fn msg(input: &[u8]) -> bool {
-    if !ole(input) {
-        return false;
-    }
-
-    // CLSID-only matching (matching Go implementation exactly)
-    ole_matches_clsid(
-        input,
-        &[
-            0x0B, 0x0D, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x46,
-        ],
-    )
+    const OUTLOOK_MSG_CLSID: &[u8; 16] = &[
+        0x0B, 0x0D, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x46,
+    ];
+    detect_ole_with_clsid(input, OUTLOOK_MSG_CLSID)
 }
 
 fn chm(input: &[u8]) -> bool {
@@ -2463,33 +2444,19 @@ fn chm(input: &[u8]) -> bool {
 }
 
 fn onenote(input: &[u8]) -> bool {
-    if !ole(input) {
-        return false;
-    }
-
-    // OneNote CLSID
-    ole_matches_clsid(
-        input,
-        &[
-            0x43, 0xAD, 0x43, 0x36, 0x5E, 0x47, 0x96, 0x48, 0x8B, 0x42, 0x04, 0x40, 0xE7, 0x87,
-            0xC9, 0x30,
-        ],
-    )
+    const ONENOTE_CLSID: &[u8; 16] = &[
+        0x43, 0xAD, 0x43, 0x36, 0x5E, 0x47, 0x96, 0x48, 0x8B, 0x42, 0x04, 0x40, 0xE7, 0x87, 0xC9,
+        0x30,
+    ];
+    detect_ole_with_clsid(input, ONENOTE_CLSID)
 }
 
 fn msi(input: &[u8]) -> bool {
-    if !ole(input) {
-        return false;
-    }
-
-    // CLSID-only matching (matching Go implementation exactly)
-    ole_matches_clsid(
-        input,
-        &[
-            0x84, 0x10, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x46,
-        ],
-    )
+    const MSI_CLSID: &[u8; 16] = &[
+        0x84, 0x10, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x46,
+    ];
+    detect_ole_with_clsid(input, MSI_CLSID)
 }
 
 // ============================================================================
@@ -2497,113 +2464,56 @@ fn msi(input: &[u8]) -> bool {
 // ============================================================================
 
 fn odt(input: &[u8]) -> bool {
-    // ODT uses offset-based detection like Go implementation
-    // Go: Odt = offset([]byte("mimetypeapplication/vnd.oasis.opendocument.text"), 30)
-    if input.len() < 30 + 48 {
-        return false;
-    }
-    let expected = b"mimetypeapplication/vnd.oasis.opendocument.text";
-    &input[30..30 + expected.len()] == expected
+    detect_opendocument_format(input, b"application/vnd.oasis.opendocument.text")
 }
 
 fn ods(input: &[u8]) -> bool {
-    // ODS uses offset-based detection like Go implementation
-    // Go: Ods = offset([]byte("mimetypeapplication/vnd.oasis.opendocument.spreadsheet"), 30)
-    if input.len() < 30 + 55 {
-        return false;
-    }
-    let expected = b"mimetypeapplication/vnd.oasis.opendocument.spreadsheet";
-    &input[30..30 + expected.len()] == expected
+    detect_opendocument_format(input, b"application/vnd.oasis.opendocument.spreadsheet")
 }
 
 fn odp(input: &[u8]) -> bool {
-    // ODP uses offset-based detection like Go implementation
-    // Go: Odp = offset([]byte("mimetypeapplication/vnd.oasis.opendocument.presentation"), 30)
-    if input.len() < 30 + 56 {
-        return false;
-    }
-    let expected = b"mimetypeapplication/vnd.oasis.opendocument.presentation";
-    &input[30..30 + expected.len()] == expected
+    detect_opendocument_format(input, b"application/vnd.oasis.opendocument.presentation")
 }
 
 fn odg(input: &[u8]) -> bool {
-    // ODG uses offset-based detection like Go implementation
-    // Go: Odg = offset([]byte("mimetypeapplication/vnd.oasis.opendocument.graphics"), 30)
-    if input.len() < 30 + 52 {
-        return false;
-    }
-    let expected = b"mimetypeapplication/vnd.oasis.opendocument.graphics";
-    &input[30..30 + expected.len()] == expected
+    detect_opendocument_format(input, b"application/vnd.oasis.opendocument.graphics")
 }
 
 fn odf_format(input: &[u8]) -> bool {
-    // ODF uses offset-based detection like Go implementation
-    // Go: Odf = offset([]byte("mimetypeapplication/vnd.oasis.opendocument.formula"), 30)
-    if input.len() < 30 + 51 {
-        return false;
-    }
-    let expected = b"mimetypeapplication/vnd.oasis.opendocument.formula";
-    &input[30..30 + expected.len()] == expected
+    detect_opendocument_format(input, b"application/vnd.oasis.opendocument.formula")
 }
 
 fn odc(input: &[u8]) -> bool {
-    // ODC uses offset-based detection like Go implementation
-    // Go: Odc = offset([]byte("mimetypeapplication/vnd.oasis.opendocument.chart"), 30)
-    if input.len() < 30 + 49 {
-        return false;
-    }
-    let expected = b"mimetypeapplication/vnd.oasis.opendocument.chart";
-    &input[30..30 + expected.len()] == expected
+    detect_opendocument_format(input, b"application/vnd.oasis.opendocument.chart")
 }
 
 fn ott(input: &[u8]) -> bool {
-    // OTT uses offset-based detection like Go implementation
-    // Go: Ott = offset([]byte("mimetypeapplication/vnd.oasis.opendocument.text-template"), 30)
-    if input.len() < 30 + 57 {
-        return false;
-    }
-    let expected = b"mimetypeapplication/vnd.oasis.opendocument.text-template";
-    &input[30..30 + expected.len()] == expected
+    detect_opendocument_format(input, b"application/vnd.oasis.opendocument.text-template")
 }
 
 fn ots(input: &[u8]) -> bool {
-    // OTS uses offset-based detection like Go implementation
-    // Go: Ots = offset([]byte("mimetypeapplication/vnd.oasis.opendocument.spreadsheet-template"), 30)
-    if input.len() < 30 + 64 {
-        return false;
-    }
-    let expected = b"mimetypeapplication/vnd.oasis.opendocument.spreadsheet-template";
-    &input[30..30 + expected.len()] == expected
+    detect_opendocument_format(
+        input,
+        b"application/vnd.oasis.opendocument.spreadsheet-template",
+    )
 }
 
 fn otp(input: &[u8]) -> bool {
-    // OTP uses offset-based detection like Go implementation
-    // Go: Otp = offset([]byte("mimetypeapplication/vnd.oasis.opendocument.presentation-template"), 30)
-    if input.len() < 30 + 65 {
-        return false;
-    }
-    let expected = b"mimetypeapplication/vnd.oasis.opendocument.presentation-template";
-    &input[30..30 + expected.len()] == expected
+    detect_opendocument_format(
+        input,
+        b"application/vnd.oasis.opendocument.presentation-template",
+    )
 }
 
 fn otg(input: &[u8]) -> bool {
-    // OTG uses offset-based detection like Go implementation
-    // Go: Otg = offset([]byte("mimetypeapplication/vnd.oasis.opendocument.graphics-template"), 30)
-    if input.len() < 30 + 61 {
-        return false;
-    }
-    let expected = b"mimetypeapplication/vnd.oasis.opendocument.graphics-template";
-    &input[30..30 + expected.len()] == expected
+    detect_opendocument_format(
+        input,
+        b"application/vnd.oasis.opendocument.graphics-template",
+    )
 }
 
 fn sxc(input: &[u8]) -> bool {
-    // SXC uses offset-based detection like Go implementation
-    // Go: Sxc = offset([]byte("mimetypeapplication/vnd.sun.xml.calc"), 30)
-    if input.len() < 30 + 37 {
-        return false;
-    }
-    let expected = b"mimetypeapplication/vnd.sun.xml.calc";
-    &input[30..30 + expected.len()] == expected
+    detect_opendocument_format(input, b"application/vnd.sun.xml.calc")
 }
 
 fn kmz(input: &[u8]) -> bool {
@@ -2759,12 +2669,12 @@ fn ndjson(input: &[u8]) -> bool {
 
 fn csv_format(input: &[u8]) -> bool {
     let lines = input.split(|&b| b == b'\n').take(5);
-    detect_csv_generic(lines, |line| count_byte(line, b','))
+    detect_csv_generic(lines, |line| count_occurrences(line, b','))
 }
 
 fn tsv(input: &[u8]) -> bool {
     let lines = input.split(|&b| b == b'\n').take(5);
-    detect_csv_generic(lines, |line| count_byte(line, b'\t'))
+    detect_csv_generic(lines, |line| count_occurrences(line, b'\t'))
 }
 
 fn rtf(input: &[u8]) -> bool {
@@ -2996,200 +2906,112 @@ fn utf16_to_text(input: &[u8], big_endian: bool) -> Option<String> {
 
 /// HTML detection for UTF-16 Big Endian
 fn html_utf16_be(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, true) {
-        detect_html_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, true, detect_html_content)
 }
 
 /// HTML detection for UTF-16 Little Endian
 fn html_utf16_le(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, false) {
-        detect_html_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, false, detect_html_content)
 }
 
 /// XML detection for UTF-16 Big Endian
 fn xml_utf16_be(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, true) {
-        detect_xml_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, true, detect_xml_content)
 }
 
 /// XML detection for UTF-16 Little Endian
 fn xml_utf16_le(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, false) {
-        detect_xml_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, false, detect_xml_content)
 }
 
 /// SVG detection for UTF-16 Big Endian
 fn svg_utf16_be(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, true) {
-        detect_svg_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, true, detect_svg_content)
 }
 
 /// SVG detection for UTF-16 Little Endian
 fn svg_utf16_le(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, false) {
-        detect_svg_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, false, detect_svg_content)
 }
 
 /// JSON detection for UTF-16 Big Endian
 fn json_utf16_be(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, true) {
-        detect_json_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, true, detect_json_content)
 }
 
 /// JSON detection for UTF-16 Little Endian
 fn json_utf16_le(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, false) {
-        detect_json_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, false, detect_json_content)
 }
 
 /// CSV detection for UTF-16 Big Endian
 fn csv_utf16_be(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, true) {
-        detect_csv_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, true, detect_csv_content)
 }
 
 /// CSV detection for UTF-16 Little Endian
 fn csv_utf16_le(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, false) {
-        detect_csv_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, false, detect_csv_content)
 }
 
 /// TSV detection for UTF-16 Big Endian
 fn tsv_utf16_be(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, true) {
-        detect_tsv_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, true, detect_tsv_content)
 }
 
 /// TSV detection for UTF-16 Little Endian
 fn tsv_utf16_le(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, false) {
-        detect_tsv_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, false, detect_tsv_content)
 }
 
 /// SRT subtitle detection for UTF-16 Big Endian
 fn srt_utf16_be(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, true) {
-        detect_srt_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, true, detect_srt_content)
 }
 
 /// SRT subtitle detection for UTF-16 Little Endian
 fn srt_utf16_le(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, false) {
-        detect_srt_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, false, detect_srt_content)
 }
 
 /// VTT subtitle detection for UTF-16 Big Endian
 fn vtt_utf16_be(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, true) {
-        detect_vtt_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, true, detect_vtt_content)
 }
 
 /// VTT subtitle detection for UTF-16 Little Endian
 fn vtt_utf16_le(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, false) {
-        detect_vtt_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, false, detect_vtt_content)
 }
 
 /// vCard detection for UTF-16 Big Endian
 fn vcard_utf16_be(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, true) {
-        detect_vcard_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, true, detect_vcard_content)
 }
 
 /// vCard detection for UTF-16 Little Endian
 fn vcard_utf16_le(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, false) {
-        detect_vcard_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, false, detect_vcard_content)
 }
 
 /// iCalendar detection for UTF-16 Big Endian
 fn icalendar_utf16_be(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, true) {
-        detect_icalendar_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, true, detect_icalendar_content)
 }
 
 /// iCalendar detection for UTF-16 Little Endian
 fn icalendar_utf16_le(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, false) {
-        detect_icalendar_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, false, detect_icalendar_content)
 }
 
 /// RTF detection for UTF-16 Big Endian
 fn rtf_utf16_be(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, true) {
-        detect_rtf_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, true, detect_rtf_content)
 }
 
 /// RTF detection for UTF-16 Little Endian
 fn rtf_utf16_le(input: &[u8]) -> bool {
-    if let Some(text) = utf16_to_text(input, false) {
-        detect_rtf_content(&text)
-    } else {
-        false
-    }
+    detect_utf16_format(input, false, detect_rtf_content)
 }
 
 // ============================================================================
@@ -3217,9 +3039,8 @@ fn detect_html_content(text: &str) -> bool {
         "<P",
     ];
 
-    let upper_text = text.to_uppercase();
     for tag in HTML_TAGS {
-        if upper_text.starts_with(tag) {
+        if case_insensitive_starts_with(text, tag) {
             // Check for proper tag termination
             if text.len() > tag.len() {
                 let next_char = text.chars().nth(tag.len()).unwrap_or(' ');
@@ -3257,13 +3078,13 @@ fn detect_json_content(text: &str) -> bool {
 /// Shared CSV content detection that works with any encoding after normalization
 fn detect_csv_content(text: &str) -> bool {
     let lines = text.lines().take(5);
-    detect_csv_generic(lines, |line| count_char(line, ','))
+    detect_csv_generic(lines, |line| count_occurrences(line.as_bytes(), b','))
 }
 
 /// Shared TSV content detection that works with any encoding after normalization
 fn detect_tsv_content(text: &str) -> bool {
     let lines = text.lines().take(5);
-    detect_csv_generic(lines, |line| count_char(line, '\t'))
+    detect_csv_generic(lines, |line| count_occurrences(line.as_bytes(), b'\t'))
 }
 
 /// Shared SRT content detection that works with any encoding after normalization
@@ -3305,14 +3126,12 @@ fn detect_vtt_content(text: &str) -> bool {
 
 /// Shared vCard content detection that works with any encoding after normalization
 fn detect_vcard_content(text: &str) -> bool {
-    text.trim_start().to_uppercase().starts_with("BEGIN:VCARD")
+    case_insensitive_starts_with(text.trim_start(), "BEGIN:VCARD")
 }
 
 /// Shared iCalendar content detection that works with any encoding after normalization
 fn detect_icalendar_content(text: &str) -> bool {
-    text.trim_start()
-        .to_uppercase()
-        .starts_with("BEGIN:VCALENDAR")
+    case_insensitive_starts_with(text.trim_start(), "BEGIN:VCALENDAR")
 }
 
 /// Shared RTF content detection that works with any encoding after normalization
@@ -3378,29 +3197,26 @@ fn utf16_to_string(input: &[u8], big_endian: bool) -> Option<String> {
 // HELPER FUNCTIONS
 // ============================================================================
 
-/// Optimized byte counting function
-/// Uses SIMD-friendly operations for better performance than iterator.filter().count()
+/// Generic function for counting occurrences of a byte in byte sequences
+/// Works with any type that can be referenced as [u8]
 #[inline]
-fn count_byte(slice: &[u8], target: u8) -> usize {
-    slice.iter().fold(0, |acc, &b| acc + (b == target) as usize)
+fn count_occurrences<S: AsRef<[u8]>>(input: S, target: u8) -> usize {
+    input.as_ref()
+        .iter()
+        .fold(0, |acc, &b| acc + (b == target) as usize)
 }
 
-/// Optimized character counting function
-/// Uses fold for better performance than chars().filter().count()
+/// Case-insensitive starts_with that works for both str and [u8] types
+/// Uses a trait to handle different input types uniformly
 #[inline]
-fn count_char(text: &str, target: char) -> usize {
-    text.chars().fold(0, |acc, c| acc + (c == target) as usize)
-}
-
-/// Case-insensitive starts_with for byte slices
-/// Avoids allocation by comparing bytes directly
-#[inline]
-fn case_insensitive_starts_with(haystack: &[u8], needed: &[u8]) -> bool {
-    if haystack.len() >= needed.len() {
-        haystack[..needed.len()].eq_ignore_ascii_case(needed)
-    } else {
-        false
-    }
+fn case_insensitive_starts_with<H>(input: H, needle: H) -> bool
+where
+    H: AsRef<[u8]>,
+{
+    let input_bytes = input.as_ref();
+    let needle_bytes = needle.as_ref();
+    input_bytes.len() >= needle_bytes.len()
+        && input_bytes[..needle_bytes.len()].eq_ignore_ascii_case(needle_bytes)
 }
 
 /// Generic CSV detection helper that works with any line iterator
@@ -3459,12 +3275,12 @@ fn zip_has(input: &[u8], search_for: &[(&[u8], bool)], stop_after: usize) -> boo
 fn msoxml(input: &[u8], search_for: &[(&[u8], bool)], stop_after: usize) -> bool {
     let mut iter = ZipIterator::new(input);
 
-    let expected_first_entries = [
-        "[Content_Types].xml".as_bytes(),
-        "_rels/.rels".as_bytes(),
-        "docProps".as_bytes(),
-        "customXml".as_bytes(),
-        "[trash]".as_bytes(),
+    const EXPECTED_FIRST_ENTRIES: [&[u8]; 5] = [
+        b"[Content_Types].xml",
+        b"_rels/.rels",
+        b"docProps",
+        b"customXml",
+        b"[trash]",
     ];
     for i in 0..stop_after {
         if let Some(entry_name) = iter.next() {
@@ -3479,7 +3295,7 @@ fn msoxml(input: &[u8], search_for: &[(&[u8], bool)], stop_after: usize) -> bool
             }
 
             // If this is the first entry, validate it's a proper Office document
-            if i == 0 && !expected_first_entries.contains(&entry_name) {
+            if i == 0 && !EXPECTED_FIRST_ENTRIES.contains(&entry_name) {
                 return false;
             }
         } else {
@@ -3590,7 +3406,7 @@ fn ole_matches_clsid(input: &[u8], clsid: &[u8]) -> bool {
 
 /// Check if input contains JavaScript keywords
 fn has_js_keywords(input: &[u8]) -> bool {
-    let keywords: [&[u8]; 7] = [
+    const KEYWORDS: [&[u8]; 7] = [
         b"function",
         b"var ",
         b"let ",
@@ -3600,7 +3416,7 @@ fn has_js_keywords(input: &[u8]) -> bool {
         b"export ",
     ];
     let sample = &input[..input.len().min(256)];
-    keywords
+    KEYWORDS
         .iter()
         .any(|&keyword| sample.windows(keyword.len()).any(|w| w == keyword))
 }
@@ -3675,10 +3491,6 @@ fn elf_dump(input: &[u8]) -> bool {
     elf(input) && input[16] == 4 && input[17] == 0
 }
 
-// ============================================================================
-// MISSING FORMAT DETECTORS
-// ============================================================================
-
 /// FDF (Forms Data Format) - PDF variant
 fn fdf(input: &[u8]) -> bool {
     input.starts_with(b"%FDF-")
@@ -3697,19 +3509,58 @@ fn aaf(input: &[u8]) -> bool {
 
     // AAF uses a specific CLSID to distinguish from other OLE formats
     // This prevents it from matching generic OLE or other Office documents
-    let aaf_clsids = [
-        // AAF specific CLSIDs (placeholder - real AAF would have specific CLSIDs)
-        [
-            0xAA, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x46,
-        ],
+    const AAF_CLSID: &[u8] = &[
+        0xAA, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x46,
     ];
 
-    for clsid in &aaf_clsids {
-        if ole_matches_clsid(input, clsid) {
-            return true;
-        }
+    ole_matches_clsid(input, AAF_CLSID)
+}
+
+// ============================================================================
+
+/// Generic UTF-16 format detection helper
+/// Consolidates the pattern used by all UTF-16 BE/LE detection functions
+#[inline]
+fn detect_utf16_format<F>(input: &[u8], big_endian: bool, detect_content: F) -> bool
+where
+    F: Fn(&str) -> bool,
+{
+    if let Some(text) = utf16_to_text(input, big_endian) {
+        detect_content(&text)
+    } else {
+        false
+    }
+}
+
+/// Generic XML-based format detection helper
+/// Consolidates the pattern: check if XML, then search for specific tag
+#[inline]
+fn detect_xml_with_tag(input: &[u8], tag: &[u8]) -> bool {
+    xml(input) && input.windows(tag.len()).any(|w| w == tag)
+}
+
+/// Generic OpenDocument format detection helper
+/// Consolidates the pattern: check for mimetype string at offset 30
+#[inline]
+fn detect_opendocument_format(input: &[u8], mimetype: &[u8]) -> bool {
+    // All OpenDocument formats have "mimetype" followed by the actual MIME type at offset 30
+    const MIMETYPE_PREFIX: &[u8] = b"mimetype";
+    let prefix_len = MIMETYPE_PREFIX.len();
+    let total_len = prefix_len + mimetype.len();
+
+    if input.len() < 30 + total_len {
+        return false;
     }
 
-    false
+    // Check prefix and mimetype separately to avoid allocation
+    &input[30..30 + prefix_len] == MIMETYPE_PREFIX
+        && &input[30 + prefix_len..30 + total_len] == mimetype
+}
+
+/// Helper for OLE-based format detection with CLSID
+/// This pattern is used by multiple Office formats
+#[inline]
+fn detect_ole_with_clsid(input: &[u8], clsid: &[u8; 16]) -> bool {
+    ole(input) && ole_matches_clsid(input, clsid)
 }
