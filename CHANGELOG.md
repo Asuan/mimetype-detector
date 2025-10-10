@@ -8,6 +8,13 @@ Used prefixes:
 `Deleted`
 `BREAKING`
 
+## 0.2.4 - 2025-10-10
+
+* Added: DXF (AutoCAD Drawing Exchange Format) detection (`image/vnd.dxf`)
+* Added: WordPerfect document detection (`application/vnd.wordperfect`)
+* Updated: Enhanced CPIO detector to support binary format variant
+* Updated: Optimized JavaScript keyword detection with adaptive algorithm (memchr for large files, simple scanning for small files)
+
 ## 0.2.3 - 2025-09-29
 
 * Updated: improve few checks (CSV,TSV, NDJSON, VCARD) improve performance only

@@ -283,6 +283,9 @@ pub const APPLICATION_X_DWG: &str = "application/x-dwg";
 pub const APPLICATION_X_AUTOCAD: &str = "application/x-autocad";
 pub const DRAWING_DWG: &str = "drawing/dwg";
 
+/// AutoCAD Drawing Exchange Format (DXF)
+pub const IMAGE_VND_DXF: &str = "image/vnd.dxf";
+
 /// DjVu document format
 pub const IMAGE_VND_DJVU: &str = "image/vnd.djvu";
 
@@ -511,6 +514,9 @@ pub const APPLICATION_VND_MS_EXCEL: &str = "application/vnd.ms-excel";
 
 /// Microsoft Word legacy format
 pub const APPLICATION_MSWORD: &str = "application/msword";
+
+/// WordPerfect Document
+pub const APPLICATION_VND_WORDPERFECT: &str = "application/vnd.wordperfect";
 
 /// Microsoft PowerPoint legacy format
 pub const APPLICATION_VND_MS_POWERPOINT: &str = "application/vnd.ms-powerpoint";

@@ -138,6 +138,8 @@ pub static ROOT: MimeType = MimeType::new(
         &CBOR_FORMAT,
         &SQLITE3,
         &DWG,
+        &DXF,
+        &WPD,
         &NES,
         &LNK,
         &MACHO,
@@ -567,6 +569,8 @@ static DWG: MimeType = MimeType::new(IMAGE_VND_DWG, ".dwg", dwg, &[]).with_alias
     DRAWING_DWG,
 ]);
 
+static DXF: MimeType = MimeType::new(IMAGE_VND_DXF, ".dxf", dxf, &[]);
+
 static DJVU: MimeType = MimeType::new(IMAGE_VND_DJVU, ".djvu", djvu, &[]);
 
 // ============================================================================
@@ -790,6 +794,8 @@ static JAR: MimeType = MimeType::new(APPLICATION_JAVA_ARCHIVE, ".jar", jar, &[])
 static APK: MimeType = MimeType::new(APPLICATION_VND_ANDROID_PACKAGE_ARCHIVE, ".apk", apk, &[]);
 
 static DOC: MimeType = MimeType::new(APPLICATION_MSWORD, ".doc", doc, &[]);
+
+static WPD: MimeType = MimeType::new(APPLICATION_VND_WORDPERFECT, ".wpd", wpd, &[]);
 
 static XLS: MimeType = MimeType::new(APPLICATION_VND_MS_EXCEL, ".xls", xls, &[]);
 
@@ -1214,6 +1220,7 @@ pub fn init_tree() {
     HDR.register();
     XPM.register();
     DWG.register();
+    DXF.register();
     DJVU.register();
 
     // Audio
@@ -1299,6 +1306,7 @@ pub fn init_tree() {
     SXC.register();
     KMZ.register();
     DOC.register();
+    WPD.register();
     XLS.register();
     PPT.register();
     ONENOTE.register();
@@ -1810,6 +1818,19 @@ fn torrent(input: &[u8]) -> bool {
 }
 
 fn cpio(input: &[u8]) -> bool {
+    if input.len() < 6 {
+        return false;
+    }
+    // Binary CPIO formats
+    if input.len() >= 2 {
+        let magic = u16::from_le_bytes([input[0], input[1]]);
+        // Old binary format: 070707 (octal) = 0x71C7
+        // Also check 0xC7C7 which appears in some binary CPIO variants
+        if magic == 0o70707 || magic == 0xC7C7 {
+            return true;
+        }
+    }
+    // ASCII CPIO variants
     input.starts_with(b"070701") || input.starts_with(b"070702") || input.starts_with(b"070707")
 }
 
@@ -1949,6 +1970,27 @@ fn dwg(input: &[u8]) -> bool {
 
     let ver = &input[2..6];
     DWG_VERSIONS.iter().any(|version| ver.eq(*version))
+}
+
+// DXF (Drawing Exchange Format) detection
+fn dxf(input: &[u8]) -> bool {
+    // DXF files are ASCII text files with various headers
+    // Check for common DXF signatures
+    input.starts_with(b"  0\x0ASECTION\x0A") ||
+    input.starts_with(b"  0\x0D\x0ASECTION\x0D\x0A") ||
+    input.starts_with(b"0\x0ASECTION\x0A") ||
+    input.starts_with(b"0\x0D\x0ASECTION\x0D\x0A")
+}
+
+// WordPerfect document detection
+fn wpd(input: &[u8]) -> bool {
+    if input.len() < 10 {
+        return false;
+    }
+    if !input.starts_with(b"\xffWPC") {
+        return false;
+    }
+    input[8] == 1 && input[9] == 10
 }
 
 // Additional audio format detectors

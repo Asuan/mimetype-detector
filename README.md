@@ -1,15 +1,14 @@
 # mimetype-detector
 
-A fast Rust library for detecting MIME types and file extensions from content, supporting 204 file formats.
+Fast MIME type detection for 206+ file formats with zero dependencies.
 
 ## Features
 
-- **204 supported formats** across all major categories
-- **Fast hierarchical detection** with parent-child relationships
-- **Thread-safe** with zero dependencies
-- **Low memory usage** - reads only file headers (up to 3KB)
-- **Type-safe constants** for all MIME types
-- **WHATWG MIME Sniffing Standard** compliance
+- **206 supported formats** - Images, audio, video, documents, archives, and more
+- **Fast & lightweight** - Reads only file headers (≤3KB)
+- **Thread-safe** - Zero dependencies, pure Rust
+- **Smart detection** - Hierarchical format relationships (ZIP→DOCX/JAR/APK)
+- **Type-safe constants** - Compile-time MIME type validation
 
 ## Installation
 
@@ -18,178 +17,71 @@ A fast Rust library for detecting MIME types and file extensions from content, s
 mimetype-detector = "0.2.3"
 ```
 
-## Quick Start
+## Usage
 
 ```rust
 use mimetype_detector::{detect, detect_file, constants::*};
 
-// Detect from bytes
+// From bytes
 let data = b"\x89PNG\r\n\x1a\n";
-let mime_type = detect(data);
-println!("{} -> {}", mime_type.mime(), mime_type.extension());
-// Output: image/png -> .png
+let mime = detect(data);
+assert_eq!(mime.mime(), IMAGE_PNG);
+assert_eq!(mime.extension(), ".png");
 
-if mime_type.is(IMAGE_PNG) {
-    println!("PNG image detected!");
+// From file
+let mime = detect_file("document.pdf")?;
+if mime.is(APPLICATION_PDF) {
+    println!("PDF detected!");
 }
-
-// Detect from file (accepts various path types)
-let mime_type = detect_file("document.pdf")?;  // &str
-// let mime_type = detect_file(path_buf)?;      // PathBuf
-// let mime_type = detect_file(&path)?;         // &Path
-
-```
-
-## Advanced Usage
-
-```rust
-use mimetype_detector::{equals_any, match_mime, constants::*};
 
 // Pattern matching
-match mime_type.mime() {
-    IMAGE_PNG => println!("PNG image"),
-    APPLICATION_PDF => println!("PDF document"),
-    _ => println!("Other: {}", mime_type.mime()),
+match mime.mime() {
+    IMAGE_PNG | IMAGE_JPEG => println!("Image"),
+    APPLICATION_PDF => println!("PDF"),
+    _ => println!("Other: {}", mime.mime()),
 }
-
-// Bulk checking
-let is_image = equals_any(mime_type.mime(), &[IMAGE_PNG, IMAGE_JPEG, IMAGE_GIF]);
-
-// Direct matching
-let is_png = match_mime(data, IMAGE_PNG);
 ```
 
-## Using the `is` Method
+## Supported Formats (206+)
 
-The `is` method provides flexible MIME type checking with both string and constant support:
+- **Images**: PNG, JPEG, GIF, WebP, AVIF, HEIC, SVG, TIFF, BMP
+- **Audio**: MP3, FLAC, WAV, AAC, OGG, MIDI
+- **Video**: MP4, WebM, AVI, MKV, MOV
+- **Archives**: ZIP, 7Z, TAR, RAR, GZIP
+- **Documents**: PDF, DOCX, XLSX, PPTX, ODT, HTML, XML
+- **Programming**: JavaScript, Python, PHP, JSON, CSV
+- **Executables**: ELF, PE/EXE, Mach-O, WASM
+- **Fonts**: TTF, OTF, WOFF, WOFF2
+
+### Smart Detection
+
+- Container awareness (ZIP→DOCX/JAR/APK)
+- UTF encoding with BOM detection
+- Binary analysis (ELF subtypes)
+
+## API
 
 ```rust
-use mimetype_detector::{detect, constants::*};
+// Core detection
+detect(data: &[u8]) -> &'static MimeType
+detect_file<P: AsRef<Path>>(path: P) -> io::Result<&'static MimeType>
+detect_reader<R: Read>(reader: R) -> io::Result<&'static MimeType>
 
-let data = b"\x89PNG\r\n\x1a\n";
-let mime_type = detect(data);
+// MimeType methods
+mime() -> &'static str           // Get MIME type
+extension() -> &'static str       // Get extension
+is(expected: &str) -> bool       // Check type
 
-// Using type-safe constants (recommended)
-if mime_type.is(IMAGE_PNG) {
-    println!("This is a PNG image");
-}
-
-// Using string literals (also works)
-if mime_type.is("image/png") {
-    println!("This is a PNG image");
-}
-
-// Check multiple formats
-if mime_type.is(IMAGE_JPEG) {
-    println!("JPEG image");
-} else if mime_type.is(IMAGE_GIF) {
-    println!("GIF image");
-} else if mime_type.is(IMAGE_WEBP) {
-    println!("WebP image");
-}
-
-// Practical examples for different categories
-let file_data = std::fs::read("unknown_file")?;
-let detected = detect(&file_data);
-
-// Document checking
-if detected.is(APPLICATION_PDF) {
-    println!("PDF document - can open with PDF viewer");
-} else if detected.is(APPLICATION_VND_OPENXML_WORDPROCESSINGML_DOCUMENT) {
-    println!("Word document - .docx format");
-} else if detected.is(TEXT_HTML) {
-    println!("HTML document - can open in browser");
-}
-
-// Media file checking
-if detected.is(AUDIO_MP3) {
-    println!("MP3 audio file");
-} else if detected.is(VIDEO_MP4) {
-    println!("MP4 video file");
-} else if detected.is(IMAGE_PNG) || detected.is(IMAGE_JPEG) {
-    println!("Common image format");
-}
-
-// Archive checking
-if detected.is(APPLICATION_ZIP) {
-    println!("ZIP archive");
-} else if detected.is(APPLICATION_X_7Z_COMPRESSED) {
-    println!("7-Zip archive");
-} else if detected.is(APPLICATION_X_TAR) {
-    println!("TAR archive");
-}
-
-// Using with match for comprehensive handling
-match detected.mime() {
-    mime if detected.is(APPLICATION_PDF) => {
-        println!("Processing PDF: {}", mime);
-        // Handle PDF-specific logic
-    },
-    mime if detected.is(IMAGE_PNG) => {
-        println!("Processing PNG: {}", mime);
-        // Handle image processing
-    },
-    mime if detected.is(APPLICATION_JSON) => {
-        println!("Processing JSON: {}", mime);
-        // Handle JSON parsing
-    },
-    _ => {
-        println!("Unknown or unsupported format: {}", detected.mime());
-    }
-}
+// Utilities
+match_mime(data: &[u8], mime: &str) -> bool
+equals_any(mime: &str, types: &[&str]) -> bool
+is_supported(mime: &str) -> bool
 ```
-
-## Supported Formats
-
-### Major Categories
-
-- **Images (31+)**: PNG, JPEG, GIF, WebP, AVIF, HEIC, SVG, TIFF, BMP, etc.
-- **Audio (15)**: MP3, FLAC, WAV, AAC, OGG, MIDI, etc.
-- **Video (14+)**: MP4, WebM, AVI, MKV, MOV, etc.
-- **Archives (15+)**: ZIP, 7Z, TAR, RAR, GZIP, etc.
-- **Documents (20+)**: PDF, DOCX, XLSX, PPTX, ODT, HTML, XML, etc.
-- **Programming (33+)**: JavaScript, Python, PHP, JSON, CSV, etc.
-- **Executables (15+)**: ELF, PE/EXE, Mach-O, WASM, etc.
-- **Fonts (5)**: TTF, OTF, WOFF, WOFF2, etc.
-
-### Smart Detection Features
-
-- **Container formats**: ZIP files detected as DOCX/XLSX/EPUB/JAR/APK based on content
-- **Office formats**: Both legacy (DOC/XLS/PPT) and modern (DOCX/XLSX/PPTX)
-- **UTF encoding**: Automatic BOM detection for UTF-8/UTF-16
-- **Binary analysis**: ELF subtypes (executables, libraries, core dumps)
-
-## API Reference
-
-### Core Functions
-
-- `detect(data: &[u8]) -> &'static MimeType`
-- `detect_file<P: AsRef<Path>>(path: P) -> io::Result<&'static MimeType>`
-- `detect_reader<R: Read>(reader: R) -> io::Result<&'static MimeType>`
-
-### Utilities
-
-- `match_mime(data: &[u8], mime_type: &str) -> bool`
-- `equals_any(mime_type: &str, types: &[&str]) -> bool`
-- `is_supported(mime_type: &str) -> bool`
-
-### MimeType Methods
-
-- `mime() -> &'static str` - Get MIME type string
-- `extension() -> &'static str` - Get file extension
-- `is(expected: &str) -> bool` - Check if matches expected type
-
-## Performance
-
-- **Hierarchical detection** minimizes unnecessary checks
-- **Lazy initialization** with static lifetime data
-- **Memory efficient** - only reads file headers
-- **Zero dependencies** - pure Rust implementation
 
 ## License
 
-MIT License
+MIT
 
 ## Credits
 
-Rust port of the Go [mimetype](https://github.com/gabriel-vasile/mimetype) library with enhancements.
+Based on Go [mimetype](https://github.com/gabriel-vasile/mimetype) library.

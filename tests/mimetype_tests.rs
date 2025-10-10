@@ -1,6 +1,6 @@
 //! Individual MIME Type Tests
 //!
-//! This module provides comprehensive individual test functions for all 212 supported MIME types
+//! This module provides comprehensive individual test functions for all 214 supported MIME types
 //! and their child formats in the mimetype-detector library. Each MIME type has its own dedicated
 //! test function using proven test data from the existing test suite.
 //!
@@ -298,6 +298,7 @@ fn test_detect_install_shield_cab() {
 
 #[test]
 fn test_detect_cpio() {
+    // Test ASCII CPIO
     let data = b"070701";
     let mime_type = detect(data);
     assert_eq!(mime_type.mime(), APPLICATION_X_CPIO);
@@ -305,6 +306,13 @@ fn test_detect_cpio() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_CPIO));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+
+    // Test binary CPIO
+    let binary_data = b"\xc7\xc7\x00\x00\x00\x00";
+    let mime_type_bin = detect(binary_data);
+    assert_eq!(mime_type_bin.mime(), APPLICATION_X_CPIO);
+    assert_eq!(mime_type_bin.extension(), ".cpio");
+    assert!(mime_type_bin.is(APPLICATION_X_CPIO));
 }
 
 #[test]
@@ -698,6 +706,17 @@ fn test_detect_dwg() {
     assert_eq!(mime_type.extension(), ".dwg");
     // Test is() method
     assert!(mime_type.is(IMAGE_VND_DWG));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+}
+
+#[test]
+fn test_detect_dxf() {
+    let data = b"  0\nSECTION\n";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), IMAGE_VND_DXF);
+    assert_eq!(mime_type.extension(), ".dxf");
+    // Test is() method
+    assert!(mime_type.is(IMAGE_VND_DXF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
 }
 
@@ -1486,6 +1505,17 @@ fn test_detect_doc() {
     assert!(
         mime_type.mime() == APPLICATION_MSWORD || mime_type.mime() == APPLICATION_X_OLE_STORAGE
     );
+}
+
+#[test]
+fn test_detect_wpd() {
+    let data = b"\xff\x57\x50\x43\x00\x00\x00\x00\x01\x0a";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_VND_WORDPERFECT);
+    assert_eq!(mime_type.extension(), ".wpd");
+    // Test is() method
+    assert!(mime_type.is(APPLICATION_VND_WORDPERFECT));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
 }
 
 #[test]
