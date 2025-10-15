@@ -40,6 +40,13 @@ match mime.mime() {
     APPLICATION_PDF => println!("PDF"),
     _ => println!("Other: {}", mime.mime()),
 }
+
+// Navigate type hierarchy
+let docx = detect_file("document.docx")?;
+println!("Type: {}", docx.mime());  // application/vnd.openxmlformats-officedocument.wordprocessingml.document
+if let Some(parent) = docx.parent() {
+    println!("Parent: {}", parent.mime());  // application/zip
+}
 ```
 
 ## Supported Formats (206+)
@@ -68,9 +75,10 @@ detect_file<P: AsRef<Path>>(path: P) -> io::Result<&'static MimeType>
 detect_reader<R: Read>(reader: R) -> io::Result<&'static MimeType>
 
 // MimeType methods
-mime() -> &'static str           // Get MIME type
-extension() -> &'static str       // Get extension
-is(expected: &str) -> bool       // Check type
+mime() -> &'static str                      // Get MIME type
+extension() -> &'static str                 // Get extension
+is(expected: &str) -> bool                  // Check type
+parent() -> Option<&'static MimeType>       // Get parent type
 
 // Utilities
 match_mime(data: &[u8], mime: &str) -> bool
