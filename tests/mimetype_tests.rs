@@ -60,6 +60,36 @@ fn create_ole_with_clsid(clsid: &[u8]) -> Vec<u8> {
     data
 }
 
+/// Create a proper ZIP file with a specific filename entry
+///
+/// This helper builds a minimal but valid ZIP file with:
+/// - ZIP local file header
+/// - Specified filename in the entry
+/// - No actual file data (empty stored file)
+fn create_zip_with_file(filename: &[u8]) -> Vec<u8> {
+    let mut data = Vec::new();
+
+    // ZIP local file header
+    data.extend_from_slice(b"PK\x03\x04"); // Signature
+    data.extend_from_slice(&[0x14, 0x00]); // Version needed (2.0)
+    data.extend_from_slice(&[0x00, 0x00]); // Flags
+    data.extend_from_slice(&[0x00, 0x00]); // Compression method (stored)
+    data.extend_from_slice(&[0x00, 0x00]); // Last mod time
+    data.extend_from_slice(&[0x00, 0x00]); // Last mod date
+    data.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]); // CRC32
+    data.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]); // Compressed size
+    data.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]); // Uncompressed size
+
+    // Filename length (little-endian u16)
+    let filename_len = filename.len() as u16;
+    data.extend_from_slice(&filename_len.to_le_bytes());
+
+    data.extend_from_slice(&[0x00, 0x00]); // Extra field length
+    data.extend_from_slice(filename); // Filename
+
+    data
+}
+
 // ============================================================================
 // TEXT FORMATS
 // ============================================================================
@@ -1559,83 +1589,95 @@ fn test_detect_pgp_net_share() {
 
 #[test]
 fn test_detect_docx() {
-    // Create a minimal DOCX-like ZIP
-    let mut data = vec![0x50, 0x4b, 0x03, 0x04]; // ZIP header
-    data.extend_from_slice(b"\x14\x00\x00\x00\x00\x00"); // ZIP fields
-    data.extend_from_slice(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"); // More ZIP fields
-    data.extend_from_slice(b"\x13\x00\x00\x00"); // Filename length
-    data.extend_from_slice(b"[Content_Types].xml"); // Filename
+    // DOCX requires word/ directory as first valid entry (after [Content_Types].xml or _rels/.rels)
+    let data = create_zip_with_file(b"word/document.xml");
+
     let mime_type = detect(&data);
-    // May detect as ZIP or DOCX depending on hierarchy
-    assert!(mime_type.mime().contains("zip") || mime_type.mime().contains("word"));
+    assert_eq!(
+        mime_type.mime(),
+        APPLICATION_VND_OPENXML_WORDPROCESSINGML_DOCUMENT
+    );
+    assert_eq!(mime_type.extension(), ".docx");
+    assert!(mime_type.is(APPLICATION_VND_OPENXML_WORDPROCESSINGML_DOCUMENT));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_document());
+    assert!(mime_type.kind().is_archive()); // Inherits from ZIP
 }
 
 #[test]
 fn test_detect_xlsx() {
-    // Create a minimal XLSX-like ZIP
-    let mut data = vec![0x50, 0x4b, 0x03, 0x04]; // ZIP header
-    data.extend_from_slice(b"\x14\x00\x00\x00\x00\x00"); // ZIP fields
-    data.extend_from_slice(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"); // More ZIP fields
-    data.extend_from_slice(b"\x13\x00\x00\x00"); // Filename length
-    data.extend_from_slice(b"[Content_Types].xml"); // Filename
+    // XLSX requires xl/ directory
+    let data = create_zip_with_file(b"xl/workbook.xml");
+
     let mime_type = detect(&data);
-    // May detect as ZIP or XLSX depending on hierarchy
-    assert!(mime_type.mime().contains("zip") || mime_type.mime().contains("sheet"));
+    assert_eq!(
+        mime_type.mime(),
+        APPLICATION_VND_OPENXML_SPREADSHEETML_SHEET
+    );
+    assert_eq!(mime_type.extension(), ".xlsx");
+    assert!(mime_type.is(APPLICATION_VND_OPENXML_SPREADSHEETML_SHEET));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_spreadsheet());
+    assert!(mime_type.kind().is_archive()); // Inherits from ZIP
 }
 
 #[test]
 fn test_detect_pptx() {
-    // Create a minimal PPTX-like ZIP
-    let mut data = vec![0x50, 0x4b, 0x03, 0x04]; // ZIP header
-    data.extend_from_slice(b"\x14\x00\x00\x00\x00\x00"); // ZIP fields
-    data.extend_from_slice(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"); // More ZIP fields
-    data.extend_from_slice(b"\x13\x00\x00\x00"); // Filename length
-    data.extend_from_slice(b"[Content_Types].xml"); // Filename
+    // PPTX requires ppt/ directory
+    let data = create_zip_with_file(b"ppt/presentation.xml");
+
     let mime_type = detect(&data);
-    // May detect as ZIP or PPTX depending on hierarchy
-    assert!(mime_type.mime().contains("zip") || mime_type.mime().contains("presentation"));
+    assert_eq!(
+        mime_type.mime(),
+        APPLICATION_VND_OPENXML_PRESENTATIONML_PRESENTATION
+    );
+    assert_eq!(mime_type.extension(), ".pptx");
+    assert!(mime_type.is(APPLICATION_VND_OPENXML_PRESENTATIONML_PRESENTATION));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_presentation());
+    assert!(mime_type.kind().is_archive()); // Inherits from ZIP
 }
 
 #[test]
 fn test_detect_epub() {
-    // EPUB uses offset-based detection
+    // EPUB uses offset-based detection - looks for mimetype string at offset 30
     let mut data = vec![0x50, 0x4b, 0x03, 0x04]; // ZIP header
     data.resize(30, 0);
     data.extend_from_slice(b"mimetypeapplication/epub+zip");
+
     let mime_type = detect(&data);
     assert_eq!(mime_type.mime(), APPLICATION_EPUB_ZIP);
     assert_eq!(mime_type.extension(), ".epub");
-    // Test is() method
     assert!(mime_type.is(APPLICATION_EPUB_ZIP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    assert!(mime_type.kind().is_archive());
     assert!(mime_type.kind().is_document());
+    assert!(mime_type.kind().is_archive()); // Inherits from ZIP
 }
 
 #[test]
 fn test_detect_jar() {
-    // Create a minimal JAR-like ZIP
-    let mut data = vec![0x50, 0x4b, 0x03, 0x04]; // ZIP header
-    data.extend_from_slice(b"\x14\x00\x00\x00\x00\x00"); // ZIP fields
-    data.extend_from_slice(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"); // More ZIP fields
-    data.extend_from_slice(b"\x14\x00\x00\x00"); // Filename length
-    data.extend_from_slice(b"META-INF/MANIFEST.MF"); // Filename
+    // JAR requires META-INF/MANIFEST.MF file
+    let data = create_zip_with_file(b"META-INF/MANIFEST.MF");
+
     let mime_type = detect(&data);
-    // May detect as ZIP or JAR depending on hierarchy
-    assert!(mime_type.mime().contains("zip") || mime_type.mime().contains("java"));
+    assert_eq!(mime_type.mime(), APPLICATION_JAVA_ARCHIVE);
+    assert_eq!(mime_type.extension(), ".jar");
+    assert!(mime_type.is(APPLICATION_JAVA_ARCHIVE));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_archive());
 }
 
 #[test]
 fn test_detect_apk() {
-    // Create a minimal APK-like ZIP
-    let mut data = vec![0x50, 0x4b, 0x03, 0x04]; // ZIP header
-    data.extend_from_slice(b"\x14\x00\x00\x00\x00\x00"); // ZIP fields
-    data.extend_from_slice(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"); // More ZIP fields
-    data.extend_from_slice(b"\x13\x00\x00\x00"); // Filename length
-    data.extend_from_slice(b"AndroidManifest.xml"); // Filename
+    // APK requires AndroidManifest.xml file
+    let data = create_zip_with_file(b"AndroidManifest.xml");
+
     let mime_type = detect(&data);
-    // May detect as ZIP or APK depending on hierarchy
-    assert!(mime_type.mime().contains("zip") || mime_type.mime().contains("android"));
+    assert_eq!(mime_type.mime(), APPLICATION_VND_ANDROID_PACKAGE_ARCHIVE);
+    assert_eq!(mime_type.extension(), ".apk");
+    assert!(mime_type.is(APPLICATION_VND_ANDROID_PACKAGE_ARCHIVE));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_archive()); // Inherits from ZIP
 }
 
 #[test]
@@ -1754,86 +1796,107 @@ fn test_detect_msi() {
 
 #[test]
 fn test_detect_odt() {
-    // ODT uses offset-based detection
+    // ODT uses offset-based detection - looks for mimetype string at offset 30
     let mut data = vec![0x50, 0x4b, 0x03, 0x04]; // ZIP header
     data.resize(30, 0);
     data.extend_from_slice(b"mimetypeapplication/vnd.oasis.opendocument.text");
+
     let mime_type = detect(&data);
-    // ODT detection may fall back to ZIP
-    assert!(
-        mime_type.mime() == APPLICATION_VND_OASIS_OPENDOCUMENT_TEXT
-            || mime_type.mime() == APPLICATION_ZIP
-    );
+    assert_eq!(mime_type.mime(), APPLICATION_VND_OASIS_OPENDOCUMENT_TEXT);
+    assert_eq!(mime_type.extension(), ".odt");
+    assert!(mime_type.is(APPLICATION_VND_OASIS_OPENDOCUMENT_TEXT));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_document());
+    assert!(mime_type.kind().is_archive()); // Inherits from ZIP
 }
 
 #[test]
 fn test_detect_ods() {
-    // ODS uses offset-based detection
+    // ODS uses offset-based detection - looks for mimetype string at offset 30
     let mut data = vec![0x50, 0x4b, 0x03, 0x04]; // ZIP header
     data.resize(30, 0);
     data.extend_from_slice(b"mimetypeapplication/vnd.oasis.opendocument.spreadsheet");
+
     let mime_type = detect(&data);
-    // ODS detection may fall back to ZIP
-    assert!(
-        mime_type.mime() == APPLICATION_VND_OASIS_OPENDOCUMENT_SPREADSHEET
-            || mime_type.mime() == APPLICATION_ZIP
+    assert_eq!(
+        mime_type.mime(),
+        APPLICATION_VND_OASIS_OPENDOCUMENT_SPREADSHEET
     );
+    assert_eq!(mime_type.extension(), ".ods");
+    assert!(mime_type.is(APPLICATION_VND_OASIS_OPENDOCUMENT_SPREADSHEET));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_spreadsheet());
+    assert!(mime_type.kind().is_archive()); // Inherits from ZIP
 }
 
 #[test]
 fn test_detect_odp() {
-    // ODP uses offset-based detection
+    // ODP uses offset-based detection - looks for mimetype string at offset 30
     let mut data = vec![0x50, 0x4b, 0x03, 0x04]; // ZIP header
     data.resize(30, 0);
     data.extend_from_slice(b"mimetypeapplication/vnd.oasis.opendocument.presentation");
+
     let mime_type = detect(&data);
-    // ODP detection may fall back to ZIP
-    assert!(
-        mime_type.mime() == APPLICATION_VND_OASIS_OPENDOCUMENT_PRESENTATION
-            || mime_type.mime() == APPLICATION_ZIP
+    assert_eq!(
+        mime_type.mime(),
+        APPLICATION_VND_OASIS_OPENDOCUMENT_PRESENTATION
     );
+    assert_eq!(mime_type.extension(), ".odp");
+    assert!(mime_type.is(APPLICATION_VND_OASIS_OPENDOCUMENT_PRESENTATION));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_presentation());
+    assert!(mime_type.kind().is_archive()); // Inherits from ZIP
 }
 
 #[test]
 fn test_detect_odg() {
-    // ODG uses offset-based detection
+    // ODG uses offset-based detection - looks for mimetype string at offset 30
     let mut data = vec![0x50, 0x4b, 0x03, 0x04]; // ZIP header
     data.resize(30, 0);
     data.extend_from_slice(b"mimetypeapplication/vnd.oasis.opendocument.graphics");
+
     let mime_type = detect(&data);
-    // ODG detection may fall back to ZIP
-    assert!(
-        mime_type.mime() == APPLICATION_VND_OASIS_OPENDOCUMENT_GRAPHICS
-            || mime_type.mime() == APPLICATION_ZIP
+    assert_eq!(
+        mime_type.mime(),
+        APPLICATION_VND_OASIS_OPENDOCUMENT_GRAPHICS
     );
+    assert_eq!(mime_type.extension(), ".odg");
+    assert!(mime_type.is(APPLICATION_VND_OASIS_OPENDOCUMENT_GRAPHICS));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_document());
+    assert!(mime_type.kind().is_archive()); // Inherits from ZIP
 }
 
 #[test]
 fn test_detect_odf() {
-    // ODF uses offset-based detection
+    // ODF uses offset-based detection - looks for mimetype string at offset 30
     let mut data = vec![0x50, 0x4b, 0x03, 0x04]; // ZIP header
     data.resize(30, 0);
     data.extend_from_slice(b"mimetypeapplication/vnd.oasis.opendocument.formula");
+
     let mime_type = detect(&data);
-    // ODF detection may fall back to ZIP
-    assert!(
-        mime_type.mime() == APPLICATION_VND_OASIS_OPENDOCUMENT_FORMULA
-            || mime_type.mime() == APPLICATION_ZIP
-    );
+    assert_eq!(mime_type.mime(), APPLICATION_VND_OASIS_OPENDOCUMENT_FORMULA);
+    assert_eq!(mime_type.extension(), ".odf");
+    assert!(mime_type.is(APPLICATION_VND_OASIS_OPENDOCUMENT_FORMULA));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_document());
+    assert!(mime_type.kind().is_archive()); // Inherits from ZIP
 }
 
 #[test]
 fn test_detect_odc() {
-    // ODC uses offset-based detection
+    // ODC uses offset-based detection - looks for mimetype string at offset 30
     let mut data = vec![0x50, 0x4b, 0x03, 0x04]; // ZIP header
     data.resize(30, 0);
     data.extend_from_slice(b"mimetypeapplication/vnd.oasis.opendocument.chart");
+
     let mime_type = detect(&data);
-    // ODC detection may fall back to ZIP
-    assert!(
-        mime_type.mime() == APPLICATION_VND_OASIS_OPENDOCUMENT_CHART
-            || mime_type.mime() == APPLICATION_ZIP
-    );
+    assert_eq!(mime_type.mime(), APPLICATION_VND_OASIS_OPENDOCUMENT_CHART);
+    assert_eq!(mime_type.extension(), ".odc");
+    assert!(mime_type.is(APPLICATION_VND_OASIS_OPENDOCUMENT_CHART));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_document());
+    assert!(mime_type.kind().is_archive()); // Inherits from ZIP
 }
 
 #[test]
@@ -1852,30 +1915,34 @@ fn test_detect_ott() {
 
 #[test]
 fn test_detect_ots() {
-    // OTS uses offset-based detection
+    // OTS uses offset-based detection - looks for mimetype string at offset 30
     let mut data = vec![0x50, 0x4b, 0x03, 0x04]; // ZIP header
     data.resize(30, 0);
     data.extend_from_slice(b"mimetypeapplication/vnd.oasis.opendocument.spreadsheet-template");
+
     let mime_type = detect(&data);
-    // OTS detection may fall back to base ODS format
-    assert!(
-        mime_type.mime() == APPLICATION_VND_OASIS_OPENDOCUMENT_SPREADSHEET_TEMPLATE
-            || mime_type.mime() == APPLICATION_VND_OASIS_OPENDOCUMENT_SPREADSHEET
-    );
+    assert_eq!(mime_type.mime(), APPLICATION_VND_OASIS_OPENDOCUMENT_SPREADSHEET_TEMPLATE);
+    assert_eq!(mime_type.extension(), ".ots");
+    assert!(mime_type.is(APPLICATION_VND_OASIS_OPENDOCUMENT_SPREADSHEET_TEMPLATE));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_spreadsheet());
+    assert!(mime_type.kind().is_archive()); // Inherits from ZIP
 }
 
 #[test]
 fn test_detect_otp() {
-    // OTP uses offset-based detection
+    // OTP uses offset-based detection - looks for mimetype string at offset 30
     let mut data = vec![0x50, 0x4b, 0x03, 0x04]; // ZIP header
     data.resize(30, 0);
     data.extend_from_slice(b"mimetypeapplication/vnd.oasis.opendocument.presentation-template");
+
     let mime_type = detect(&data);
-    // OTP detection may fall back to base ODP format
-    assert!(
-        mime_type.mime() == APPLICATION_VND_OASIS_OPENDOCUMENT_PRESENTATION_TEMPLATE
-            || mime_type.mime() == APPLICATION_VND_OASIS_OPENDOCUMENT_PRESENTATION
-    );
+    assert_eq!(mime_type.mime(), APPLICATION_VND_OASIS_OPENDOCUMENT_PRESENTATION_TEMPLATE);
+    assert_eq!(mime_type.extension(), ".otp");
+    assert!(mime_type.is(APPLICATION_VND_OASIS_OPENDOCUMENT_PRESENTATION_TEMPLATE));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_presentation());
+    assert!(mime_type.kind().is_archive()); // Inherits from ZIP
 }
 
 #[test]
@@ -1894,30 +1961,31 @@ fn test_detect_otg() {
 
 #[test]
 fn test_detect_sxc() {
-    // SXC uses offset-based detection
+    // SXC uses offset-based detection - looks for mimetype string at offset 30
     let mut data = vec![0x50, 0x4b, 0x03, 0x04]; // ZIP header
     data.resize(30, 0);
     data.extend_from_slice(b"mimetypeapplication/vnd.sun.xml.calc");
+
     let mime_type = detect(&data);
-    // SXC detection may fall back to ZIP
-    assert!(
-        mime_type.mime() == APPLICATION_VND_SUN_XML_CALC || mime_type.mime() == APPLICATION_ZIP
-    );
+    assert_eq!(mime_type.mime(), APPLICATION_VND_SUN_XML_CALC);
+    assert_eq!(mime_type.extension(), ".sxc");
+    assert!(mime_type.is(APPLICATION_VND_SUN_XML_CALC));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_spreadsheet());
+    assert!(mime_type.kind().is_archive()); // Inherits from ZIP
 }
 
 #[test]
 fn test_detect_kmz() {
-    // KMZ is a ZIP with doc.kml file
-    let mut data = vec![0x50, 0x4b, 0x03, 0x04]; // ZIP header
-    data.extend_from_slice(b"\x14\x00\x00\x00\x00\x00"); // ZIP fields
-    data.extend_from_slice(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"); // More ZIP fields
-    data.extend_from_slice(b"\x07\x00\x00\x00"); // Filename length
-    data.extend_from_slice(b"doc.kml"); // Filename
+    // KMZ requires doc.kml file
+    let data = create_zip_with_file(b"doc.kml");
+
     let mime_type = detect(&data);
-    // KMZ detection may fall back to ZIP
-    assert!(
-        mime_type.mime() == APPLICATION_VND_GOOGLE_EARTH_KMZ || mime_type.mime() == APPLICATION_ZIP
-    );
+    assert_eq!(mime_type.mime(), APPLICATION_VND_GOOGLE_EARTH_KMZ);
+    assert_eq!(mime_type.extension(), ".kmz");
+    assert!(mime_type.is(APPLICATION_VND_GOOGLE_EARTH_KMZ));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_archive());
 }
 
 // ============================================================================
