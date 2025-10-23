@@ -13,6 +13,7 @@ Used prefixes:
 * Added: `MimeKind` categorization to 175+ file formats across 13 categories
 * Added: `kind()` methods to get MimeType kind
 * Updated:  changed mimetype registration to recursive
+* Updated:  fixed RTF detection
 
 ## 0.2.4 - 2025-10-10
 

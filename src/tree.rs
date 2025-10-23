@@ -255,6 +255,7 @@ static UTF8: MimeType = MimeType::new(
     &[
         &HTML,
         &XML,
+        &RTF,  // RTF must come before JSON (both start with {, RTF has more specific pattern)
         &PHP,
         &JAVASCRIPT,
         &PYTHON,
@@ -266,7 +267,6 @@ static UTF8: MimeType = MimeType::new(
         &JSON,
         &CSV_FORMAT,
         &TSV,
-        &RTF,
         &SRT,
         &VTT,
         &VCARD,

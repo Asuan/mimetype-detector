@@ -27,6 +27,40 @@
 use mimetype_detector::{constants::*, detect};
 
 // ============================================================================
+// TEST HELPERS
+// ============================================================================
+
+/// Create a proper OLE file structure with a specific CLSID
+///
+/// This helper builds a minimal but valid OLE Compound File with:
+/// - Proper OLE header (512-byte sectors, v3)
+/// - Directory stream at sector 0
+/// - CLSID placed at the correct offset (592 bytes)
+fn create_ole_with_clsid(clsid: &[u8]) -> Vec<u8> {
+    const SECTOR_SIZE: usize = 512;
+    let mut data = vec![0u8; SECTOR_SIZE * 2 + 100]; // Header + directory sector + extra
+
+    // OLE header signature
+    data[0..8].copy_from_slice(&[0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
+
+    // Minor version (offset 24-25)
+    data[24..26].copy_from_slice(&[0x3e, 0x00]);
+
+    // Sector shift (offset 26-27): 0x0009 for 512-byte sectors
+    data[26..28].copy_from_slice(&[0x09, 0x00]);
+
+    // First directory sector SecID (offset 48-51): 0 (first sector after header)
+    data[48..52].copy_from_slice(&[0x00, 0x00, 0x00, 0x00]);
+
+    // CLSID at: 512 * (1 + 0) + 80 = 592
+    const CLSID_OFFSET: usize = SECTOR_SIZE * (1 + 0) + 80;
+    let clsid_len = clsid.len().min(16);
+    data[CLSID_OFFSET..CLSID_OFFSET + clsid_len].copy_from_slice(&clsid[..clsid_len]);
+
+    data
+}
+
+// ============================================================================
 // TEXT FORMATS
 // ============================================================================
 
@@ -39,7 +73,6 @@ fn test_detect_html() {
     // Test is() method
     assert!(mime_type.is(TEXT_HTML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -52,7 +85,6 @@ fn test_detect_xml() {
     // Test is() method
     assert!(mime_type.is(TEXT_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -65,6 +97,7 @@ fn test_detect_utf8_bom() {
     // Test is() method
     assert!(mime_type.is(TEXT_UTF8_BOM));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -113,7 +146,6 @@ fn test_detect_pdf() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_PDF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_document());
 }
 
@@ -126,7 +158,6 @@ fn test_detect_fdf() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_VND_FDF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_document());
 }
 
@@ -139,7 +170,6 @@ fn test_detect_postscript() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_POSTSCRIPT));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_document());
 }
 
@@ -152,18 +182,24 @@ fn test_detect_ole() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_OLE_STORAGE));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_document());
 }
 
 #[test]
 fn test_detect_aaf() {
-    // Advanced Authoring Format - based on OLE
-    let mut data = vec![0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
-    data.resize(512, 0); // Extend to minimum OLE size
+    // Advanced Authoring Format CLSID
+    const AAF_CLSID: &[u8] = &[
+        0xAA, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x46,
+    ];
+    let data = create_ole_with_clsid(AAF_CLSID);
+
     let mime_type = detect(&data);
-    // AAF detection may fall back to generic OLE
-    assert!(mime_type.mime() == APPLICATION_X_AAF || mime_type.mime() == APPLICATION_X_OLE_STORAGE);
+    assert_eq!(mime_type.mime(), APPLICATION_X_AAF);
+    assert_eq!(mime_type.extension(), ".aaf");
+    assert!(mime_type.is(APPLICATION_X_AAF));
+    // AAF inherits DOCUMENT kind from OLE parent
+    assert!(mime_type.kind().is_document());
 }
 
 // ============================================================================
@@ -179,7 +215,6 @@ fn test_detect_7z() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_7Z_COMPRESSED));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_archive());
 }
 
@@ -189,6 +224,7 @@ fn test_detect_zip() {
     let mime_type = detect(data);
     // ZIP detection might identify child formats in the hierarchy
     assert!(mime_type.mime().contains("zip") || mime_type.mime().contains("application/"));
+    assert!(mime_type.kind().is_archive());
 }
 
 #[test]
@@ -200,7 +236,6 @@ fn test_detect_rar() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_RAR_COMPRESSED));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_archive());
 }
 
@@ -213,7 +248,6 @@ fn test_detect_gzip() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_GZIP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_archive());
 }
 
@@ -246,7 +280,6 @@ fn test_detect_tar() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_TAR));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_archive());
 }
 
@@ -259,7 +292,6 @@ fn test_detect_bz2() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_BZIP2));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_archive());
 }
 
@@ -272,7 +304,6 @@ fn test_detect_xz() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_XZ));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_archive());
 }
 
@@ -285,7 +316,6 @@ fn test_detect_zstd() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_ZSTD));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_archive());
 }
 
@@ -298,6 +328,7 @@ fn test_detect_lzip() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_LZIP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_archive());
 }
 
 #[test]
@@ -309,7 +340,6 @@ fn test_detect_cab() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_VND_MS_CAB_COMPRESSED));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_archive());
 }
 
@@ -334,7 +364,6 @@ fn test_detect_cpio() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_CPIO));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_archive());
 
     // Test binary CPIO
@@ -354,7 +383,6 @@ fn test_detect_ar() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_ARCHIVE));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_archive());
 }
 
@@ -367,7 +395,6 @@ fn test_detect_rpm() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_RPM));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_archive());
 }
 
@@ -391,7 +418,6 @@ fn test_detect_fits() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_FITS));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -404,7 +430,6 @@ fn test_detect_xar() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_XAR));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_archive());
 }
 
@@ -428,7 +453,6 @@ fn test_detect_warc() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_WARC));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
     assert!(mime_type.kind().is_archive());
 }
@@ -446,6 +470,7 @@ fn test_detect_png() {
     // Test is() method
     assert!(mime_type.is(IMAGE_PNG));
     assert!(!mime_type.is(IMAGE_JPEG));
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -455,7 +480,7 @@ fn test_detect_apng() {
     data.extend_from_slice(b"acTL"); // APNG marker
     let mime_type = detect(&data);
     // APNG may be detected as PNG in the hierarchy
-    assert!(mime_type.mime() == IMAGE_VND_MOZILLA_APNG || mime_type.mime() == IMAGE_PNG);
+    assert!(mime_type.mime() == IMAGE_VND_MOZILLA_APNG)
 }
 
 #[test]
@@ -467,7 +492,6 @@ fn test_detect_jpeg() {
     // Test is() method
     assert!(mime_type.is(IMAGE_JPEG));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -483,7 +507,6 @@ fn test_detect_jp2() {
     // Test is() method
     assert!(mime_type.is(IMAGE_JP2));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -499,7 +522,6 @@ fn test_detect_jpx() {
     // Test is() method
     assert!(mime_type.is(IMAGE_JPX));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -515,7 +537,6 @@ fn test_detect_jpm() {
     // Test is() method
     assert!(mime_type.is(IMAGE_JPM));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -528,7 +549,6 @@ fn test_detect_jxs() {
     // Test is() method
     assert!(mime_type.is(IMAGE_JXS));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -541,7 +561,6 @@ fn test_detect_jxr() {
     // Test is() method
     assert!(mime_type.is(IMAGE_JXR));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -554,7 +573,6 @@ fn test_detect_jxl() {
     // Test is() method
     assert!(mime_type.is(IMAGE_JXL));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -567,7 +585,6 @@ fn test_detect_gif() {
     // Test is() method
     assert!(mime_type.is(IMAGE_GIF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -580,7 +597,6 @@ fn test_detect_webp() {
     // Test is() method
     assert!(mime_type.is(IMAGE_WEBP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -593,7 +609,6 @@ fn test_detect_tiff() {
     // Test is() method
     assert!(mime_type.is(IMAGE_TIFF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -606,7 +621,6 @@ fn test_detect_bmp() {
     // Test is() method
     assert!(mime_type.is(IMAGE_BMP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -619,7 +633,6 @@ fn test_detect_ico() {
     // Test is() method
     assert!(mime_type.is(IMAGE_X_ICON));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -632,7 +645,6 @@ fn test_detect_icns() {
     // Test is() method
     assert!(mime_type.is(IMAGE_X_ICNS));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -645,7 +657,6 @@ fn test_detect_psd() {
     // Test is() method
     assert!(mime_type.is(IMAGE_VND_ADOBE_PHOTOSHOP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -661,7 +672,6 @@ fn test_detect_heic() {
     // Test is() method
     assert!(mime_type.is(IMAGE_HEIC));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -677,7 +687,6 @@ fn test_detect_heic_sequence() {
     // Test is() method
     assert!(mime_type.is(IMAGE_HEIC_SEQUENCE));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -693,7 +702,6 @@ fn test_detect_heif() {
     // Test is() method
     assert!(mime_type.is(IMAGE_HEIF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -718,7 +726,6 @@ fn test_detect_bpg() {
     // Test is() method
     assert!(mime_type.is(IMAGE_BPG));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -731,7 +738,6 @@ fn test_detect_xcf() {
     // Test is() method
     assert!(mime_type.is(IMAGE_X_XCF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -764,7 +770,6 @@ fn test_detect_hdr() {
     // Test is() method
     assert!(mime_type.is(IMAGE_VND_RADIANCE));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -777,7 +782,6 @@ fn test_detect_xpm() {
     // Test is() method
     assert!(mime_type.is(IMAGE_X_XPIXMAP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -790,7 +794,6 @@ fn test_detect_dwg() {
     // Test is() method
     assert!(mime_type.is(IMAGE_VND_DWG));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -803,7 +806,6 @@ fn test_detect_dxf() {
     // Test is() method
     assert!(mime_type.is(IMAGE_VND_DXF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -816,7 +818,6 @@ fn test_detect_djvu() {
     // Test is() method
     assert!(mime_type.is(IMAGE_VND_DJVU));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -832,7 +833,6 @@ fn test_detect_avif() {
     // Test is() method
     assert!(mime_type.is(IMAGE_AVIF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -849,7 +849,6 @@ fn test_detect_mp3() {
     // Test is() method
     assert!(mime_type.is(AUDIO_MPEG));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_audio());
 }
 
@@ -862,7 +861,6 @@ fn test_detect_flac() {
     // Test is() method
     assert!(mime_type.is(AUDIO_FLAC));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_audio());
 }
 
@@ -875,7 +873,6 @@ fn test_detect_wav() {
     // Test is() method
     assert!(mime_type.is(AUDIO_WAV));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_audio());
 }
 
@@ -888,7 +885,6 @@ fn test_detect_aiff() {
     // Test is() method
     assert!(mime_type.is(AUDIO_AIFF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_audio());
 }
 
@@ -901,7 +897,6 @@ fn test_detect_midi() {
     // Test is() method
     assert!(mime_type.is(AUDIO_MIDI));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_audio());
 }
 
@@ -914,7 +909,6 @@ fn test_detect_ogg() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_OGG));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_audio());
 }
 
@@ -929,7 +923,6 @@ fn test_detect_ogg_audio() {
     // Test is() method
     assert!(mime_type.is(AUDIO_OGG));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_audio());
 }
 
@@ -944,7 +937,6 @@ fn test_detect_ogg_video() {
     // Test is() method
     assert!(mime_type.is(VIDEO_OGG));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_video());
 }
 
@@ -957,7 +949,6 @@ fn test_detect_ape() {
     // Test is() method
     assert!(mime_type.is(AUDIO_APE));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_audio());
 }
 
@@ -970,7 +961,6 @@ fn test_detect_musepack() {
     // Test is() method
     assert!(mime_type.is(AUDIO_MUSEPACK));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_audio());
 }
 
@@ -983,7 +973,6 @@ fn test_detect_au() {
     // Test is() method
     assert!(mime_type.is(AUDIO_BASIC));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_audio());
 }
 
@@ -996,7 +985,6 @@ fn test_detect_amr() {
     // Test is() method
     assert!(mime_type.is(AUDIO_AMR));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_audio());
 }
 
@@ -1009,7 +997,6 @@ fn test_detect_voc() {
     // Test is() method
     assert!(mime_type.is(AUDIO_X_UNKNOWN));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_audio());
 }
 
@@ -1022,7 +1009,6 @@ fn test_detect_m3u() {
     // Test is() method
     assert!(mime_type.is(AUDIO_X_MPEGURL));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -1035,7 +1021,6 @@ fn test_detect_aac() {
     // Test is() method
     assert!(mime_type.is(AUDIO_AAC));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_audio());
 }
 
@@ -1048,7 +1033,6 @@ fn test_detect_qcp() {
     // Test is() method
     assert!(mime_type.is(AUDIO_QCELP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_audio());
 }
 
@@ -1086,7 +1070,6 @@ fn test_detect_mp4() {
     // Test is() method
     assert!(mime_type.is(VIDEO_MP4));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_video());
 }
 
@@ -1099,7 +1082,6 @@ fn test_detect_webm() {
     // Test is() method
     assert!(mime_type.is(VIDEO_WEBM));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_video());
 }
 
@@ -1112,16 +1094,28 @@ fn test_detect_mkv() {
     // Test is() method
     assert!(mime_type.is(VIDEO_X_MATROSKA));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_video());
 }
 
 #[test]
 fn test_detect_avi() {
-    let data = b"RIFF\x00\x00\x00\x00AVI LIST";
-    let mime_type = detect(data);
-    // AVI detection may fall back to binary
-    assert!(mime_type.mime() == VIDEO_X_MSVIDEO || mime_type.mime() == APPLICATION_OCTET_STREAM);
+    // Proper AVI (RIFF) file structure:
+    // RIFF - RIFF header (4 bytes)
+    // file size - 4 bytes (little-endian)
+    // AVI LIST - AVI format identifier (8 bytes at offset 8)
+    // Additional RIFF chunks follow...
+    let mut data = vec![0u8; 24];
+    data[0..4].copy_from_slice(b"RIFF");
+    data[4..8].copy_from_slice(&1000u32.to_le_bytes()); // File size
+    data[8..16].copy_from_slice(b"AVI LIST");
+    data[16..20].copy_from_slice(&100u32.to_le_bytes()); // Chunk size
+
+    let mime_type = detect(&data);
+    assert_eq!(mime_type.mime(), VIDEO_X_MSVIDEO);
+    assert_eq!(mime_type.extension(), ".avi");
+    assert!(mime_type.is(VIDEO_X_MSVIDEO));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_video());
 }
 
 #[test]
@@ -1133,7 +1127,6 @@ fn test_detect_mpeg() {
     // Test is() method
     assert!(mime_type.is(VIDEO_MPEG));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_video());
 }
 
@@ -1148,7 +1141,6 @@ fn test_detect_quicktime() {
     // Test is() method
     assert!(mime_type.is(VIDEO_QUICKTIME));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_video());
 }
 
@@ -1163,7 +1155,6 @@ fn test_detect_mqv() {
     // Test is() method
     assert!(mime_type.is(VIDEO_QUICKTIME));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_video());
 }
 
@@ -1176,7 +1167,6 @@ fn test_detect_flv() {
     // Test is() method
     assert!(mime_type.is(VIDEO_X_FLV));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_video());
 }
 
@@ -1189,7 +1179,6 @@ fn test_detect_asf() {
     // Test is() method
     assert!(mime_type.is(VIDEO_X_MS_ASF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_video());
 }
 
@@ -1230,7 +1219,6 @@ fn test_detect_3gpp() {
     // Test is() method
     assert!(mime_type.is(VIDEO_3GPP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_video());
 }
 
@@ -1246,7 +1234,6 @@ fn test_detect_3gpp2() {
     // Test is() method
     assert!(mime_type.is(VIDEO_3GPP2));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_video());
 }
 
@@ -1299,7 +1286,6 @@ fn test_detect_elf() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_ELF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_executable());
 }
 
@@ -1315,7 +1301,6 @@ fn test_detect_elf_obj() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_OBJECT));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_executable());
 }
 
@@ -1381,7 +1366,6 @@ fn test_detect_wasm() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_WASM));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_executable());
 }
 
@@ -1398,7 +1382,6 @@ fn test_detect_ttf() {
     // Test is() method
     assert!(mime_type.is(FONT_TTF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_font());
 }
 
@@ -1411,7 +1394,6 @@ fn test_detect_woff() {
     // Test is() method
     assert!(mime_type.is(FONT_WOFF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_font());
 }
 
@@ -1424,7 +1406,6 @@ fn test_detect_woff2() {
     // Test is() method
     assert!(mime_type.is(FONT_WOFF2));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_font());
 }
 
@@ -1437,7 +1418,6 @@ fn test_detect_otf() {
     // Test is() method
     assert!(mime_type.is(FONT_OTF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_font());
 }
 
@@ -1451,7 +1431,6 @@ fn test_detect_eot() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_VND_MS_FONTOBJECT));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_font());
 }
 
@@ -1464,7 +1443,6 @@ fn test_detect_ttc() {
     // Test is() method
     assert!(mime_type.is(FONT_COLLECTION));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_font());
 }
 
@@ -1519,7 +1497,6 @@ fn test_detect_dcm() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_DICOM));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_image());
 }
 
@@ -1553,7 +1530,6 @@ fn test_detect_sqlite3() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_VND_SQLITE3));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_database());
 }
 
@@ -1632,7 +1608,6 @@ fn test_detect_epub() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_EPUB_ZIP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_archive());
     assert!(mime_type.kind().is_document());
 }
@@ -1665,14 +1640,19 @@ fn test_detect_apk() {
 
 #[test]
 fn test_detect_doc() {
-    // Create OLE document with Word CLSID
-    let mut data = vec![0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
-    data.resize(512, 0);
+    // Word 97-2003 CLSID
+    const WORD_97_2003_CLSID: &[u8] = &[
+        0x06, 0x09, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x46,
+    ];
+    let data = create_ole_with_clsid(WORD_97_2003_CLSID);
+
     let mime_type = detect(&data);
-    // Basic OLE detection - may need more specific Word signatures
-    assert!(
-        mime_type.mime() == APPLICATION_MSWORD || mime_type.mime() == APPLICATION_X_OLE_STORAGE
-    );
+    assert_eq!(mime_type.mime(), APPLICATION_MSWORD);
+    assert_eq!(mime_type.extension(), ".doc");
+    assert!(mime_type.is(APPLICATION_MSWORD));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_document());
 }
 
 #[test]
@@ -1688,69 +1668,84 @@ fn test_detect_wpd() {
 
 #[test]
 fn test_detect_xls() {
-    // Create OLE document with Excel CLSID
-    let mut data = vec![0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
-    data.resize(520, 0);
-    // Add XLS sub-header
-    data[512..520].copy_from_slice(b"\x09\x08\x10\x00\x00\x06\x05\x00");
+    // Excel v5 CLSID: 10 08 02 00 00 00 00 00
+    const EXCEL_V5_CLSID: &[u8] = &[0x10, 0x08, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00];
+    let data = create_ole_with_clsid(EXCEL_V5_CLSID);
+
     let mime_type = detect(&data);
-    assert!(
-        mime_type.mime() == APPLICATION_VND_MS_EXCEL
-            || mime_type.mime() == APPLICATION_X_OLE_STORAGE
-    );
+    assert_eq!(mime_type.mime(), APPLICATION_VND_MS_EXCEL);
+    assert_eq!(mime_type.extension(), ".xls");
+    assert!(mime_type.is(APPLICATION_VND_MS_EXCEL));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_spreadsheet());
 }
 
 #[test]
 fn test_detect_ppt() {
-    // Create OLE document with PowerPoint CLSID
-    let mut data = vec![0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
-    data.resize(520, 0);
-    // Add PPT sub-header
-    data[512..516].copy_from_slice(b"\xA0\x46\x1D\xF0");
+    // PowerPoint v4 CLSID
+    const PPT_V4_CLSID: &[u8] = &[
+        0x10, 0x8d, 0x81, 0x64, 0x9b, 0x4f, 0xcf, 0x11, 0x86, 0xea, 0x00, 0xaa, 0x00, 0xb9, 0x29,
+        0xe8,
+    ];
+    let data = create_ole_with_clsid(PPT_V4_CLSID);
+
     let mime_type = detect(&data);
-    assert!(
-        mime_type.mime() == APPLICATION_VND_MS_POWERPOINT
-            || mime_type.mime() == APPLICATION_X_OLE_STORAGE
-    );
+    assert_eq!(mime_type.mime(), APPLICATION_VND_MS_POWERPOINT);
+    assert_eq!(mime_type.extension(), ".ppt");
+    assert!(mime_type.is(APPLICATION_VND_MS_POWERPOINT));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_document());
 }
 
 #[test]
 fn test_detect_pub() {
-    // Create OLE document with Publisher CLSID
-    let mut data = vec![0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
-    data.resize(512, 0);
+    // Publisher CLSID
+    const PUBLISHER_CLSID: &[u8] = &[
+        0x01, 0x12, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x46,
+    ];
+    let data = create_ole_with_clsid(PUBLISHER_CLSID);
+
     let mime_type = detect(&data);
-    // Publisher detection may fall back to generic OLE
-    assert!(
-        mime_type.mime() == APPLICATION_VND_MS_PUBLISHER
-            || mime_type.mime() == APPLICATION_X_OLE_STORAGE
-    );
+    assert_eq!(mime_type.mime(), APPLICATION_VND_MS_PUBLISHER);
+    assert_eq!(mime_type.extension(), ".pub");
+    assert!(mime_type.is(APPLICATION_VND_MS_PUBLISHER));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_document());
 }
 
 #[test]
 fn test_detect_msg() {
-    // Create OLE document with Outlook CLSID
-    let mut data = vec![0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
-    data.resize(512, 0);
+    // Outlook MSG CLSID
+    const OUTLOOK_MSG_CLSID: &[u8] = &[
+        0x0B, 0x0D, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x46,
+    ];
+    let data = create_ole_with_clsid(OUTLOOK_MSG_CLSID);
+
     let mime_type = detect(&data);
-    // MSG detection may fall back to generic OLE
-    assert!(
-        mime_type.mime() == APPLICATION_VND_MS_OUTLOOK
-            || mime_type.mime() == APPLICATION_X_OLE_STORAGE
-    );
+    assert_eq!(mime_type.mime(), APPLICATION_VND_MS_OUTLOOK);
+    assert_eq!(mime_type.extension(), ".msg");
+    assert!(mime_type.is(APPLICATION_VND_MS_OUTLOOK));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_document());
 }
 
 #[test]
 fn test_detect_msi() {
-    // Create OLE document with MSI CLSID
-    let mut data = vec![0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
-    data.resize(512, 0);
+    // MSI Installer CLSID
+    const MSI_CLSID: &[u8] = &[
+        0x84, 0x10, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x46,
+    ];
+    let data = create_ole_with_clsid(MSI_CLSID);
+
     let mime_type = detect(&data);
-    // MSI detection may fall back to generic OLE
-    assert!(
-        mime_type.mime() == APPLICATION_X_MS_INSTALLER
-            || mime_type.mime() == APPLICATION_X_OLE_STORAGE
-    );
+    assert_eq!(mime_type.mime(), APPLICATION_X_MS_INSTALLER);
+    assert_eq!(mime_type.extension(), ".msi");
+    assert!(mime_type.is(APPLICATION_X_MS_INSTALLER));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_archive());
 }
 
 // ============================================================================
@@ -1939,7 +1934,6 @@ fn test_detect_mdb() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_MSACCESS));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_database());
 }
 
@@ -1953,7 +1947,6 @@ fn test_detect_accdb() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_MSACCESS));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_database());
 }
 
@@ -1967,7 +1960,6 @@ fn test_detect_dbf() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_DBF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_database());
 }
 
@@ -1981,7 +1973,6 @@ fn test_detect_lotus123() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_VND_LOTUS_1_2_3));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_database());
     assert!(mime_type.kind().is_spreadsheet());
 }
@@ -1998,7 +1989,6 @@ fn test_detect_marc() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_MARC));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
     assert!(mime_type.kind().is_database());
 }
@@ -2016,7 +2006,6 @@ fn test_detect_php() {
     // Test is() method
     assert!(mime_type.is(TEXT_X_PHP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2029,7 +2018,6 @@ fn test_detect_javascript() {
     // Test is() method
     assert!(mime_type.is(TEXT_JAVASCRIPT));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2042,7 +2030,6 @@ fn test_detect_python() {
     // Test is() method
     assert!(mime_type.is(TEXT_X_PYTHON));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2055,7 +2042,6 @@ fn test_detect_perl() {
     // Test is() method
     assert!(mime_type.is(TEXT_X_PERL));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2068,7 +2054,6 @@ fn test_detect_ruby() {
     // Test is() method
     assert!(mime_type.is(TEXT_X_RUBY));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2081,7 +2066,6 @@ fn test_detect_lua() {
     // Test is() method
     assert!(mime_type.is(TEXT_X_LUA));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2094,7 +2078,6 @@ fn test_detect_shell() {
     // Test is() method
     assert!(mime_type.is(TEXT_X_SHELLSCRIPT));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2107,7 +2090,6 @@ fn test_detect_tcl() {
     // Test is() method
     assert!(mime_type.is(TEXT_X_TCL));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2120,7 +2102,6 @@ fn test_detect_json() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_JSON));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2133,7 +2114,6 @@ fn test_detect_geojson() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_GEO_JSON));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2146,7 +2126,6 @@ fn test_detect_ndjson() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_NDJSON));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2159,7 +2138,6 @@ fn test_detect_csv() {
     // Test is() method
     assert!(mime_type.is(TEXT_CSV));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2172,16 +2150,24 @@ fn test_detect_tsv() {
     // Test is() method
     assert!(mime_type.is(TEXT_TAB_SEPARATED_VALUES));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
 #[test]
 fn test_detect_rtf() {
-    let data = b"{\\rtf1\\ansi\\deff0 Hello World}";
+    // Proper RTF file structure (matches real RTF files):
+    // {\rtf1 - RTF version 1 (required signature)
+    // \ansi - ANSI character set
+    // \deff0 - default font index
+    // {\fonttbl...} - font table (required for valid RTF)
+    // Content with RTF control words
+    let data = b"{\\rtf1\\ansi\\deff0 {\\fonttbl {\\f0 Times New Roman;}} Hello World}";
     let mime_type = detect(data);
-    // RTF may be detected as JSON due to the opening brace
-    assert!(mime_type.mime() == TEXT_RTF || mime_type.mime() == APPLICATION_JSON);
+    assert_eq!(mime_type.mime(), TEXT_RTF);
+    assert_eq!(mime_type.extension(), ".rtf");
+    assert!(mime_type.is(TEXT_RTF));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_document());
 }
 
 #[test]
@@ -2193,7 +2179,6 @@ fn test_detect_srt() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_SUBRIP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
     assert!(mime_type.kind().is_document());
 }
@@ -2207,7 +2192,6 @@ fn test_detect_vtt() {
     // Test is() method
     assert!(mime_type.is(TEXT_VTT));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2220,7 +2204,6 @@ fn test_detect_vcard() {
     // Test is() method
     assert!(mime_type.is(TEXT_VCARD));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2233,7 +2216,6 @@ fn test_detect_icalendar() {
     // Test is() method
     assert!(mime_type.is(TEXT_CALENDAR));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2246,7 +2228,6 @@ fn test_detect_svg() {
     // Test is() method
     assert!(mime_type.is(IMAGE_SVG_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
     assert!(mime_type.kind().is_image());
 }
@@ -2260,7 +2241,6 @@ fn test_detect_har() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_JSON_HAR));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2277,7 +2257,6 @@ fn test_detect_rss() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_RSS_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2290,7 +2269,6 @@ fn test_detect_atom() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_ATOM_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2303,7 +2281,6 @@ fn test_detect_x3d() {
     // Test is() method
     assert!(mime_type.is(MODEL_X3D_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2316,7 +2293,6 @@ fn test_detect_kml() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_VND_GOOGLE_EARTH_KML_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2340,7 +2316,6 @@ fn test_detect_collada() {
     // Test is() method
     assert!(mime_type.is(MODEL_VND_COLLADA_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
     assert!(mime_type.kind().is_model());
 }
@@ -2354,7 +2329,6 @@ fn test_detect_gml() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_GML_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2367,7 +2341,6 @@ fn test_detect_gpx() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_GPX_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
 }
 
@@ -2458,7 +2431,6 @@ fn test_detect_glb() {
     // Test is() method
     assert!(mime_type.is(MODEL_GLTF_BINARY));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_model());
 }
 
@@ -2471,7 +2443,6 @@ fn test_detect_gltf() {
     // Test is() method
     assert!(mime_type.is(MODEL_GLTF_JSON));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_text());
     assert!(mime_type.kind().is_model());
 }
@@ -2504,7 +2475,6 @@ fn test_detect_hdf() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_HDF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_database());
 }
 
@@ -2528,7 +2498,6 @@ fn test_detect_parquet() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_VND_APACHE_PARQUET));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_database());
 }
 
@@ -2552,7 +2521,6 @@ fn test_detect_macho() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_MACH_BINARY));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    // Check kinds
     assert!(mime_type.kind().is_executable());
 }
 
