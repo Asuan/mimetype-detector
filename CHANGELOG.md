@@ -8,6 +8,12 @@ Used prefixes:
 `Deleted`
 `BREAKING`
 
+## 0.2.5 - 2025-10-23
+
+* Added: `MimeKind` categorization to 175+ file formats across 13 categories
+* Added: `kind()` methods to get MimeType kind
+* Updated:  changed mimetype registration to recursive
+
 ## 0.2.4 - 2025-10-10
 
 * Added: DXF (AutoCAD Drawing Exchange Format) detection (`image/vnd.dxf`)

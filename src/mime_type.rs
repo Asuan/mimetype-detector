@@ -1,4 +1,4 @@
-use crate::{register_extension, register_mime};
+use crate::{register_extension, register_mime, MimeKind};
 
 pub struct MimeType {
     mime: &'static str,
@@ -8,6 +8,7 @@ pub struct MimeType {
     matcher: fn(&[u8]) -> bool,
     children: &'static [&'static MimeType],
     parent: Option<&'static MimeType>,
+    kind: MimeKind,
 }
 
 impl MimeType {
@@ -25,6 +26,7 @@ impl MimeType {
             matcher,
             children,
             parent: None,
+            kind: MimeKind::UNKNOWN,
         }
     }
 
@@ -46,7 +48,13 @@ impl MimeType {
         self
     }
 
+    pub const fn with_kind(mut self, kind: MimeKind) -> Self {
+        self.kind = kind;
+        self
+    }
+
     pub fn register(&'static self) {
+        // Register this MIME type
         register_mime(self.mime, self.matcher);
         if !self.extension.is_empty() {
             register_extension(self.extension, self.matcher);
@@ -58,6 +66,11 @@ impl MimeType {
 
         for ext_alias in self.extension_aliases {
             register_extension(ext_alias, self.matcher);
+        }
+
+        // Recursively register all children
+        for child in self.children {
+            child.register();
         }
     }
 
@@ -71,6 +84,25 @@ impl MimeType {
 
     pub fn parent(&self) -> Option<&'static MimeType> {
         self.parent
+    }
+
+    /// Get the combined kind including all parent kinds
+    ///
+    /// This method returns a MimeKind that includes both the current type's kind
+    /// and all parent kinds merged together using bitwise OR.
+    ///
+    /// For example, DOCX has kind DOCUMENT, but since its parent is ZIP (ARCHIVE),
+    /// the returned kind will be DOCUMENT | ARCHIVE.
+    ///
+    /// If no explicit parent is set, returns only this type's own kind.
+    /// (ROOT is used as implicit parent for tree structure, but its kind is not inherited)
+    pub fn kind(&'static self) -> MimeKind {
+        if let Some(parent) = self.parent {
+            return self.kind.union(parent.kind());
+        }
+
+        // No explicit parent - just return own kind
+        self.kind
     }
 
     pub fn is(&self, expected_mime: &str) -> bool {

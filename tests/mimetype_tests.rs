@@ -39,6 +39,8 @@ fn test_detect_html() {
     // Test is() method
     assert!(mime_type.is(TEXT_HTML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -50,6 +52,8 @@ fn test_detect_xml() {
     // Test is() method
     assert!(mime_type.is(TEXT_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -109,6 +113,8 @@ fn test_detect_pdf() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_PDF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_document());
 }
 
 #[test]
@@ -120,6 +126,8 @@ fn test_detect_fdf() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_VND_FDF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_document());
 }
 
 #[test]
@@ -131,6 +139,8 @@ fn test_detect_postscript() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_POSTSCRIPT));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_document());
 }
 
 #[test]
@@ -142,6 +152,8 @@ fn test_detect_ole() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_OLE_STORAGE));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_document());
 }
 
 #[test]
@@ -167,6 +179,8 @@ fn test_detect_7z() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_7Z_COMPRESSED));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_archive());
 }
 
 #[test]
@@ -186,6 +200,8 @@ fn test_detect_rar() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_RAR_COMPRESSED));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_archive());
 }
 
 #[test]
@@ -197,6 +213,8 @@ fn test_detect_gzip() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_GZIP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_archive());
 }
 
 #[test]
@@ -228,6 +246,8 @@ fn test_detect_tar() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_TAR));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_archive());
 }
 
 #[test]
@@ -239,6 +259,8 @@ fn test_detect_bz2() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_BZIP2));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_archive());
 }
 
 #[test]
@@ -250,6 +272,8 @@ fn test_detect_xz() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_XZ));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_archive());
 }
 
 #[test]
@@ -261,6 +285,8 @@ fn test_detect_zstd() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_ZSTD));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_archive());
 }
 
 #[test]
@@ -283,6 +309,8 @@ fn test_detect_cab() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_VND_MS_CAB_COMPRESSED));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_archive());
 }
 
 #[test]
@@ -306,6 +334,8 @@ fn test_detect_cpio() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_CPIO));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_archive());
 
     // Test binary CPIO
     let binary_data = b"\xc7\xc7\x00\x00\x00\x00";
@@ -324,6 +354,8 @@ fn test_detect_ar() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_ARCHIVE));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_archive());
 }
 
 #[test]
@@ -335,6 +367,8 @@ fn test_detect_rpm() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_RPM));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_archive());
 }
 
 #[test]
@@ -357,6 +391,8 @@ fn test_detect_fits() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_FITS));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -368,6 +404,8 @@ fn test_detect_xar() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_XAR));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_archive());
 }
 
 #[test]
@@ -390,6 +428,9 @@ fn test_detect_warc() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_WARC));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
+    assert!(mime_type.kind().is_archive());
 }
 
 // ============================================================================
@@ -426,6 +467,8 @@ fn test_detect_jpeg() {
     // Test is() method
     assert!(mime_type.is(IMAGE_JPEG));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -440,6 +483,8 @@ fn test_detect_jp2() {
     // Test is() method
     assert!(mime_type.is(IMAGE_JP2));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -454,6 +499,8 @@ fn test_detect_jpx() {
     // Test is() method
     assert!(mime_type.is(IMAGE_JPX));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -468,6 +515,8 @@ fn test_detect_jpm() {
     // Test is() method
     assert!(mime_type.is(IMAGE_JPM));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -479,6 +528,8 @@ fn test_detect_jxs() {
     // Test is() method
     assert!(mime_type.is(IMAGE_JXS));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -490,6 +541,8 @@ fn test_detect_jxr() {
     // Test is() method
     assert!(mime_type.is(IMAGE_JXR));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -501,6 +554,8 @@ fn test_detect_jxl() {
     // Test is() method
     assert!(mime_type.is(IMAGE_JXL));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -512,6 +567,8 @@ fn test_detect_gif() {
     // Test is() method
     assert!(mime_type.is(IMAGE_GIF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -523,6 +580,8 @@ fn test_detect_webp() {
     // Test is() method
     assert!(mime_type.is(IMAGE_WEBP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -534,6 +593,8 @@ fn test_detect_tiff() {
     // Test is() method
     assert!(mime_type.is(IMAGE_TIFF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -545,6 +606,8 @@ fn test_detect_bmp() {
     // Test is() method
     assert!(mime_type.is(IMAGE_BMP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -556,6 +619,8 @@ fn test_detect_ico() {
     // Test is() method
     assert!(mime_type.is(IMAGE_X_ICON));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -567,6 +632,8 @@ fn test_detect_icns() {
     // Test is() method
     assert!(mime_type.is(IMAGE_X_ICNS));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -578,6 +645,8 @@ fn test_detect_psd() {
     // Test is() method
     assert!(mime_type.is(IMAGE_VND_ADOBE_PHOTOSHOP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -592,6 +661,8 @@ fn test_detect_heic() {
     // Test is() method
     assert!(mime_type.is(IMAGE_HEIC));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -606,6 +677,8 @@ fn test_detect_heic_sequence() {
     // Test is() method
     assert!(mime_type.is(IMAGE_HEIC_SEQUENCE));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -620,6 +693,8 @@ fn test_detect_heif() {
     // Test is() method
     assert!(mime_type.is(IMAGE_HEIF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -643,6 +718,8 @@ fn test_detect_bpg() {
     // Test is() method
     assert!(mime_type.is(IMAGE_BPG));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -654,6 +731,8 @@ fn test_detect_xcf() {
     // Test is() method
     assert!(mime_type.is(IMAGE_X_XCF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -685,6 +764,8 @@ fn test_detect_hdr() {
     // Test is() method
     assert!(mime_type.is(IMAGE_VND_RADIANCE));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -696,6 +777,8 @@ fn test_detect_xpm() {
     // Test is() method
     assert!(mime_type.is(IMAGE_X_XPIXMAP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -707,6 +790,8 @@ fn test_detect_dwg() {
     // Test is() method
     assert!(mime_type.is(IMAGE_VND_DWG));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -718,6 +803,8 @@ fn test_detect_dxf() {
     // Test is() method
     assert!(mime_type.is(IMAGE_VND_DXF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -729,6 +816,8 @@ fn test_detect_djvu() {
     // Test is() method
     assert!(mime_type.is(IMAGE_VND_DJVU));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -743,6 +832,8 @@ fn test_detect_avif() {
     // Test is() method
     assert!(mime_type.is(IMAGE_AVIF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 // ============================================================================
@@ -758,6 +849,8 @@ fn test_detect_mp3() {
     // Test is() method
     assert!(mime_type.is(AUDIO_MPEG));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_audio());
 }
 
 #[test]
@@ -769,6 +862,8 @@ fn test_detect_flac() {
     // Test is() method
     assert!(mime_type.is(AUDIO_FLAC));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_audio());
 }
 
 #[test]
@@ -780,6 +875,8 @@ fn test_detect_wav() {
     // Test is() method
     assert!(mime_type.is(AUDIO_WAV));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_audio());
 }
 
 #[test]
@@ -791,6 +888,8 @@ fn test_detect_aiff() {
     // Test is() method
     assert!(mime_type.is(AUDIO_AIFF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_audio());
 }
 
 #[test]
@@ -802,6 +901,8 @@ fn test_detect_midi() {
     // Test is() method
     assert!(mime_type.is(AUDIO_MIDI));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_audio());
 }
 
 #[test]
@@ -813,6 +914,8 @@ fn test_detect_ogg() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_OGG));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_audio());
 }
 
 #[test]
@@ -826,6 +929,8 @@ fn test_detect_ogg_audio() {
     // Test is() method
     assert!(mime_type.is(AUDIO_OGG));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_audio());
 }
 
 #[test]
@@ -839,6 +944,8 @@ fn test_detect_ogg_video() {
     // Test is() method
     assert!(mime_type.is(VIDEO_OGG));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_video());
 }
 
 #[test]
@@ -850,6 +957,8 @@ fn test_detect_ape() {
     // Test is() method
     assert!(mime_type.is(AUDIO_APE));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_audio());
 }
 
 #[test]
@@ -861,6 +970,8 @@ fn test_detect_musepack() {
     // Test is() method
     assert!(mime_type.is(AUDIO_MUSEPACK));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_audio());
 }
 
 #[test]
@@ -872,6 +983,8 @@ fn test_detect_au() {
     // Test is() method
     assert!(mime_type.is(AUDIO_BASIC));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_audio());
 }
 
 #[test]
@@ -883,6 +996,8 @@ fn test_detect_amr() {
     // Test is() method
     assert!(mime_type.is(AUDIO_AMR));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_audio());
 }
 
 #[test]
@@ -894,6 +1009,8 @@ fn test_detect_voc() {
     // Test is() method
     assert!(mime_type.is(AUDIO_X_UNKNOWN));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_audio());
 }
 
 #[test]
@@ -905,6 +1022,8 @@ fn test_detect_m3u() {
     // Test is() method
     assert!(mime_type.is(AUDIO_X_MPEGURL));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -916,6 +1035,8 @@ fn test_detect_aac() {
     // Test is() method
     assert!(mime_type.is(AUDIO_AAC));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_audio());
 }
 
 #[test]
@@ -927,6 +1048,8 @@ fn test_detect_qcp() {
     // Test is() method
     assert!(mime_type.is(AUDIO_QCELP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_audio());
 }
 
 #[test]
@@ -963,6 +1086,8 @@ fn test_detect_mp4() {
     // Test is() method
     assert!(mime_type.is(VIDEO_MP4));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_video());
 }
 
 #[test]
@@ -974,6 +1099,8 @@ fn test_detect_webm() {
     // Test is() method
     assert!(mime_type.is(VIDEO_WEBM));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_video());
 }
 
 #[test]
@@ -985,6 +1112,8 @@ fn test_detect_mkv() {
     // Test is() method
     assert!(mime_type.is(VIDEO_X_MATROSKA));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_video());
 }
 
 #[test]
@@ -1004,6 +1133,8 @@ fn test_detect_mpeg() {
     // Test is() method
     assert!(mime_type.is(VIDEO_MPEG));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_video());
 }
 
 #[test]
@@ -1017,6 +1148,8 @@ fn test_detect_quicktime() {
     // Test is() method
     assert!(mime_type.is(VIDEO_QUICKTIME));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_video());
 }
 
 #[test]
@@ -1030,6 +1163,8 @@ fn test_detect_mqv() {
     // Test is() method
     assert!(mime_type.is(VIDEO_QUICKTIME));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_video());
 }
 
 #[test]
@@ -1041,6 +1176,8 @@ fn test_detect_flv() {
     // Test is() method
     assert!(mime_type.is(VIDEO_X_FLV));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_video());
 }
 
 #[test]
@@ -1052,6 +1189,8 @@ fn test_detect_asf() {
     // Test is() method
     assert!(mime_type.is(VIDEO_X_MS_ASF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_video());
 }
 
 #[test]
@@ -1091,6 +1230,8 @@ fn test_detect_3gpp() {
     // Test is() method
     assert!(mime_type.is(VIDEO_3GPP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_video());
 }
 
 #[test]
@@ -1105,6 +1246,8 @@ fn test_detect_3gpp2() {
     // Test is() method
     assert!(mime_type.is(VIDEO_3GPP2));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_video());
 }
 
 #[test]
@@ -1156,6 +1299,8 @@ fn test_detect_elf() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_ELF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_executable());
 }
 
 #[test]
@@ -1170,6 +1315,8 @@ fn test_detect_elf_obj() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_OBJECT));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_executable());
 }
 
 #[test]
@@ -1234,6 +1381,8 @@ fn test_detect_wasm() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_WASM));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_executable());
 }
 
 // ============================================================================
@@ -1249,6 +1398,8 @@ fn test_detect_ttf() {
     // Test is() method
     assert!(mime_type.is(FONT_TTF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_font());
 }
 
 #[test]
@@ -1260,6 +1411,8 @@ fn test_detect_woff() {
     // Test is() method
     assert!(mime_type.is(FONT_WOFF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_font());
 }
 
 #[test]
@@ -1271,6 +1424,8 @@ fn test_detect_woff2() {
     // Test is() method
     assert!(mime_type.is(FONT_WOFF2));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_font());
 }
 
 #[test]
@@ -1282,6 +1437,8 @@ fn test_detect_otf() {
     // Test is() method
     assert!(mime_type.is(FONT_OTF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_font());
 }
 
 #[test]
@@ -1294,6 +1451,8 @@ fn test_detect_eot() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_VND_MS_FONTOBJECT));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_font());
 }
 
 #[test]
@@ -1305,6 +1464,8 @@ fn test_detect_ttc() {
     // Test is() method
     assert!(mime_type.is(FONT_COLLECTION));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_font());
 }
 
 // ============================================================================
@@ -1358,6 +1519,8 @@ fn test_detect_dcm() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_DICOM));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -1390,6 +1553,8 @@ fn test_detect_sqlite3() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_VND_SQLITE3));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_database());
 }
 
 #[test]
@@ -1467,6 +1632,9 @@ fn test_detect_epub() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_EPUB_ZIP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_archive());
+    assert!(mime_type.kind().is_document());
 }
 
 #[test]
@@ -1771,6 +1939,8 @@ fn test_detect_mdb() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_MSACCESS));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_database());
 }
 
 #[test]
@@ -1783,6 +1953,8 @@ fn test_detect_accdb() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_MSACCESS));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_database());
 }
 
 #[test]
@@ -1795,6 +1967,8 @@ fn test_detect_dbf() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_DBF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_database());
 }
 
 #[test]
@@ -1807,6 +1981,9 @@ fn test_detect_lotus123() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_VND_LOTUS_1_2_3));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_database());
+    assert!(mime_type.kind().is_spreadsheet());
 }
 
 #[test]
@@ -1821,6 +1998,9 @@ fn test_detect_marc() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_MARC));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
+    assert!(mime_type.kind().is_database());
 }
 
 // ============================================================================
@@ -1836,6 +2016,8 @@ fn test_detect_php() {
     // Test is() method
     assert!(mime_type.is(TEXT_X_PHP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -1847,6 +2029,8 @@ fn test_detect_javascript() {
     // Test is() method
     assert!(mime_type.is(TEXT_JAVASCRIPT));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -1858,6 +2042,8 @@ fn test_detect_python() {
     // Test is() method
     assert!(mime_type.is(TEXT_X_PYTHON));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -1869,6 +2055,8 @@ fn test_detect_perl() {
     // Test is() method
     assert!(mime_type.is(TEXT_X_PERL));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -1880,6 +2068,8 @@ fn test_detect_ruby() {
     // Test is() method
     assert!(mime_type.is(TEXT_X_RUBY));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -1891,6 +2081,8 @@ fn test_detect_lua() {
     // Test is() method
     assert!(mime_type.is(TEXT_X_LUA));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -1902,6 +2094,8 @@ fn test_detect_shell() {
     // Test is() method
     assert!(mime_type.is(TEXT_X_SHELLSCRIPT));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -1913,6 +2107,8 @@ fn test_detect_tcl() {
     // Test is() method
     assert!(mime_type.is(TEXT_X_TCL));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -1924,6 +2120,8 @@ fn test_detect_json() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_JSON));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -1935,6 +2133,8 @@ fn test_detect_geojson() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_GEO_JSON));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -1946,6 +2146,8 @@ fn test_detect_ndjson() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_NDJSON));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -1957,6 +2159,8 @@ fn test_detect_csv() {
     // Test is() method
     assert!(mime_type.is(TEXT_CSV));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -1968,6 +2172,8 @@ fn test_detect_tsv() {
     // Test is() method
     assert!(mime_type.is(TEXT_TAB_SEPARATED_VALUES));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -1987,6 +2193,9 @@ fn test_detect_srt() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_SUBRIP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
+    assert!(mime_type.kind().is_document());
 }
 
 #[test]
@@ -1998,6 +2207,8 @@ fn test_detect_vtt() {
     // Test is() method
     assert!(mime_type.is(TEXT_VTT));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -2009,6 +2220,8 @@ fn test_detect_vcard() {
     // Test is() method
     assert!(mime_type.is(TEXT_VCARD));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -2020,6 +2233,8 @@ fn test_detect_icalendar() {
     // Test is() method
     assert!(mime_type.is(TEXT_CALENDAR));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -2031,6 +2246,9 @@ fn test_detect_svg() {
     // Test is() method
     assert!(mime_type.is(IMAGE_SVG_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
+    assert!(mime_type.kind().is_image());
 }
 
 #[test]
@@ -2042,6 +2260,8 @@ fn test_detect_har() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_JSON_HAR));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 // ============================================================================
@@ -2057,6 +2277,8 @@ fn test_detect_rss() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_RSS_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -2068,6 +2290,8 @@ fn test_detect_atom() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_ATOM_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -2079,6 +2303,8 @@ fn test_detect_x3d() {
     // Test is() method
     assert!(mime_type.is(MODEL_X3D_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -2090,6 +2316,8 @@ fn test_detect_kml() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_VND_GOOGLE_EARTH_KML_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -2112,6 +2340,9 @@ fn test_detect_collada() {
     // Test is() method
     assert!(mime_type.is(MODEL_VND_COLLADA_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
+    assert!(mime_type.kind().is_model());
 }
 
 #[test]
@@ -2123,6 +2354,8 @@ fn test_detect_gml() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_GML_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -2134,6 +2367,8 @@ fn test_detect_gpx() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_GPX_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
 }
 
 #[test]
@@ -2223,6 +2458,8 @@ fn test_detect_glb() {
     // Test is() method
     assert!(mime_type.is(MODEL_GLTF_BINARY));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_model());
 }
 
 #[test]
@@ -2234,6 +2471,9 @@ fn test_detect_gltf() {
     // Test is() method
     assert!(mime_type.is(MODEL_GLTF_JSON));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_text());
+    assert!(mime_type.kind().is_model());
 }
 
 // ============================================================================
@@ -2264,6 +2504,8 @@ fn test_detect_hdf() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_HDF));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_database());
 }
 
 #[test]
@@ -2286,6 +2528,8 @@ fn test_detect_parquet() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_VND_APACHE_PARQUET));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_database());
 }
 
 #[test]
@@ -2308,6 +2552,8 @@ fn test_detect_macho() {
     // Test is() method
     assert!(mime_type.is(APPLICATION_X_MACH_BINARY));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    // Check kinds
+    assert!(mime_type.kind().is_executable());
 }
 
 #[test]
@@ -2541,67 +2787,4 @@ fn test_detect_rtf_utf16_le() {
     let mime_type = detect(data);
     assert_eq!(mime_type.mime(), TEXT_RTF_UTF16);
     assert_eq!(mime_type.extension(), ".rtf");
-}
-
-// ============================================================================
-// COMPREHENSIVE INTEGRATION TEST
-// ============================================================================
-
-#[test]
-fn test_comprehensive_mime_type_coverage() {
-    // This test verifies that we have covered all major MIME type categories
-    // by testing at least one representative from each category
-
-    // Text formats
-    assert_eq!(detect(b"<html>").mime(), TEXT_HTML);
-    assert_eq!(detect(b"<?xml version=\"1.0\"?>").mime(), TEXT_XML);
-
-    // Documents
-    assert_eq!(detect(b"%PDF-1.4").mime(), APPLICATION_PDF);
-
-    // Archives
-    assert_eq!(
-        detect(b"7z\xbc\xaf\x27\x1c").mime(),
-        APPLICATION_X_7Z_COMPRESSED
-    );
-    assert_eq!(detect(b"\x1f\x8b").mime(), APPLICATION_GZIP);
-
-    // Images
-    assert_eq!(detect(b"\x89PNG\r\n\x1a\n").mime(), IMAGE_PNG);
-    assert_eq!(detect(b"\xff\xd8\xff\xe0").mime(), IMAGE_JPEG);
-
-    // Audio
-    assert_eq!(detect(b"ID3").mime(), AUDIO_MPEG);
-    assert_eq!(detect(b"fLaC").mime(), AUDIO_FLAC);
-
-    // Video
-    assert_eq!(detect(b"FLV").mime(), VIDEO_X_FLV);
-
-    // Executables
-    assert_eq!(
-        detect(b"MZ").mime(),
-        APPLICATION_VND_MICROSOFT_PORTABLE_EXECUTABLE
-    );
-    assert_eq!(detect(b"\x7fELF").mime(), APPLICATION_X_ELF);
-
-    // Fonts
-    assert_eq!(detect(b"wOFF").mime(), FONT_WOFF);
-    assert_eq!(detect(b"OTTO").mime(), FONT_OTF);
-
-    // Databases
-    assert_eq!(
-        detect(b"SQLite format 3\x00").mime(),
-        APPLICATION_VND_SQLITE3
-    );
-
-    // Programming languages
-    assert_eq!(detect(b"#!/usr/bin/env python").mime(), TEXT_X_PYTHON);
-    assert_eq!(detect(b"{\"test\": true}").mime(), APPLICATION_JSON);
-
-    // 3D/Geospatial
-    assert_eq!(detect(b"glTF\x02\x00\x00\x00").mime(), MODEL_GLTF_BINARY);
-
-    // Miscellaneous
-    assert_eq!(detect(b"PAR1").mime(), APPLICATION_VND_APACHE_PARQUET);
-    assert_eq!(detect(b"TZif").mime(), APPLICATION_TZIF);
 }

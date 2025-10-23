@@ -47,6 +47,17 @@ println!("Type: {}", docx.mime());  // application/vnd.openxmlformats-officedocu
 if let Some(parent) = docx.parent() {
     println!("Parent: {}", parent.mime());  // application/zip
 }
+
+// Check type categories using MimeKind
+let png_data = b"\x89PNG\r\n\x1a\n";
+let mime = detect(png_data);
+if mime.kind().is_image() {
+    println!("It's an image!");
+}
+
+// Multiple kinds display with pipe separator
+let jar = detect(b"PK\x03\x04...META-INF/MANIFEST.MF");
+println!("Kind: {}", jar.kind()); // Output: "ARCHIVE | APPLICATION"
 ```
 
 ## Supported Formats (206+)
@@ -79,6 +90,11 @@ mime() -> &'static str                      // Get MIME type
 extension() -> &'static str                 // Get extension
 is(expected: &str) -> bool                  // Check type
 parent() -> Option<&'static MimeType>       // Get parent type
+kind() -> MimeKind                          // Get type category bitmask
+
+// MimeKind methods (call on mime.kind())
+is_image/video/audio/archive/document/...() // Category checks
+contains(kind: MimeKind) -> bool            // Check if contains kind
 
 // Utilities
 match_mime(data: &[u8], mime: &str) -> bool
