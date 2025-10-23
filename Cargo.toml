@@ -1,6 +1,6 @@
 [package]
 name = "mimetype-detector"
-version = "0.2.4"
+version = "0.2.5"
 edition = "2021"
 description = "Fast, accurate, and thread-safe MIME type detection for ~200 file formats with zero dependencies"
 license = "MIT"
