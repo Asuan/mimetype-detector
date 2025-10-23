@@ -255,7 +255,7 @@ static UTF8: MimeType = MimeType::new(
     &[
         &HTML,
         &XML,
-        &RTF,  // RTF must come before JSON (both start with {, RTF has more specific pattern)
+        &RTF, // RTF must come before JSON (both start with {, RTF has more specific pattern)
         &PHP,
         &JAVASCRIPT,
         &PYTHON,
@@ -334,14 +334,23 @@ static OLE: MimeType = MimeType::new(
     APPLICATION_X_OLE_STORAGE,
     "",
     ole,
-    &[&MSI, &AAF, &MSG, &XLS, &PUB, &PPT, &DOC, &ONENOTE, &FASOO, &PGP_NET_SHARE],
+    &[
+        &MSI,
+        &AAF,
+        &MSG,
+        &XLS,
+        &PUB,
+        &PPT,
+        &DOC,
+        &ONENOTE,
+        &FASOO,
+        &PGP_NET_SHARE,
+    ],
 )
 .with_extension_aliases(&[".xls", ".pub", ".ppt", ".doc", ".chm", ".one"])
 .with_kind(MimeKind::DOCUMENT);
 
-static AAF: MimeType =
-    MimeType::new(APPLICATION_X_AAF, ".aaf", aaf, &[])
-    .with_parent(&OLE);
+static AAF: MimeType = MimeType::new(APPLICATION_X_AAF, ".aaf", aaf, &[]).with_parent(&OLE);
 
 // ============================================================================
 // ARCHIVE & COMPRESSION FORMATS
@@ -357,8 +366,7 @@ static AAF: MimeType =
 ///
 /// 7Z files start with a unique 6-byte signature that makes detection reliable.
 /// This format supports multiple compression algorithms and strong encryption.
-static SEVEN_Z: MimeType =
-    MimeType::new(APPLICATION_X_7Z_COMPRESSED, ".7z", seven_z, &[])
+static SEVEN_Z: MimeType = MimeType::new(APPLICATION_X_7Z_COMPRESSED, ".7z", seven_z, &[])
     .with_kind(MimeKind::ARCHIVE)
     .with_parent(&ROOT);
 
@@ -439,8 +447,8 @@ static XAR: MimeType =
 static DEB: MimeType = MimeType::new(APPLICATION_VND_DEBIAN_BINARY_PACKAGE, ".deb", deb, &[])
     .with_kind(MimeKind::ARCHIVE);
 
-static WARC: MimeType =
-    MimeType::new(APPLICATION_WARC, ".warc", warc, &[]).with_kind(MimeKind::ARCHIVE)
+static WARC: MimeType = MimeType::new(APPLICATION_WARC, ".warc", warc, &[])
+    .with_kind(MimeKind::ARCHIVE)
     .with_parent(&UTF8);
 
 // ============================================================================
@@ -448,100 +456,96 @@ static WARC: MimeType =
 // ============================================================================
 
 /// HTML format for UTF-16 Big Endian
-static HTML_UTF16_BE: MimeType = MimeType::new(TEXT_HTML_UTF16, ".html", html_utf16_be, &[])
-    .with_parent(&UTF16_BE);
+static HTML_UTF16_BE: MimeType =
+    MimeType::new(TEXT_HTML_UTF16, ".html", html_utf16_be, &[]).with_parent(&UTF16_BE);
 
 /// HTML format for UTF-16 Little Endian  
-static HTML_UTF16_LE: MimeType = MimeType::new(TEXT_HTML_UTF16, ".html", html_utf16_le, &[])
-    .with_parent(&UTF16_LE);
+static HTML_UTF16_LE: MimeType =
+    MimeType::new(TEXT_HTML_UTF16, ".html", html_utf16_le, &[]).with_parent(&UTF16_LE);
 
 /// XML format for UTF-16 Big Endian
-static XML_UTF16_BE: MimeType =
-    MimeType::new(TEXT_XML_UTF16, ".xml", xml_utf16_be, &[]).with_aliases(&[APPLICATION_XML_UTF16])
+static XML_UTF16_BE: MimeType = MimeType::new(TEXT_XML_UTF16, ".xml", xml_utf16_be, &[])
+    .with_aliases(&[APPLICATION_XML_UTF16])
     .with_parent(&UTF16_BE);
 
 /// XML format for UTF-16 Little Endian
-static XML_UTF16_LE: MimeType =
-    MimeType::new(TEXT_XML_UTF16, ".xml", xml_utf16_le, &[]).with_aliases(&[APPLICATION_XML_UTF16])
+static XML_UTF16_LE: MimeType = MimeType::new(TEXT_XML_UTF16, ".xml", xml_utf16_le, &[])
+    .with_aliases(&[APPLICATION_XML_UTF16])
     .with_parent(&UTF16_LE);
 
 /// SVG format for UTF-16 Big Endian
-static SVG_UTF16_BE: MimeType = MimeType::new(IMAGE_SVG_XML_UTF16, ".svg", svg_utf16_be, &[])
-    .with_parent(&UTF16_BE);
+static SVG_UTF16_BE: MimeType =
+    MimeType::new(IMAGE_SVG_XML_UTF16, ".svg", svg_utf16_be, &[]).with_parent(&UTF16_BE);
 
 /// SVG format for UTF-16 Little Endian
-static SVG_UTF16_LE: MimeType = MimeType::new(IMAGE_SVG_XML_UTF16, ".svg", svg_utf16_le, &[])
-    .with_parent(&UTF16_LE);
+static SVG_UTF16_LE: MimeType =
+    MimeType::new(IMAGE_SVG_XML_UTF16, ".svg", svg_utf16_le, &[]).with_parent(&UTF16_LE);
 
 /// JSON format for UTF-16 Big Endian
-static JSON_UTF16_BE: MimeType = MimeType::new(APPLICATION_JSON_UTF16, ".json", json_utf16_be, &[])
-    .with_parent(&UTF16_BE);
+static JSON_UTF16_BE: MimeType =
+    MimeType::new(APPLICATION_JSON_UTF16, ".json", json_utf16_be, &[]).with_parent(&UTF16_BE);
 
 /// JSON format for UTF-16 Little Endian
-static JSON_UTF16_LE: MimeType = MimeType::new(APPLICATION_JSON_UTF16, ".json", json_utf16_le, &[])
-    .with_parent(&UTF16_LE);
+static JSON_UTF16_LE: MimeType =
+    MimeType::new(APPLICATION_JSON_UTF16, ".json", json_utf16_le, &[]).with_parent(&UTF16_LE);
 
 /// CSV format for UTF-16 Big Endian
-static CSV_UTF16_BE: MimeType = MimeType::new(TEXT_CSV_UTF16, ".csv", csv_utf16_be, &[])
-    .with_parent(&UTF16_BE);
+static CSV_UTF16_BE: MimeType =
+    MimeType::new(TEXT_CSV_UTF16, ".csv", csv_utf16_be, &[]).with_parent(&UTF16_BE);
 
 /// CSV format for UTF-16 Little Endian
-static CSV_UTF16_LE: MimeType = MimeType::new(TEXT_CSV_UTF16, ".csv", csv_utf16_le, &[])
-    .with_parent(&UTF16_LE);
+static CSV_UTF16_LE: MimeType =
+    MimeType::new(TEXT_CSV_UTF16, ".csv", csv_utf16_le, &[]).with_parent(&UTF16_LE);
 
 /// TSV format for UTF-16 Big Endian
 static TSV_UTF16_BE: MimeType =
     MimeType::new(TEXT_TAB_SEPARATED_VALUES_UTF16, ".tsv", tsv_utf16_be, &[])
-    .with_parent(&UTF16_BE);
+        .with_parent(&UTF16_BE);
 
 /// TSV format for UTF-16 Little Endian
 static TSV_UTF16_LE: MimeType =
     MimeType::new(TEXT_TAB_SEPARATED_VALUES_UTF16, ".tsv", tsv_utf16_le, &[])
-    .with_parent(&UTF16_LE);
+        .with_parent(&UTF16_LE);
 
 /// SRT subtitle format for UTF-16 Big Endian
 static SRT_UTF16_BE: MimeType =
-    MimeType::new(APPLICATION_X_SUBRIP_UTF16, ".srt", srt_utf16_be, &[])
-    .with_parent(&UTF16_BE);
+    MimeType::new(APPLICATION_X_SUBRIP_UTF16, ".srt", srt_utf16_be, &[]).with_parent(&UTF16_BE);
 
 /// SRT subtitle format for UTF-16 Little Endian
 static SRT_UTF16_LE: MimeType =
-    MimeType::new(APPLICATION_X_SUBRIP_UTF16, ".srt", srt_utf16_le, &[])
-    .with_parent(&UTF16_LE);
+    MimeType::new(APPLICATION_X_SUBRIP_UTF16, ".srt", srt_utf16_le, &[]).with_parent(&UTF16_LE);
 
 /// VTT subtitle format for UTF-16 Big Endian
-static VTT_UTF16_BE: MimeType = MimeType::new(TEXT_VTT_UTF16, ".vtt", vtt_utf16_be, &[])
-    .with_parent(&UTF16_BE);
+static VTT_UTF16_BE: MimeType =
+    MimeType::new(TEXT_VTT_UTF16, ".vtt", vtt_utf16_be, &[]).with_parent(&UTF16_BE);
 
 /// VTT subtitle format for UTF-16 Little Endian
-static VTT_UTF16_LE: MimeType = MimeType::new(TEXT_VTT_UTF16, ".vtt", vtt_utf16_le, &[])
-    .with_parent(&UTF16_LE);
+static VTT_UTF16_LE: MimeType =
+    MimeType::new(TEXT_VTT_UTF16, ".vtt", vtt_utf16_le, &[]).with_parent(&UTF16_LE);
 
 /// vCard format for UTF-16 Big Endian
-static VCARD_UTF16_BE: MimeType = MimeType::new(TEXT_VCARD_UTF16, ".vcf", vcard_utf16_be, &[])
-    .with_parent(&UTF16_BE);
+static VCARD_UTF16_BE: MimeType =
+    MimeType::new(TEXT_VCARD_UTF16, ".vcf", vcard_utf16_be, &[]).with_parent(&UTF16_BE);
 
 /// vCard format for UTF-16 Little Endian
-static VCARD_UTF16_LE: MimeType = MimeType::new(TEXT_VCARD_UTF16, ".vcf", vcard_utf16_le, &[])
-    .with_parent(&UTF16_LE);
+static VCARD_UTF16_LE: MimeType =
+    MimeType::new(TEXT_VCARD_UTF16, ".vcf", vcard_utf16_le, &[]).with_parent(&UTF16_LE);
 
 /// iCalendar format for UTF-16 Big Endian
 static ICALENDAR_UTF16_BE: MimeType =
-    MimeType::new(TEXT_CALENDAR_UTF16, ".ics", icalendar_utf16_be, &[])
-    .with_parent(&UTF16_BE);
+    MimeType::new(TEXT_CALENDAR_UTF16, ".ics", icalendar_utf16_be, &[]).with_parent(&UTF16_BE);
 
 /// iCalendar format for UTF-16 Little Endian
 static ICALENDAR_UTF16_LE: MimeType =
-    MimeType::new(TEXT_CALENDAR_UTF16, ".ics", icalendar_utf16_le, &[])
-    .with_parent(&UTF16_LE);
+    MimeType::new(TEXT_CALENDAR_UTF16, ".ics", icalendar_utf16_le, &[]).with_parent(&UTF16_LE);
 
 /// RTF format for UTF-16 Big Endian
-static RTF_UTF16_BE: MimeType = MimeType::new(TEXT_RTF_UTF16, ".rtf", rtf_utf16_be, &[])
-    .with_parent(&UTF16_BE);
+static RTF_UTF16_BE: MimeType =
+    MimeType::new(TEXT_RTF_UTF16, ".rtf", rtf_utf16_be, &[]).with_parent(&UTF16_BE);
 
 /// RTF format for UTF-16 Little Endian
-static RTF_UTF16_LE: MimeType = MimeType::new(TEXT_RTF_UTF16, ".rtf", rtf_utf16_le, &[])
-    .with_parent(&UTF16_LE);
+static RTF_UTF16_LE: MimeType =
+    MimeType::new(TEXT_RTF_UTF16, ".rtf", rtf_utf16_le, &[]).with_parent(&UTF16_LE);
 
 // ============================================================================
 // IMAGE FORMATS
@@ -605,11 +609,12 @@ static PPM: MimeType =
 static PAM: MimeType =
     MimeType::new(IMAGE_X_PORTABLE_ARBITRARYMAP, ".pam", pam, &[]).with_kind(MimeKind::IMAGE);
 
-static HEIC: MimeType = MimeType::new(IMAGE_HEIC, ".heic", heic, &[]).with_kind(MimeKind::IMAGE)
+static HEIC: MimeType = MimeType::new(IMAGE_HEIC, ".heic", heic, &[])
+    .with_kind(MimeKind::IMAGE)
     .with_parent(&HEIF);
 
-static HEIC_SEQ: MimeType =
-    MimeType::new(IMAGE_HEIC_SEQUENCE, ".heic", heic_sequence, &[]).with_kind(MimeKind::IMAGE)
+static HEIC_SEQ: MimeType = MimeType::new(IMAGE_HEIC_SEQUENCE, ".heic", heic_sequence, &[])
+    .with_kind(MimeKind::IMAGE)
     .with_parent(&HEIF);
 
 static HEIF: MimeType = MimeType::new(IMAGE_HEIF, ".heif", heif, &[]).with_kind(MimeKind::IMAGE);
@@ -675,12 +680,12 @@ static OGG: MimeType = MimeType::new(APPLICATION_OGG, ".ogg", ogg, &[&OGG_AUDIO,
     .with_extension_aliases(&[".oga", ".opus", ".ogv"])
     .with_kind(MimeKind::AUDIO);
 
-static OGG_AUDIO: MimeType =
-    MimeType::new(AUDIO_OGG, ".oga", ogg_audio, &[]).with_kind(MimeKind::AUDIO)
+static OGG_AUDIO: MimeType = MimeType::new(AUDIO_OGG, ".oga", ogg_audio, &[])
+    .with_kind(MimeKind::AUDIO)
     .with_parent(&OGG);
 
-static OGG_VIDEO: MimeType =
-    MimeType::new(VIDEO_OGG, ".ogv", ogg_video, &[]).with_kind(MimeKind::VIDEO)
+static OGG_VIDEO: MimeType = MimeType::new(VIDEO_OGG, ".ogv", ogg_video, &[])
+    .with_kind(MimeKind::VIDEO)
     .with_parent(&OGG);
 
 static APE: MimeType = MimeType::new(AUDIO_APE, ".ape", ape, &[]).with_kind(MimeKind::AUDIO);
@@ -857,11 +862,10 @@ static SQLITE3: MimeType = MimeType::new(APPLICATION_VND_SQLITE3, ".sqlite", sql
     .with_aliases(&[APPLICATION_X_SQLITE3])
     .with_kind(MimeKind::DATABASE);
 
-static FASOO: MimeType = MimeType::new(APPLICATION_X_FASOO, "", fasoo, &[])
-    .with_parent(&OLE);
+static FASOO: MimeType = MimeType::new(APPLICATION_X_FASOO, "", fasoo, &[]).with_parent(&OLE);
 
-static PGP_NET_SHARE: MimeType = MimeType::new(APPLICATION_X_PGP_NET_SHARE, "", pgp_net_share, &[])
-    .with_parent(&OLE);
+static PGP_NET_SHARE: MimeType =
+    MimeType::new(APPLICATION_X_PGP_NET_SHARE, "", pgp_net_share, &[]).with_parent(&OLE);
 
 // ============================================================================
 // MICROSOFT OFFICE & DOCUMENT FORMATS
@@ -874,7 +878,7 @@ static DOCX: MimeType = MimeType::new(
     &[],
 )
 .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ZIP);
+.with_parent(&ZIP);
 
 static XLSX: MimeType = MimeType::new(
     APPLICATION_VND_OPENXML_SPREADSHEETML_SHEET,
@@ -883,7 +887,7 @@ static XLSX: MimeType = MimeType::new(
     &[],
 )
 .with_kind(MimeKind::SPREADSHEET)
-    .with_parent(&ZIP);
+.with_parent(&ZIP);
 
 static PPTX: MimeType = MimeType::new(
     APPLICATION_VND_OPENXML_PRESENTATIONML_PRESENTATION,
@@ -892,7 +896,7 @@ static PPTX: MimeType = MimeType::new(
     &[],
 )
 .with_kind(MimeKind::PRESENTATION)
-    .with_parent(&ZIP);
+.with_parent(&ZIP);
 
 static VSDX: MimeType = MimeType::new(
     APPLICATION_VND_MS_VISIO_DRAWING_MAIN_XML,
@@ -901,10 +905,10 @@ static VSDX: MimeType = MimeType::new(
     &[],
 )
 .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ZIP);
+.with_parent(&ZIP);
 
-static EPUB: MimeType =
-    MimeType::new(APPLICATION_EPUB_ZIP, ".epub", epub, &[]).with_kind(MimeKind::DOCUMENT)
+static EPUB: MimeType = MimeType::new(APPLICATION_EPUB_ZIP, ".epub", epub, &[])
+    .with_kind(MimeKind::DOCUMENT)
     .with_parent(&ZIP);
 
 static JAR: MimeType = MimeType::new(APPLICATION_JAVA_ARCHIVE, ".jar", jar, &[])
@@ -920,15 +924,15 @@ static APK: MimeType = MimeType::new(APPLICATION_VND_ANDROID_PACKAGE_ARCHIVE, ".
     .with_kind(MimeKind::APPLICATION)
     .with_parent(&ZIP);
 
-static DOC: MimeType =
-    MimeType::new(APPLICATION_MSWORD, ".doc", doc, &[]).with_kind(MimeKind::DOCUMENT)
+static DOC: MimeType = MimeType::new(APPLICATION_MSWORD, ".doc", doc, &[])
+    .with_kind(MimeKind::DOCUMENT)
     .with_parent(&OLE);
 
 static WPD: MimeType =
     MimeType::new(APPLICATION_VND_WORDPERFECT, ".wpd", wpd, &[]).with_kind(MimeKind::DOCUMENT);
 
-static XLS: MimeType =
-    MimeType::new(APPLICATION_VND_MS_EXCEL, ".xls", xls, &[]).with_kind(MimeKind::SPREADSHEET)
+static XLS: MimeType = MimeType::new(APPLICATION_VND_MS_EXCEL, ".xls", xls, &[])
+    .with_kind(MimeKind::SPREADSHEET)
     .with_parent(&OLE);
 
 static PPT: MimeType = MimeType::new(APPLICATION_VND_MS_POWERPOINT, ".ppt", ppt, &[])
@@ -938,20 +942,20 @@ static PPT: MimeType = MimeType::new(APPLICATION_VND_MS_POWERPOINT, ".ppt", ppt,
 static CHM: MimeType =
     MimeType::new(APPLICATION_VND_MS_HTMLHELP, ".chm", chm, &[]).with_kind(MimeKind::DOCUMENT);
 
-static ONENOTE: MimeType =
-    MimeType::new(APPLICATION_ONENOTE, ".one", onenote, &[]).with_kind(MimeKind::DOCUMENT)
+static ONENOTE: MimeType = MimeType::new(APPLICATION_ONENOTE, ".one", onenote, &[])
+    .with_kind(MimeKind::DOCUMENT)
     .with_parent(&OLE);
 
 static PUB: MimeType = MimeType::new(APPLICATION_VND_MS_PUBLISHER, ".pub", pub_format, &[])
     .with_kind(MimeKind::DOCUMENT)
     .with_parent(&OLE);
 
-static MSG: MimeType =
-    MimeType::new(APPLICATION_VND_MS_OUTLOOK, ".msg", msg, &[]).with_kind(MimeKind::DOCUMENT)
+static MSG: MimeType = MimeType::new(APPLICATION_VND_MS_OUTLOOK, ".msg", msg, &[])
+    .with_kind(MimeKind::DOCUMENT)
     .with_parent(&OLE);
 
-static MSI: MimeType =
-    MimeType::new(APPLICATION_X_MS_INSTALLER, ".msi", msi, &[]).with_kind(MimeKind::ARCHIVE)
+static MSI: MimeType = MimeType::new(APPLICATION_X_MS_INSTALLER, ".msi", msi, &[])
+    .with_kind(MimeKind::ARCHIVE)
     .with_parent(&OLE);
 
 // ============================================================================
@@ -966,7 +970,7 @@ static ODT: MimeType = MimeType::new(
 )
 .with_aliases(&["application/x-vnd.oasis.opendocument.text"])
 .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ZIP);
+.with_parent(&ZIP);
 
 static ODS: MimeType = MimeType::new(
     APPLICATION_VND_OASIS_OPENDOCUMENT_SPREADSHEET,
@@ -976,7 +980,7 @@ static ODS: MimeType = MimeType::new(
 )
 .with_aliases(&["application/x-vnd.oasis.opendocument.spreadsheet"])
 .with_kind(MimeKind::SPREADSHEET)
-    .with_parent(&ZIP);
+.with_parent(&ZIP);
 
 static ODP: MimeType = MimeType::new(
     APPLICATION_VND_OASIS_OPENDOCUMENT_PRESENTATION,
@@ -986,7 +990,7 @@ static ODP: MimeType = MimeType::new(
 )
 .with_aliases(&["application/x-vnd.oasis.opendocument.presentation"])
 .with_kind(MimeKind::PRESENTATION)
-    .with_parent(&ZIP);
+.with_parent(&ZIP);
 
 static ODG: MimeType = MimeType::new(
     APPLICATION_VND_OASIS_OPENDOCUMENT_GRAPHICS,
@@ -996,7 +1000,7 @@ static ODG: MimeType = MimeType::new(
 )
 .with_aliases(&["application/x-vnd.oasis.opendocument.graphics"])
 .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ZIP);
+.with_parent(&ZIP);
 
 static ODF: MimeType = MimeType::new(
     APPLICATION_VND_OASIS_OPENDOCUMENT_FORMULA,
@@ -1006,7 +1010,7 @@ static ODF: MimeType = MimeType::new(
 )
 .with_aliases(&["application/x-vnd.oasis.opendocument.formula"])
 .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ZIP);
+.with_parent(&ZIP);
 
 static ODC: MimeType = MimeType::new(APPLICATION_VND_OASIS_OPENDOCUMENT_CHART, ".odc", odc, &[])
     .with_aliases(&["application/x-vnd.oasis.opendocument.chart"])
@@ -1021,7 +1025,7 @@ static OTT: MimeType = MimeType::new(
 )
 .with_aliases(&["application/x-vnd.oasis.opendocument.text-template"])
 .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ODT);
+.with_parent(&ODT);
 
 static OTS: MimeType = MimeType::new(
     APPLICATION_VND_OASIS_OPENDOCUMENT_SPREADSHEET_TEMPLATE,
@@ -1031,7 +1035,7 @@ static OTS: MimeType = MimeType::new(
 )
 .with_aliases(&["application/x-vnd.oasis.opendocument.spreadsheet-template"])
 .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ODS);
+.with_parent(&ODS);
 
 static OTP: MimeType = MimeType::new(
     APPLICATION_VND_OASIS_OPENDOCUMENT_PRESENTATION_TEMPLATE,
@@ -1041,7 +1045,7 @@ static OTP: MimeType = MimeType::new(
 )
 .with_aliases(&["application/x-vnd.oasis.opendocument.presentation-template"])
 .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ODP);
+.with_parent(&ODP);
 
 static OTG: MimeType = MimeType::new(
     APPLICATION_VND_OASIS_OPENDOCUMENT_GRAPHICS_TEMPLATE,
@@ -1051,14 +1055,14 @@ static OTG: MimeType = MimeType::new(
 )
 .with_aliases(&["application/x-vnd.oasis.opendocument.graphics-template"])
 .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ODG);
+.with_parent(&ODG);
 
-static SXC: MimeType =
-    MimeType::new(APPLICATION_VND_SUN_XML_CALC, ".sxc", sxc, &[]).with_kind(MimeKind::SPREADSHEET)
+static SXC: MimeType = MimeType::new(APPLICATION_VND_SUN_XML_CALC, ".sxc", sxc, &[])
+    .with_kind(MimeKind::SPREADSHEET)
     .with_parent(&ZIP);
 
-static KMZ: MimeType =
-    MimeType::new(APPLICATION_VND_GOOGLE_EARTH_KMZ, ".kmz", kmz, &[]).with_kind(MimeKind::DOCUMENT)
+static KMZ: MimeType = MimeType::new(APPLICATION_VND_GOOGLE_EARTH_KMZ, ".kmz", kmz, &[])
+    .with_kind(MimeKind::DOCUMENT)
     .with_parent(&ZIP);
 
 // ============================================================================
@@ -1084,8 +1088,7 @@ static MRC: MimeType = MimeType::new(APPLICATION_MARC, ".mrc", marc, &[])
 // PROGRAMMING & TEXT FORMATS
 // ============================================================================
 
-static PHP: MimeType = MimeType::new(TEXT_X_PHP, ".php", php, &[])
-    .with_parent(&UTF8);
+static PHP: MimeType = MimeType::new(TEXT_X_PHP, ".php", php, &[]).with_parent(&UTF8);
 
 static JAVASCRIPT: MimeType = MimeType::new(TEXT_JAVASCRIPT, ".js", javascript, &[])
     .with_aliases(&[APPLICATION_JAVASCRIPT])
@@ -1095,15 +1098,13 @@ static PYTHON: MimeType = MimeType::new(TEXT_X_PYTHON, ".py", python, &[])
     .with_aliases(&[TEXT_X_SCRIPT_PYTHON, APPLICATION_X_PYTHON])
     .with_parent(&UTF8);
 
-static PERL: MimeType = MimeType::new(TEXT_X_PERL, ".pl", perl, &[])
-    .with_parent(&UTF8);
+static PERL: MimeType = MimeType::new(TEXT_X_PERL, ".pl", perl, &[]).with_parent(&UTF8);
 
 static RUBY: MimeType = MimeType::new(TEXT_X_RUBY, ".rb", ruby, &[])
     .with_aliases(&[APPLICATION_X_RUBY])
     .with_parent(&UTF8);
 
-static LUA: MimeType = MimeType::new(TEXT_X_LUA, ".lua", lua, &[])
-    .with_parent(&UTF8);
+static LUA: MimeType = MimeType::new(TEXT_X_LUA, ".lua", lua, &[]).with_parent(&UTF8);
 
 static SHELL: MimeType = MimeType::new(TEXT_X_SHELLSCRIPT, ".sh", shell, &[])
     .with_aliases(&[TEXT_X_SH, APPLICATION_X_SHELLSCRIPT, APPLICATION_X_SH])
@@ -1122,20 +1123,15 @@ static JSON: MimeType = MimeType::new(
 .with_parent(&UTF8);
 
 static GEOJSON: MimeType =
-    MimeType::new(APPLICATION_GEO_JSON, ".geojson", geojson, &[])
-    .with_parent(&JSON);
+    MimeType::new(APPLICATION_GEO_JSON, ".geojson", geojson, &[]).with_parent(&JSON);
 
 static NDJSON: MimeType =
-    MimeType::new(APPLICATION_X_NDJSON, ".ndjson", ndjson, &[])
-    .with_parent(&JSON);
+    MimeType::new(APPLICATION_X_NDJSON, ".ndjson", ndjson, &[]).with_parent(&JSON);
 
-static CSV_FORMAT: MimeType =
-    MimeType::new(TEXT_CSV, ".csv", csv_format, &[])
-    .with_parent(&UTF8);
+static CSV_FORMAT: MimeType = MimeType::new(TEXT_CSV, ".csv", csv_format, &[]).with_parent(&UTF8);
 
 static TSV: MimeType =
-    MimeType::new(TEXT_TAB_SEPARATED_VALUES, ".tsv", tsv, &[])
-    .with_parent(&UTF8);
+    MimeType::new(TEXT_TAB_SEPARATED_VALUES, ".tsv", tsv, &[]).with_parent(&UTF8);
 
 static RTF: MimeType = MimeType::new(TEXT_RTF, ".rtf", rtf, &[])
     .with_aliases(&[APPLICATION_RTF])
@@ -1147,18 +1143,15 @@ static SRT: MimeType = MimeType::new(APPLICATION_X_SUBRIP, ".srt", srt, &[])
     .with_kind(MimeKind::DOCUMENT)
     .with_parent(&UTF8);
 
-static VTT: MimeType = MimeType::new(TEXT_VTT, ".vtt", vtt, &[])
-    .with_parent(&UTF8);
+static VTT: MimeType = MimeType::new(TEXT_VTT, ".vtt", vtt, &[]).with_parent(&UTF8);
 
-static VCARD: MimeType = MimeType::new(TEXT_VCARD, ".vcf", vcard, &[])
-    .with_parent(&UTF8);
+static VCARD: MimeType = MimeType::new(TEXT_VCARD, ".vcf", vcard, &[]).with_parent(&UTF8);
 
 static ICALENDAR: MimeType =
-    MimeType::new(TEXT_CALENDAR, ".ics", icalendar, &[])
-    .with_parent(&UTF8);
+    MimeType::new(TEXT_CALENDAR, ".ics", icalendar, &[]).with_parent(&UTF8);
 
-static SVG: MimeType =
-    MimeType::new(IMAGE_SVG_XML, ".svg", svg, &[]).with_kind(MimeKind::IMAGE)
+static SVG: MimeType = MimeType::new(IMAGE_SVG_XML, ".svg", svg, &[])
+    .with_kind(MimeKind::IMAGE)
     .with_parent(&XML);
 
 // ============================================================================
@@ -1170,39 +1163,40 @@ static RSS: MimeType = MimeType::new(APPLICATION_RSS_XML, ".rss", rss, &[])
     .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
-static ATOM: MimeType =
-    MimeType::new(APPLICATION_ATOM_XML, ".atom", atom, &[]).with_kind(MimeKind::TEXT)
+static ATOM: MimeType = MimeType::new(APPLICATION_ATOM_XML, ".atom", atom, &[])
+    .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
-static X3D: MimeType = MimeType::new(MODEL_X3D_XML, ".x3d", x3d, &[]).with_kind(MimeKind::TEXT)
+static X3D: MimeType = MimeType::new(MODEL_X3D_XML, ".x3d", x3d, &[])
+    .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
-static KML: MimeType =
-    MimeType::new(APPLICATION_VND_GOOGLE_EARTH_KML_XML, ".kml", kml, &[]).with_kind(MimeKind::TEXT)
+static KML: MimeType = MimeType::new(APPLICATION_VND_GOOGLE_EARTH_KML_XML, ".kml", kml, &[])
+    .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
-static XLIFF: MimeType =
-    MimeType::new(APPLICATION_X_XLIFF_XML, ".xlf", xliff, &[]).with_kind(MimeKind::TEXT)
+static XLIFF: MimeType = MimeType::new(APPLICATION_X_XLIFF_XML, ".xlf", xliff, &[])
+    .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
-static COLLADA: MimeType =
-    MimeType::new(MODEL_VND_COLLADA_XML, ".dae", collada, &[]).with_kind(MimeKind::MODEL)
+static COLLADA: MimeType = MimeType::new(MODEL_VND_COLLADA_XML, ".dae", collada, &[])
+    .with_kind(MimeKind::MODEL)
     .with_parent(&XML);
 
-static GML: MimeType =
-    MimeType::new(APPLICATION_GML_XML, ".gml", gml, &[]).with_kind(MimeKind::TEXT)
+static GML: MimeType = MimeType::new(APPLICATION_GML_XML, ".gml", gml, &[])
+    .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
-static GPX: MimeType =
-    MimeType::new(APPLICATION_GPX_XML, ".gpx", gpx, &[]).with_kind(MimeKind::TEXT)
+static GPX: MimeType = MimeType::new(APPLICATION_GPX_XML, ".gpx", gpx, &[])
+    .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
-static TCX: MimeType =
-    MimeType::new(APPLICATION_VND_GARMIN_TCX_XML, ".tcx", tcx, &[]).with_kind(MimeKind::TEXT)
+static TCX: MimeType = MimeType::new(APPLICATION_VND_GARMIN_TCX_XML, ".tcx", tcx, &[])
+    .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
-static AMF: MimeType =
-    MimeType::new(APPLICATION_X_AMF, ".amf", amf, &[]).with_kind(MimeKind::MODEL)
+static AMF: MimeType = MimeType::new(APPLICATION_X_AMF, ".amf", amf, &[])
+    .with_kind(MimeKind::MODEL)
     .with_parent(&XML);
 
 static THREEMF: MimeType = MimeType::new(
@@ -1214,20 +1208,20 @@ static THREEMF: MimeType = MimeType::new(
 .with_kind(MimeKind::MODEL)
 .with_parent(&XML);
 
-static XFDF: MimeType =
-    MimeType::new(APPLICATION_VND_ADOBE_XFDF, ".xfdf", xfdf, &[]).with_kind(MimeKind::TEXT)
+static XFDF: MimeType = MimeType::new(APPLICATION_VND_ADOBE_XFDF, ".xfdf", xfdf, &[])
+    .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
-static OWL2: MimeType =
-    MimeType::new(APPLICATION_OWL_XML, ".owl", owl2, &[]).with_kind(MimeKind::TEXT)
+static OWL2: MimeType = MimeType::new(APPLICATION_OWL_XML, ".owl", owl2, &[])
+    .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
-static XHTML: MimeType =
-    MimeType::new(APPLICATION_XHTML_XML, ".html", xhtml, &[]).with_kind(MimeKind::TEXT)
+static XHTML: MimeType = MimeType::new(APPLICATION_XHTML_XML, ".html", xhtml, &[])
+    .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
-static HAR: MimeType =
-    MimeType::new(APPLICATION_JSON_HAR, ".har", har, &[]).with_kind(MimeKind::TEXT)
+static HAR: MimeType = MimeType::new(APPLICATION_JSON_HAR, ".har", har, &[])
+    .with_kind(MimeKind::TEXT)
     .with_parent(&JSON);
 
 // ============================================================================
@@ -1241,8 +1235,8 @@ static SHX: MimeType = MimeType::new(APPLICATION_VND_SHX, ".shx", shx, &[&SHP]);
 static GLB: MimeType =
     MimeType::new(MODEL_GLTF_BINARY, ".glb", glb, &[]).with_kind(MimeKind::MODEL);
 
-static GLTF: MimeType =
-    MimeType::new(MODEL_GLTF_JSON, ".gltf", gltf, &[]).with_kind(MimeKind::MODEL)
+static GLTF: MimeType = MimeType::new(MODEL_GLTF_JSON, ".gltf", gltf, &[])
+    .with_kind(MimeKind::MODEL)
     .with_parent(&JSON);
 
 // ============================================================================
@@ -1278,21 +1272,18 @@ static AVIF_FORMAT: MimeType =
 static HDF: MimeType =
     MimeType::new(APPLICATION_X_HDF, ".hdf", hdf, &[]).with_kind(MimeKind::DATABASE);
 
-static CBOR_FORMAT: MimeType =
-    MimeType::new(APPLICATION_CBOR, ".cbor", cbor_format, &[]);
+static CBOR_FORMAT: MimeType = MimeType::new(APPLICATION_CBOR, ".cbor", cbor_format, &[]);
 
 static PARQUET: MimeType = MimeType::new(APPLICATION_VND_APACHE_PARQUET, ".parquet", parquet, &[])
     .with_aliases(&[APPLICATION_X_PARQUET])
     .with_kind(MimeKind::DATABASE);
 
-static LNK: MimeType =
-    MimeType::new(APPLICATION_X_MS_SHORTCUT, ".lnk", lnk, &[]);
+static LNK: MimeType = MimeType::new(APPLICATION_X_MS_SHORTCUT, ".lnk", lnk, &[]);
 
 static MACHO: MimeType =
     MimeType::new(APPLICATION_X_MACH_BINARY, ".macho", macho, &[]).with_kind(MimeKind::EXECUTABLE);
 
-static TZIF: MimeType =
-    MimeType::new(APPLICATION_TZIF, "", tzif, &[]);
+static TZIF: MimeType = MimeType::new(APPLICATION_TZIF, "", tzif, &[]);
 
 // ============================================================================
 // XML FORMAT DETECTION FUNCTIONS
