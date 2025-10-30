@@ -1,0 +1,30 @@
+name: Benchmarks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [ opened, reopened, synchronize ]
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    name: Run Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          components: 'llvm-tools-preview'
+          toolchain: stable
+
+      - name: Run benchmarks
+        env:
+          CARGO_TERM_COLOR: always
+        run: cargo bench --all-features
