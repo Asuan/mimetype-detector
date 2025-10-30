@@ -2821,7 +2821,6 @@ fn test_detect_rtf_utf16_le() {
     assert_eq!(mime_type.extension(), ".rtf");
 }
 
-
 #[test]
 fn test_detect_multiple_signatures() {
     let gif87 = b"GIF87a";

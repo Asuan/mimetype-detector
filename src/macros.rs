@@ -236,14 +236,19 @@ mod tests {
 
     #[test]
     fn test_array_prefix_matching() {
-        let test_png = |input: &[u8]| input.starts_with(&[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+        let test_png =
+            |input: &[u8]| input.starts_with(&[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
         assert!(test_png(b"\x89PNG\r\n\x1a\n"));
         assert!(!test_png(b"not png"));
     }
 
     #[test]
     fn test_multi_prefix_matching() {
-        let test_zip = |input: &[u8]| input.starts_with(b"PK\x03\x04") || input.starts_with(b"PK\x05\x06") || input.starts_with(b"PK\x07\x08");
+        let test_zip = |input: &[u8]| {
+            input.starts_with(b"PK\x03\x04")
+                || input.starts_with(b"PK\x05\x06")
+                || input.starts_with(b"PK\x07\x08")
+        };
         assert!(test_zip(b"PK\x03\x04"));
         assert!(test_zip(b"PK\x05\x06"));
         assert!(test_zip(b"PK\x07\x08"));
@@ -261,7 +266,9 @@ mod tests {
 
     #[test]
     fn test_offset_prefix_matching() {
-        let test_webp = |input: &[u8]| input.len() >= 12 && input.starts_with(b"RIFF") && &input[8..12] == b"WEBP";
+        let test_webp = |input: &[u8]| {
+            input.len() >= 12 && input.starts_with(b"RIFF") && &input[8..12] == b"WEBP"
+        };
         let mut data = vec![0u8; 20];
         data[0..4].copy_from_slice(b"RIFF");
         data[8..12].copy_from_slice(b"WEBP");
@@ -330,9 +337,13 @@ mod tests {
         assert!(TEST_WAV_FMT.kind().contains(MimeKind::AUDIO));
     }
 
-    static TEST_PDF_SEP: crate::MimeType =
-        crate::MimeType::new(APPLICATION_PDF, ".pdf", |input| input.starts_with(b"%PDF-"), &[])
-            .with_kind(crate::MimeKind::DOCUMENT);
+    static TEST_PDF_SEP: crate::MimeType = crate::MimeType::new(
+        APPLICATION_PDF,
+        ".pdf",
+        |input| input.starts_with(b"%PDF-"),
+        &[],
+    )
+    .with_kind(crate::MimeKind::DOCUMENT);
 
     #[test]
     fn test_manual_mimetype_creation() {
@@ -446,12 +457,8 @@ mod tests {
 
     // Test children parameter
     // Create a test child type
-    static TEST_CHILD: crate::MimeType = crate::MimeType::new(
-        "application/x-test-child",
-        ".child",
-        |_| false,
-        &[]
-    );
+    static TEST_CHILD: crate::MimeType =
+        crate::MimeType::new("application/x-test-child", ".child", |_| false, &[]);
 
     mimetype!(
         TEST_PNG_CHILDREN,
@@ -472,12 +479,7 @@ mod tests {
 
     // Test unified mimetype! macro with parent parameter
     // Create a test parent type
-    static TEST_PARENT: crate::MimeType = crate::MimeType::new(
-        "text/plain",
-        ".txt",
-        |_| true,
-        &[]
-    );
+    static TEST_PARENT: crate::MimeType = crate::MimeType::new("text/plain", ".txt", |_| true, &[]);
 
     mimetype!(
         TEST_WARC_PARENT,

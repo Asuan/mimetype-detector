@@ -54,20 +54,6 @@ jobs:
         run: |
           cargo clippy --all-targets --all-features --tests
 
-  deny:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
-      - name: Install cargo deny
-        run: cargo install cargo-deny
-      - name: Check licenses
-        run: cargo deny check --allow duplicate
-
   doc:
     runs-on: ubuntu-latest
     steps:

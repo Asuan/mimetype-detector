@@ -184,7 +184,7 @@ pub static ROOT: MimeType = MimeType::new(
 /// HTML format with enhanced case-insensitive tag detection.
 ///
 /// Detects HTML files by looking for common HTML tags while handling:
-/// - Case insensitive matching (handles both <html> and <HTML>)
+/// - Case insensitive matching (handles both `<html>` and `<HTML>`)
 /// - Proper tag termination validation
 /// - DOCTYPE declarations and comments
 /// - Whitespace tolerance at the beginning of files
@@ -439,9 +439,14 @@ mimetype!(LHA, APPLICATION_X_LZH_COMPRESSED, ".lzh", b"-lh", kind: ARCHIVE);
 static DEB: MimeType = MimeType::new(APPLICATION_VND_DEBIAN_BINARY_PACKAGE, ".deb", deb, &[])
     .with_kind(MimeKind::ARCHIVE);
 
-static WARC: MimeType = MimeType::new(APPLICATION_WARC, ".warc", |input| input.starts_with(b"WARC/1.0") || input.starts_with(b"WARC/1.1"), &[])
-    .with_kind(MimeKind::ARCHIVE)
-    .with_parent(&UTF8);
+static WARC: MimeType = MimeType::new(
+    APPLICATION_WARC,
+    ".warc",
+    |input| input.starts_with(b"WARC/1.0") || input.starts_with(b"WARC/1.1"),
+    &[],
+)
+.with_kind(MimeKind::ARCHIVE)
+.with_parent(&UTF8);
 
 // ============================================================================
 // UTF-16 TEXT FORMAT VARIANTS
@@ -560,9 +565,14 @@ static JPM: MimeType = MimeType::new(IMAGE_JPM, ".jpm", jpm, &[])
 
 mimetype!(JXS, IMAGE_JXS, ".jxs", b"\x00\x00\x00\x0C\x4A\x58\x53\x20\x0D\x0A\x87\x0A", kind: IMAGE);
 
-static JXR: MimeType = MimeType::new(IMAGE_JXR, ".jxr", |input| input.starts_with(b"\x49\x49\xBC\x01"), &[])
-    .with_aliases(&[IMAGE_VND_MS_PHOTO])
-    .with_kind(MimeKind::IMAGE);
+static JXR: MimeType = MimeType::new(
+    IMAGE_JXR,
+    ".jxr",
+    |input| input.starts_with(b"\x49\x49\xBC\x01"),
+    &[],
+)
+.with_aliases(&[IMAGE_VND_MS_PHOTO])
+.with_kind(MimeKind::IMAGE);
 
 mimetype!(JXL, IMAGE_JXL, ".jxl", b"\xFF\x0A" | b"\x00\x00\x00\x0CJXL \x0D\x0A\x87\x0A", kind: IMAGE);
 
@@ -629,7 +639,18 @@ static DWG: MimeType = MimeType::new(IMAGE_VND_DWG, ".dwg", dwg, &[])
     ])
     .with_kind(MimeKind::IMAGE);
 
-static DXF: MimeType = MimeType::new(IMAGE_VND_DXF, ".dxf", |input| input.starts_with(b"  0\x0ASECTION\x0A") || input.starts_with(b"  0\x0D\x0ASECTION\x0D\x0A") || input.starts_with(b"0\x0ASECTION\x0A") || input.starts_with(b"0\x0D\x0ASECTION\x0D\x0A"), &[]).with_kind(MimeKind::IMAGE);
+static DXF: MimeType = MimeType::new(
+    IMAGE_VND_DXF,
+    ".dxf",
+    |input| {
+        input.starts_with(b"  0\x0ASECTION\x0A")
+            || input.starts_with(b"  0\x0D\x0ASECTION\x0D\x0A")
+            || input.starts_with(b"0\x0ASECTION\x0A")
+            || input.starts_with(b"0\x0D\x0ASECTION\x0D\x0A")
+    },
+    &[],
+)
+.with_kind(MimeKind::IMAGE);
 
 mimetype!(DJVU, IMAGE_VND_DJVU, ".djvu", offset: (12, b"DJVU", prefix: (0, b"AT&TFORM")), kind: IMAGE);
 
@@ -658,15 +679,25 @@ mimetype!(SGI, IMAGE_X_SGI, ".sgi", [0x01, 0xDA], kind: IMAGE);
 mimetype!(ANI, APPLICATION_X_NAVI_ANIMATION, ".ani", offset: (8, b"ACON", prefix: (0, b"RIFF")), kind: IMAGE);
 
 // CorelDRAW - RIFF container
-static CDR: MimeType = MimeType::new(APPLICATION_VND_COREL_DRAW, ".cdr", |input| input.len() >= 11 && input.starts_with(b"RIFF") && &input[8..11] == b"CDR", &[])
-    .with_aliases(&[APPLICATION_CDR, APPLICATION_X_CDR])
-    .with_kind(MimeKind::IMAGE);
+static CDR: MimeType = MimeType::new(
+    APPLICATION_VND_COREL_DRAW,
+    ".cdr",
+    |input| input.len() >= 11 && input.starts_with(b"RIFF") && &input[8..11] == b"CDR",
+    &[],
+)
+.with_aliases(&[APPLICATION_CDR, APPLICATION_X_CDR])
+.with_kind(MimeKind::IMAGE);
 
 // IFF/ILBM - Amiga graphics format (FORM container)
-static ILBM: MimeType = MimeType::new(IMAGE_X_ILBM, ".lbm", |input| input.len() >= 12 && input.starts_with(b"FORM") && &input[8..12] == b"ILBM", &[])
-    .with_extension_aliases(&[".iff", ".ilbm"])
-    .with_aliases(&[IMAGE_X_IFF])
-    .with_kind(MimeKind::IMAGE);
+static ILBM: MimeType = MimeType::new(
+    IMAGE_X_ILBM,
+    ".lbm",
+    |input| input.len() >= 12 && input.starts_with(b"FORM") && &input[8..12] == b"ILBM",
+    &[],
+)
+.with_extension_aliases(&[".iff", ".ilbm"])
+.with_aliases(&[IMAGE_X_IFF])
+.with_kind(MimeKind::IMAGE);
 
 static AVIF_FORMAT: MimeType =
     MimeType::new(IMAGE_AVIF, ".avif", avif_format, &[]).with_kind(MimeKind::IMAGE);
@@ -681,13 +712,23 @@ static MP3: MimeType = MimeType::new(AUDIO_MPEG, ".mp3", mp3, &[])
 
 mimetype!(FLAC, AUDIO_FLAC, ".flac", b"fLaC", kind: AUDIO);
 
-static WAV: MimeType = MimeType::new(AUDIO_WAV, ".wav", |input| input.len() >= 12 && input.starts_with(b"RIFF") && &input[8..12] == b"WAVE", &[])
-    .with_aliases(&[AUDIO_X_WAV, AUDIO_VND_WAVE, AUDIO_WAVE])
-    .with_kind(MimeKind::AUDIO);
+static WAV: MimeType = MimeType::new(
+    AUDIO_WAV,
+    ".wav",
+    |input| input.len() >= 12 && input.starts_with(b"RIFF") && &input[8..12] == b"WAVE",
+    &[],
+)
+.with_aliases(&[AUDIO_X_WAV, AUDIO_VND_WAVE, AUDIO_WAVE])
+.with_kind(MimeKind::AUDIO);
 
-static AIFF: MimeType = MimeType::new(AUDIO_AIFF, ".aiff", |input| input.len() >= 12 && input.starts_with(b"FORM") && &input[8..12] == b"AIFF", &[])
-    .with_extension_aliases(&[".aif"])
-    .with_kind(MimeKind::AUDIO);
+static AIFF: MimeType = MimeType::new(
+    AUDIO_AIFF,
+    ".aiff",
+    |input| input.len() >= 12 && input.starts_with(b"FORM") && &input[8..12] == b"AIFF",
+    &[],
+)
+.with_extension_aliases(&[".aif"])
+.with_kind(MimeKind::AUDIO);
 
 static MIDI: MimeType = MimeType::new(AUDIO_MIDI, ".midi", |input| input.starts_with(b"MThd"), &[])
     .with_aliases(&[AUDIO_MID])
@@ -711,7 +752,13 @@ static OGG_VIDEO: MimeType = MimeType::new(VIDEO_OGG, ".ogv", ogg_video, &[])
     .with_kind(MimeKind::VIDEO)
     .with_parent(&OGG);
 
-static APE: MimeType = MimeType::new(AUDIO_APE, ".ape", |input| input.starts_with(b"MAC \x96\x0F\x00\x00\x34\x00\x00\x00\x18\x00\x00\x00\x90\xE3"), &[]).with_kind(MimeKind::AUDIO);
+static APE: MimeType = MimeType::new(
+    AUDIO_APE,
+    ".ape",
+    |input| input.starts_with(b"MAC \x96\x0F\x00\x00\x34\x00\x00\x00\x18\x00\x00\x00\x90\xE3"),
+    &[],
+)
+.with_kind(MimeKind::AUDIO);
 
 mimetype!(MUSEPACK, AUDIO_MUSEPACK, ".mpc", b"MPCK", kind: AUDIO);
 
@@ -725,10 +772,15 @@ static AMR: MimeType = MimeType::new(AUDIO_AMR, ".amr", |input| input.starts_wit
 
 mimetype!(VOC, AUDIO_X_UNKNOWN, ".voc", b"Creative Voice File", kind: AUDIO);
 
-static M3U: MimeType = MimeType::new(AUDIO_X_MPEGURL, ".m3u", |input| input.starts_with(b"#EXTM3U"), &[])
-    .with_aliases(&[AUDIO_MPEGURL])
-    .with_extension_aliases(&[".m3u8"])
-    .with_kind(MimeKind::TEXT);
+static M3U: MimeType = MimeType::new(
+    AUDIO_X_MPEGURL,
+    ".m3u",
+    |input| input.starts_with(b"#EXTM3U"),
+    &[],
+)
+.with_aliases(&[AUDIO_MPEGURL])
+.with_extension_aliases(&[".m3u8"])
+.with_kind(MimeKind::TEXT);
 
 mimetype!(AAC, AUDIO_AAC, ".aac", b"\xFF\xF1" | b"\xFF\xF9", kind: AUDIO);
 
@@ -895,8 +947,13 @@ mimetype!(SQLITE3, APPLICATION_VND_SQLITE3, ".sqlite", b"SQLite format 3\x00", k
 
 static FASOO: MimeType = MimeType::new(APPLICATION_X_FASOO, "", fasoo, &[]).with_parent(&OLE);
 
-static PGP_NET_SHARE: MimeType =
-    MimeType::new(APPLICATION_X_PGP_NET_SHARE, "", |input| input.starts_with(b"-----BEGIN PGP"), &[]).with_parent(&OLE);
+static PGP_NET_SHARE: MimeType = MimeType::new(
+    APPLICATION_X_PGP_NET_SHARE,
+    "",
+    |input| input.starts_with(b"-----BEGIN PGP"),
+    &[],
+)
+.with_parent(&OLE);
 
 // ============================================================================
 // MICROSOFT OFFICE & DOCUMENT FORMATS
@@ -1261,7 +1318,12 @@ static HAR: MimeType = MimeType::new(APPLICATION_JSON_HAR, ".har", har, &[])
 
 static SHP: MimeType = MimeType::new(APPLICATION_VND_SHP, ".shp", shp, &[]);
 
-static SHX: MimeType = MimeType::new(APPLICATION_VND_SHX, ".shx", |input| input.starts_with(b"\x00\x00\x27\x0A"), &[&SHP]);
+static SHX: MimeType = MimeType::new(
+    APPLICATION_VND_SHX,
+    ".shx",
+    |input| input.starts_with(b"\x00\x00\x27\x0A"),
+    &[&SHP],
+);
 
 mimetype!(GLB, MODEL_GLTF_BINARY, ".glb", b"glTF\x02\x00\x00\x00" | b"glTF\x01\x00\x00\x00", kind: MODEL);
 
