@@ -134,6 +134,9 @@ pub const APPLICATION_LZIP: &str = "application/lzip";
 /// LZIP compression (alias)
 pub const APPLICATION_X_LZIP: &str = "application/x-lzip";
 
+/// LZ4 Compression
+pub const APPLICATION_X_LZ4: &str = "application/x-lz4";
+
 /// Microsoft Cabinet archive
 pub const APPLICATION_VND_MS_CAB_COMPRESSED: &str = "application/vnd.ms-cab-compressed";
 
@@ -161,6 +164,14 @@ pub const IMAGE_FITS: &str = "image/fits";
 
 /// XAR archive
 pub const APPLICATION_X_XAR: &str = "application/x-xar";
+
+/// ARJ archive
+pub const APPLICATION_ARJ: &str = "application/arj";
+pub const APPLICATION_X_ARJ: &str = "application/x-arj";
+
+/// LHA/LZH archive
+pub const APPLICATION_X_LZH_COMPRESSED: &str = "application/x-lzh-compressed";
+pub const APPLICATION_X_LHA: &str = "application/x-lha";
 
 /// Debian package
 pub const APPLICATION_VND_DEBIAN_BINARY_PACKAGE: &str = "application/vnd.debian.binary-package";
@@ -289,6 +300,42 @@ pub const IMAGE_VND_DXF: &str = "image/vnd.dxf";
 /// DjVu document format
 pub const IMAGE_VND_DJVU: &str = "image/vnd.djvu";
 
+/// AVIF Image Sequence
+pub const IMAGE_AVIF: &str = "image/avif";
+
+/// DirectDraw Surface
+pub const IMAGE_VND_MS_DDS: &str = "image/vnd-ms.dds";
+
+/// PC Paintbrush
+pub const IMAGE_X_PCX: &str = "image/x-pcx";
+
+/// Khronos Texture
+pub const IMAGE_KTX: &str = "image/ktx";
+
+/// ARM Texture Compression
+pub const IMAGE_X_ASTC: &str = "image/x-astc";
+
+/// Windows Animated Cursor
+pub const APPLICATION_X_NAVI_ANIMATION: &str = "application/x-navi-animation";
+
+/// CorelDRAW
+pub const APPLICATION_VND_COREL_DRAW: &str = "application/vnd.corel-draw";
+pub const APPLICATION_CDR: &str = "application/cdr";
+pub const APPLICATION_X_CDR: &str = "application/x-cdr";
+
+/// IFF/ILBM (Amiga)
+pub const IMAGE_X_ILBM: &str = "image/x-ilbm";
+pub const IMAGE_X_IFF: &str = "image/x-iff";
+
+/// Truevision TGA (Targa)
+pub const IMAGE_X_TGA: &str = "image/x-tga";
+
+/// Sun Raster
+pub const IMAGE_X_SUN_RASTER: &str = "image/x-sun-raster";
+
+/// Silicon Graphics Image
+pub const IMAGE_X_SGI: &str = "image/x-sgi";
+
 // ============================================================================
 // AUDIO FORMATS
 // ============================================================================
@@ -358,6 +405,21 @@ pub const AUDIO_MP4: &str = "audio/mp4";
 pub const AUDIO_X_M4A: &str = "audio/x-m4a";
 pub const AUDIO_X_MP4A: &str = "audio/x-mp4a";
 
+/// WavPack Lossless Audio
+pub const AUDIO_X_WAVPACK: &str = "audio/x-wavpack";
+
+/// True Audio Lossless
+pub const AUDIO_X_TTA: &str = "audio/x-tta";
+
+/// DSD Stream File
+pub const AUDIO_X_DSF: &str = "audio/x-dsf";
+
+/// DSD Interchange File Format
+pub const AUDIO_X_DFF: &str = "audio/x-dff";
+
+/// Scream Tracker 3 Module
+pub const AUDIO_S3M: &str = "audio/s3m";
+
 // ============================================================================
 // VIDEO FORMATS
 // ============================================================================
@@ -396,6 +458,35 @@ pub const VIDEO_X_M4V: &str = "video/x-m4v";
 
 /// RealMedia Variable Bitrate
 pub const APPLICATION_VND_RN_REALMEDIA_VBR: &str = "application/vnd.rn-realmedia-vbr";
+
+/// 3GPP Multimedia
+pub const VIDEO_3GPP: &str = "video/3gpp";
+
+/// 3GPP Multimedia (aliases)
+pub const VIDEO_3GP: &str = "video/3gp";
+pub const AUDIO_3GPP: &str = "audio/3gpp";
+
+/// 3GPP2 Multimedia
+pub const VIDEO_3GPP2: &str = "video/3gpp2";
+
+/// 3GPP2 Multimedia (aliases)
+pub const VIDEO_3G2: &str = "video/3g2";
+pub const AUDIO_3GPP2: &str = "audio/3gpp2";
+
+/// Motion JPEG 2000
+pub const VIDEO_MJ2: &str = "video/mj2";
+
+/// Digital Video Broadcasting
+pub const VIDEO_VND_DVB_FILE: &str = "video/vnd.dvb.file";
+
+/// Autodesk FLIC Animation (FLI)
+pub const VIDEO_FLI: &str = "video/fli";
+
+/// Autodesk FLIC Animation (FLC)
+pub const VIDEO_FLC: &str = "video/flc";
+
+/// Fast Search and Transfer Video
+pub const VIDEO_VND_FVT: &str = "video/vnd.fvt";
 
 // ============================================================================
 // EXECUTABLE & BINARY FORMATS
@@ -821,6 +912,9 @@ pub const MODEL_GLTF_BINARY: &str = "model/gltf-binary";
 /// glTF JSON
 pub const MODEL_GLTF_JSON: &str = "model/gltf+json";
 
+/// Universal 3D
+pub const MODEL_U3D: &str = "model/u3d";
+
 // ============================================================================
 // NINTENDO & GAMING FORMATS
 // ============================================================================
@@ -829,31 +923,24 @@ pub const MODEL_GLTF_JSON: &str = "model/gltf+json";
 pub const APPLICATION_VND_NINTENDO_SNES_ROM: &str = "application/vnd.nintendo.snes.rom";
 
 // ============================================================================
-// ADDITIONAL VIDEO FORMATS
+// NETWORK & DEBUGGING FORMATS
 // ============================================================================
 
-/// 3GPP Multimedia
-pub const VIDEO_3GPP: &str = "video/3gpp";
+/// Packet Capture (libpcap)
+pub const APPLICATION_VND_TCPDUMP_PCAP: &str = "application/vnd.tcpdump.pcap";
 
-/// 3GPP Multimedia (aliases)
-pub const VIDEO_3GP: &str = "video/3gp";
-pub const AUDIO_3GPP: &str = "audio/3gpp";
+/// Packet Capture Next Generation
+pub const APPLICATION_X_PCAPNG: &str = "application/x-pcapng";
 
-/// 3GPP2 Multimedia
-pub const VIDEO_3GPP2: &str = "video/3gpp2";
+// ============================================================================
+// 3D & CAD FORMATS
+// ============================================================================
 
-/// 3GPP2 Multimedia (aliases)
-pub const VIDEO_3G2: &str = "video/3g2";
-pub const AUDIO_3GPP2: &str = "audio/3gpp2";
+/// Blender 3D File
+pub const APPLICATION_X_BLENDER: &str = "application/x-blender";
 
-/// Motion JPEG 2000
-pub const VIDEO_MJ2: &str = "video/mj2";
-
-/// Digital Video Broadcasting
-pub const VIDEO_VND_DVB_FILE: &str = "video/vnd.dvb.file";
-
-/// AVIF Image Sequence
-pub const IMAGE_AVIF: &str = "image/avif";
+/// Polygon File Format
+pub const APPLICATION_PLY: &str = "application/ply";
 
 // ============================================================================
 // MISCELLANEOUS FORMATS

@@ -1,10 +1,10 @@
 # mimetype-detector
 
-Fast MIME type detection for 206+ file formats with zero dependencies.
+Fast MIME type detection for 231+ file formats with zero dependencies.
 
 ## Features
 
-- **206 supported formats** - Images, audio, video, documents, archives, and more
+- **231 supported formats** - Images, audio, video, documents, archives, and more
 - **Fast & lightweight** - Reads only file headers (≤3KB)
 - **Thread-safe** - Zero dependencies, pure Rust
 - **Smart detection** - Hierarchical format relationships (ZIP→DOCX/JAR/APK)
@@ -14,7 +14,7 @@ Fast MIME type detection for 206+ file formats with zero dependencies.
 
 ```toml
 [dependencies]
-mimetype-detector = "0.2.5"
+mimetype-detector = "0.2.6"
 ```
 
 ## Usage
@@ -60,7 +60,7 @@ let jar = detect(b"PK\x03\x04...META-INF/MANIFEST.MF");
 println!("Kind: {}", jar.kind()); // Output: "ARCHIVE | APPLICATION"
 ```
 
-## Supported Formats (206+)
+## Supported Formats (231+)
 
 - **Images**: PNG, JPEG, GIF, WebP, AVIF, HEIC, SVG, TIFF, BMP
 - **Audio**: MP3, FLAC, WAV, AAC, OGG, MIDI

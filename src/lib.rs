@@ -1,13 +1,13 @@
 //! # mimetype-detector
 //!
 //! A comprehensive Rust library for detecting MIME types and file extensions based on magic numbers.
-//! This library provides fast, accurate, and thread-safe MIME type detection for 100+ file formats
+//! This library provides fast, accurate, and thread-safe MIME type detection for 231+ file formats
 //! across all major categories.
 //!
 //! ## Features
 //!
 //! - **Fast and precise** MIME type detection using magic number analysis
-//! - **100+ supported formats** including images, audio, video, documents, archives, and more
+//! - **231+ supported formats** including images, audio, video, documents, archives, and more
 //! - **Thread-safe** operations with lazy initialization
 //! - **Zero unsafe code** - built with RwLock and LazyLock for safety
 //! - **Memory efficient** - reads only first 3KB of files
@@ -23,6 +23,7 @@
 //! let mime_type = detect(data);
 //! println!("MIME type: {}", mime_type); // image/png
 //! println!("Extension: {}", mime_type.extension()); // .png
+//! println!("Kind: {}", mime_type.kind()); // IMAGE
 //!
 //! // Detect from file
 //! # std::fs::write("test.png", b"\x89PNG\r\n\x1a\n").unwrap();
@@ -43,13 +44,15 @@
 //!
 //! ## Supported Formats
 //!
-//! - **Images**: PNG, JPEG, GIF, WebP, TIFF, BMP, SVG, and 20+ others
-//! - **Audio**: MP3, FLAC, WAV, OGG, AAC, and 10+ others  
+//! - **Images**: PNG, JPEG, GIF, WebP, TIFF, BMP, SVG, DDS, PCX, KTX, ASTC, and 20+ others
+//! - **Audio**: MP3, FLAC, WAV, OGG, AAC, WavPack, TTA, DSF, DFF, and 15+ others
 //! - **Video**: MP4, WebM, AVI, MKV, MPEG, and 8+ others
 //! - **Documents**: PDF, HTML, XML, Office formats, and more
-//! - **Archives**: ZIP, TAR, 7Z, RAR, GZIP, and 15+ others
+//! - **Archives**: ZIP, TAR, 7Z, RAR, GZIP, LZ4, and 15+ others
 //! - **Executables**: ELF, PE/EXE, Mach-O, Java CLASS, WASM
 //! - **Fonts**: TTF, OTF, WOFF, WOFF2, EOT, TTC
+//! - **3D/CAD**: Blender (.blend), PLY, GLB, GLTF, DWG, DXF
+//! - **Network/Debug**: PCAP, PCAPNG for packet capture analysis
 //! - **And many more**: See documentation for complete list
 //!
 //! ## Custom Matchers
@@ -83,6 +86,9 @@ pub use kind::MimeKind;
 
 pub mod constants;
 pub use constants::*;
+
+#[macro_use]
+mod macros;
 
 mod tree;
 use tree::ROOT;
@@ -194,7 +200,7 @@ static EXT_REGISTRY: LazyLock<RwLock<HashMap<String, MatcherVec>>> =
 pub fn register_mime(mime_type: &str, matcher: fn(&[u8]) -> bool) {
     MIME_REGISTRY
         .write()
-        .unwrap()
+        .expect("MIME registry lock poisoned")
         .entry(mime_type.to_string())
         .or_default()
         .push(matcher);
@@ -212,7 +218,7 @@ pub fn register_mime(mime_type: &str, matcher: fn(&[u8]) -> bool) {
 pub fn register_extension(extension: &str, matcher: fn(&[u8]) -> bool) {
     EXT_REGISTRY
         .write()
-        .unwrap()
+        .expect("Extension registry lock poisoned")
         .entry(extension.to_string())
         .or_default()
         .push(matcher);
@@ -232,7 +238,10 @@ pub fn register_extension(extension: &str, matcher: fn(&[u8]) -> bool) {
 pub fn is_supported(mime_type: &str) -> bool {
     ensure_init();
     let normalized = normalize_mime_type(mime_type);
-    MIME_REGISTRY.read().unwrap().contains_key(normalized)
+    MIME_REGISTRY
+        .read()
+        .expect("MIME registry lock poisoned")
+        .contains_key(normalized)
 }
 
 /// Checks if the given data matches a specific MIME type.
@@ -257,7 +266,11 @@ pub fn match_mime(data: &[u8], mime_type: &str) -> bool {
     };
 
     let normalized = normalize_mime_type(mime_type);
-    if let Some(matchers) = MIME_REGISTRY.read().unwrap().get(normalized) {
+    if let Some(matchers) = MIME_REGISTRY
+        .read()
+        .expect("MIME registry lock poisoned")
+        .get(normalized)
+    {
         return matchers.iter().any(|matcher| matcher(input));
     }
     false
@@ -313,7 +326,10 @@ pub fn match_file<P: AsRef<Path>>(path: P, mime_type: &str) -> io::Result<bool> 
 /// `true` if the extension is supported, `false` otherwise
 pub fn is_supported_extension(extension: &str) -> bool {
     ensure_init();
-    EXT_REGISTRY.read().unwrap().contains_key(extension)
+    EXT_REGISTRY
+        .read()
+        .expect("Extension registry lock poisoned")
+        .contains_key(extension)
 }
 
 /// Checks if the given data matches a specific file extension.
@@ -337,7 +353,11 @@ pub fn match_extension(data: &[u8], extension: &str) -> bool {
         data
     };
 
-    if let Some(matchers) = EXT_REGISTRY.read().unwrap().get(extension) {
+    if let Some(matchers) = EXT_REGISTRY
+        .read()
+        .expect("Extension registry lock poisoned")
+        .get(extension)
+    {
         return matchers.iter().any(|matcher| matcher(input));
     }
     false

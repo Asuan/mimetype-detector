@@ -29,6 +29,75 @@ use crate::constants::*;
 use crate::mime_type::MimeType;
 use crate::MimeKind;
 
+build_prefix_vec! {
+    /// Prefix vector for fast ROOT child lookup
+    /// Uses first byte (0-255) to index into array of MimeType slices
+    /// Covers 98 out of 135 ROOT children using 60 unique first bytes
+    /// Static array with zero runtime overhead - no LazyLock, no mutex, no heap allocations
+    static ROOT_PREFIX_VEC: [
+        0x00 => [&JXS, &ICO, &SHX, &TGA, &WASM] as __PV_00,
+        0x01 => [&SGI] as __PV_01,
+        0x04 => [&LZ4] as __PV_04,
+        0x0a => [&PCAPNG] as __PV_0A,
+        0x0e => [&HDF] as __PV_0E,  // NEW: HDF4 format
+        0x11 => [&FLI] as __PV_11,
+        0x12 => [&FLC] as __PV_12,
+        0x13 => [&ASTC] as __PV_13,
+        0x1a => [&WEBM, &MKV] as __PV_1A,  // NEW: Matroska containers
+        0x1f => [&GZIP] as __PV_1F,
+        0x21 => [&AR] as __PV_21,
+        0x23 => [&AMR, &HDR, &M3U] as __PV_23,
+        0x25 => [&PS, &FDF, &PDF] as __PV_25,
+        0x2d => [&P7S, &LHA] as __PV_2D,
+        0x2e => [&RMVB, &AU] as __PV_2E,
+        0x2f => [&XPM] as __PV_2F,
+        0x30 => [&ASF, &CPIO] as __PV_30,  // NEW: ASF and CPIO ASCII variant
+        0x37 => [&SEVEN_Z] as __PV_37,
+        0x38 => [&PSD] as __PV_38,
+        0x41 => [&DJVU, &DWG] as __PV_41,  // NEW: DJVU and DWG
+        0x42 => [&BLEND, &BMP, &BPG, &BZ2] as __PV_42,
+        0x43 => [&VOC, &SWF, &CRX] as __PV_43,  // Added SWF ('CWS') and CRX
+        0x44 => [&DDS, &DSF] as __PV_44,
+        0x46 => [&FLV, &DFF, &FVT, &SWF] as __PV_46,  // Added SWF ('FWS')
+        0x47 => [&GIF] as __PV_47,
+        0x49 => [&JXR, &LIT, &TIFF, &CHM, &INSTALL_SHIELD_CAB] as __PV_49,  // Added INSTALL_SHIELD_CAB
+        0x4c => [&LNK, &LZIP] as __PV_4C,
+        0x4d => [&MUSEPACK, &CAB, &MIDI, &EXE, &TIFF] as __PV_4D,
+        0x4e => [&NES] as __PV_4E,
+        0x4f => [&OTF, &OGG] as __PV_4F,
+        0x50 => [&PAM, &PARQUET, &ZIP, &PBM, &PGM, &PPM] as __PV_50,
+        0x52 => [&RAR] as __PV_52,
+        0x53 => [&FITS, &SQLITE3] as __PV_53,
+        0x54 => [&TTA, &TZIF] as __PV_54,
+        0x55 => [&U3D] as __PV_55,
+        0x59 => [&SUN_RASTER] as __PV_59,
+        0x5a => [&SWF] as __PV_5A,  // NEW: SWF ('ZWS' compressed)
+        0x60 => [&ARJ] as __PV_60,
+        0x64 => [&TORRENT] as __PV_64,
+        0x66 => [&FLAC] as __PV_66,
+        0x67 => [&XCF, &GLB] as __PV_67,
+        0x69 => [&ICNS] as __PV_69,
+        0x70 => [&PLY] as __PV_70,
+        0x74 => [&TTC] as __PV_74,
+        0x77 => [&WOFF, &WOFF2, &WAVPACK] as __PV_77,
+        0x78 => [&XAR] as __PV_78,
+        0x7f => [&ELF] as __PV_7F,
+        0x89 => [&PNG, &HDF] as __PV_89,  // Added HDF (0x89HDF variant)
+        0xa1 => [&PCAP] as __PV_A1,  // NEW: PCAP big-endian
+        0xab => [&KTX] as __PV_AB,
+        0xc7 => [&CPIO] as __PV_C7,  // NEW: CPIO binary variant
+        0xca => [&CLASS] as __PV_CA,
+        0xd0 => [&OLE] as __PV_D0,
+        0xd4 => [&PCAP] as __PV_D4,  // NEW: PCAP little-endian
+        0xd9 => [&CBOR_FORMAT] as __PV_D9,
+        0xed => [&RPM] as __PV_ED,
+        0xef => [&UTF8_BOM] as __PV_EF,
+        0xfd => [&XZ] as __PV_FD,
+        0xfe => [&UTF16_BE] as __PV_FE,
+        0xff => [&JXL, &JPG, &AAC, &UTF16_LE] as __PV_FF,
+    ]
+}
+
 /// Root MIME type that serves as the fallback for all unrecognized binary data.
 ///
 /// This is the entry point for the detection tree. It contains references to all
@@ -50,127 +119,57 @@ pub static ROOT: MimeType = MimeType::new(
     "",
     |_| true,
     &[
-        // Go ordering: xpm, sevenZ, zip, pdf, fdf, ole, ps, psd, p7s, ogg, png, jpg, jxl, jp2, jpx,
-        // jpm, jxs, gif, webp, exe, elf, ar, tar, xar, bz2, fits, tiff, bmp, lotus, ico,
-        // mp3, flac, midi, ape, musePack, amr, wav, aiff, au, mpeg, quickTime, mp4, webM,
-        // avi, flv, mkv, asf, aac, voc, m3u, rmvb, gzip, class, swf, crx, ttf, woff,
-        // woff2, otf, ttc, eot, wasm, shx, dbf, dcm, rar, djvu, mobi, lit, bpg, cbor,
-        // sqlite3, dwg, nes, lnk, macho, qcp, icns, hdr, mrc, mdb, accdb, zstd, cab,
-        // rpm, xz, lzip, torrent, cpio, tzif, xcf, pat, gbr, glb, cabIS, jxr, parquet, text
-        &XPM,
-        &SEVEN_Z,
-        &ZIP,
-        &PDF,
-        &FDF, // PDF variant
-        &OLE,
-        // Text encoding formats need to be in root for early detection
-        &UTF8_BOM,
-        &UTF16_BE,
-        &UTF16_LE,
-        &PS,
-        &PSD,
-        &PBM,
-        &PGM,
-        &PPM,
-        &PAM,
-        &P7S, // PKCS7 signature
-        &OGG,
-        &PNG,
-        &JPG,
-        &JXL,
-        &JP2,
-        &JPX,
-        &JPM,
-        &JXS,
-        &GIF,
-        &WEBP,
-        &EXE,
-        &ELF,
-        &AR,
-        &TAR,
-        &XAR,
-        &BZ2,
-        &FITS,
-        &TIFF,
-        &BMP,
-        &LOTUS123,
-        &ICO,
-        &MP3,
-        &FLAC,
-        &MIDI,
-        &APE,
-        &MUSEPACK,
-        &AMR,
-        &WAV,
-        &AIFF,
-        &AU,
-        &MPEG,
-        &QUICKTIME,
-        &MQV,
-        &MP4_PRECISE,
-        &WEBM,
-        &AVI,
-        &FLV,
-        &MKV,
-        &ASF,
-        &AAC,
-        &VOC,
-        &M3U,
-        &RMVB,
-        &GZIP,
-        &CLASS,
-        &SWF,
-        &CRX,
-        &TTF,
-        &WOFF,
-        &WOFF2,
-        &OTF,
-        &TTC,
-        &EOT,
-        &WASM,
-        &SHX,
-        &DBF,
-        &DCM,
-        &RAR,
-        &DJVU,
-        &MOBI,
-        &LIT,
-        &BPG,
-        &CBOR_FORMAT,
-        &SQLITE3,
-        &DWG,
-        &DXF,
-        &WPD,
-        &NES,
-        &LNK,
-        &MACHO,
-        &QCP,
-        &ICNS,
-        &HDR,
-        &HDF,
-        &MRC,
-        &MDB,
-        &ACCDB,
-        &ZSTD,
-        &CAB,
-        &CHM,
-        &RPM,
-        &XZ,
-        &LZIP,
-        &TORRENT,
-        &CPIO,
-        &TZIF,
-        &XCF,
-        &PAT,
-        &GBR,
-        &GLB,
-        &INSTALL_SHIELD_CAB,
-        &JXR,
-        &PARQUET,
-        // Keep text last because it is the slowest check (matches Go comment)
-        &UTF8,
+        // Remaining formats (98 others in ROOT_PREFIX_VEC after Phase 1)
+        // Formats that cannot use first-byte indexing:
+        &JP2,       // Offset 4-8 check
+        &JPX,       // Offset 4-8 check
+        &JPM,       // Offset 4-8 check
+        &WEBP,      // RIFF format (conflict)
+        &TAR,       // No magic number
+        &LOTUS123,  // Offset 4-7 check
+        &MP3,       // Multiple first bytes (conflict)
+        &APE,       // Conflict with 0x4D
+        &WAV,       // RIFF format (conflict)
+        &AIFF,      // FORM format, offset 8
+        &MPEG,      // Conflict with 0x00
+        &QUICKTIME, // Offset 4-8 check
+        &MQV,       // Offset 4-8 check
+        &MP4,       // Offset 4-8 check
+        // Removed: &WEBM (moved to 0x1A)
+        &AVI, // RIFF format (conflict)
+        // Removed: &MKV (moved to 0x1A)
+        // Removed: &ASF (moved to 0x30)
+        &SWF, // Partial move (only ZWS to 0x5A, FWS/CWS conflict)
+        // Removed: &CRX (moved to 0x43)
+        &TTF, // Multiple patterns (conflict)
+        &EOT, // 34 null bytes
+        &DBF, // Multiple first bytes
+        &DCM, // Offset 128 check
+        // Removed: &DJVU (moved to 0x41)
+        &MOBI, // Offset 60 check
+        // Removed: &DWG (moved to 0x41)
+        &DXF,   // Space patterns
+        &WPD,   // Conflict with 0xFF
+        &MACHO, // Multiple magics (conflict)
+        &QCP,   // RIFF format (conflict)
+        &HDF,   // Partial move (only HDF4 to 0x0E, HDF5 uses 0x89)
+        &MRC,   // Offset checks
+        &MDB,   // Offset 4 check
+        &ACCDB, // Offset 4 check
+        &ZSTD,  // Range check on first 4 bytes
+        &CPIO,  // Partial move (multiple formats)
+        &PAT,   // Offset 20 check
+        &GBR,   // Offset 20 check
+        // Removed: &INSTALL_SHIELD_CAB (moved to 0x49)
+        &PCX, // Conflict with 0x0A
+        // Removed: &PCAP (moved to 0xA1 and 0xD4)
+        &ANI,  // RIFF format (conflict)
+        &CDR,  // RIFF format (conflict)
+        &ILBM, // IFF/FORM format
+        &UTF8, // Content validation (last)
     ],
-);
+)
+.with_prefix_vec(&ROOT_PREFIX_VEC);
 
 // ============================================================================
 // TEXT FORMATS
@@ -205,48 +204,35 @@ static XML: MimeType = MimeType::new(
 .with_aliases(&[APPLICATION_XML])
 .with_parent(&UTF8);
 
-static UTF8_BOM: MimeType =
-    MimeType::new(TEXT_UTF8_BOM, ".txt", utf8_bom, &[]).with_kind(MimeKind::TEXT);
+mimetype!(UTF8_BOM, TEXT_UTF8_BOM, ".txt", b"\xEF\xBB\xBF", kind: TEXT);
 
-static UTF16_BE: MimeType = MimeType::new(
-    TEXT_UTF16_BE,
-    ".txt",
-    utf16_be,
-    &[
-        &HTML_UTF16_BE,
-        &XML_UTF16_BE,
-        &SVG_UTF16_BE,
-        &JSON_UTF16_BE,
-        &CSV_UTF16_BE,
-        &TSV_UTF16_BE,
-        &SRT_UTF16_BE,
-        &VTT_UTF16_BE,
-        &VCARD_UTF16_BE,
-        &ICALENDAR_UTF16_BE,
-        &RTF_UTF16_BE,
-    ],
-)
-.with_kind(MimeKind::TEXT);
+mimetype!(UTF16_BE, TEXT_UTF16_BE, ".txt", b"\xFE\xFF", kind: TEXT, children: [
+    &HTML_UTF16_BE,
+    &XML_UTF16_BE,
+    &SVG_UTF16_BE,
+    &JSON_UTF16_BE,
+    &CSV_UTF16_BE,
+    &TSV_UTF16_BE,
+    &SRT_UTF16_BE,
+    &VTT_UTF16_BE,
+    &VCARD_UTF16_BE,
+    &ICALENDAR_UTF16_BE,
+    &RTF_UTF16_BE
+]);
 
-static UTF16_LE: MimeType = MimeType::new(
-    TEXT_UTF16_LE,
-    ".txt",
-    utf16_le,
-    &[
-        &HTML_UTF16_LE,
-        &XML_UTF16_LE,
-        &SVG_UTF16_LE,
-        &JSON_UTF16_LE,
-        &CSV_UTF16_LE,
-        &TSV_UTF16_LE,
-        &SRT_UTF16_LE,
-        &VTT_UTF16_LE,
-        &VCARD_UTF16_LE,
-        &ICALENDAR_UTF16_LE,
-        &RTF_UTF16_LE,
-    ],
-)
-.with_kind(MimeKind::TEXT);
+mimetype!(UTF16_LE, TEXT_UTF16_LE, ".txt", b"\xFF\xFE", kind: TEXT, children: [
+    &HTML_UTF16_LE,
+    &XML_UTF16_LE,
+    &SVG_UTF16_LE,
+    &JSON_UTF16_LE,
+    &CSV_UTF16_LE,
+    &TSV_UTF16_LE,
+    &SRT_UTF16_LE,
+    &VTT_UTF16_LE,
+    &VCARD_UTF16_LE,
+    &ICALENDAR_UTF16_LE,
+    &RTF_UTF16_LE
+]);
 
 static UTF8: MimeType = MimeType::new(
     TEXT_UTF8,
@@ -320,20 +306,16 @@ static UTF8: MimeType = MimeType::new(
 // DOCUMENT FORMATS
 // ============================================================================
 
-static PDF: MimeType = MimeType::new(APPLICATION_PDF, ".pdf", pdf, &[])
-    .with_aliases(&[APPLICATION_X_PDF])
-    .with_kind(MimeKind::DOCUMENT);
+mimetype!(PDF, APPLICATION_PDF, ".pdf", b"%PDF-", kind: DOCUMENT, aliases: [APPLICATION_X_PDF]);
 
-static FDF: MimeType =
-    MimeType::new(APPLICATION_VND_FDF, ".fdf", fdf, &[]).with_kind(MimeKind::DOCUMENT);
+mimetype!(FDF, APPLICATION_VND_FDF, ".fdf", b"%FDF-", kind: DOCUMENT);
 
-static PS: MimeType =
-    MimeType::new(APPLICATION_POSTSCRIPT, ".ps", ps, &[]).with_kind(MimeKind::DOCUMENT);
+mimetype!(PS, APPLICATION_POSTSCRIPT, ".ps", b"%!PS-Adobe-", kind: DOCUMENT);
 
 static OLE: MimeType = MimeType::new(
     APPLICATION_X_OLE_STORAGE,
     "",
-    ole,
+    |input| input.starts_with(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"),
     &[
         &MSI,
         &AAF,
@@ -362,18 +344,19 @@ static AAF: MimeType = MimeType::new(APPLICATION_X_AAF, ".aaf", aaf, &[]).with_p
 // 3. TAR uses checksum validation for reliability
 // 4. Compression formats are organized by algorithm type
 
-/// 7-Zip archive format with distinctive signature.
-///
-/// 7Z files start with a unique 6-byte signature that makes detection reliable.
-/// This format supports multiple compression algorithms and strong encryption.
-static SEVEN_Z: MimeType = MimeType::new(APPLICATION_X_7Z_COMPRESSED, ".7z", seven_z, &[])
-    .with_kind(MimeKind::ARCHIVE)
-    .with_parent(&ROOT);
+// 7-Zip archive format with distinctive signature.
+// 7Z files start with a unique 6-byte signature that makes detection reliable.
+// This format supports multiple compression algorithms and strong encryption.
+mimetype!(SEVEN_Z, APPLICATION_X_7Z_COMPRESSED, ".7z", b"7z\xbc\xaf\x27\x1c", kind: ARCHIVE);
 
 static ZIP: MimeType = MimeType::new(
     APPLICATION_ZIP,
     ".zip",
-    zip,
+    |input| {
+        input.starts_with(b"PK\x03\x04")
+            || input.starts_with(b"PK\x05\x06")
+            || input.starts_with(b"PK\x07\x08")
+    },
     &[
         &DOCX, &XLSX, &PPTX, &VSDX, &EPUB, &JAR, &APK, &ODT, &ODS, &ODP, &ODG, &ODF, &ODC, &SXC,
         &KMZ,
@@ -386,39 +369,41 @@ static ZIP: MimeType = MimeType::new(
 ])
 .with_kind(MimeKind::ARCHIVE);
 
-static RAR: MimeType = MimeType::new(APPLICATION_X_RAR_COMPRESSED, ".rar", rar, &[])
-    .with_aliases(&[APPLICATION_X_RAR])
-    .with_kind(MimeKind::ARCHIVE);
+mimetype!(RAR, APPLICATION_X_RAR_COMPRESSED, ".rar", b"Rar!\x1a\x07\x00" | b"Rar!\x1a\x07\x01\x00", kind: ARCHIVE, aliases: [APPLICATION_X_RAR]);
 
-static GZIP: MimeType = MimeType::new(APPLICATION_GZIP, ".gz", gzip, &[])
-    .with_aliases(&[
-        APPLICATION_X_GZIP,
-        APPLICATION_X_GUNZIP,
-        APPLICATION_GZIPPED,
-        APPLICATION_GZIP_COMPRESSED,
-        APPLICATION_X_GZIP_COMPRESSED,
-        GZIP_DOCUMENT,
-    ])
-    .with_extension_aliases(&[".tgz", ".taz"])
-    .with_kind(MimeKind::ARCHIVE);
+static GZIP: MimeType = MimeType::new(
+    APPLICATION_GZIP,
+    ".gz",
+    |input| input.starts_with(b"\x1f\x8b"),
+    &[],
+)
+.with_aliases(&[
+    APPLICATION_X_GZIP,
+    APPLICATION_X_GUNZIP,
+    APPLICATION_GZIPPED,
+    APPLICATION_GZIP_COMPRESSED,
+    APPLICATION_X_GZIP_COMPRESSED,
+    GZIP_DOCUMENT,
+])
+.with_extension_aliases(&[".tgz", ".taz"])
+.with_kind(MimeKind::ARCHIVE);
 
 static TAR: MimeType =
     MimeType::new(APPLICATION_X_TAR, ".tar", tar, &[]).with_kind(MimeKind::ARCHIVE);
 
-static BZ2: MimeType =
-    MimeType::new(APPLICATION_X_BZIP2, ".bz2", bz2, &[]).with_kind(MimeKind::ARCHIVE);
+mimetype!(BZ2, APPLICATION_X_BZIP2, ".bz2", b"BZ", kind: ARCHIVE);
 
-static XZ: MimeType = MimeType::new(APPLICATION_X_XZ, ".xz", xz, &[]).with_kind(MimeKind::ARCHIVE);
+mimetype!(XZ, APPLICATION_X_XZ, ".xz", b"\xfd7zXZ\x00", kind: ARCHIVE);
 
 static ZSTD: MimeType =
     MimeType::new(APPLICATION_ZSTD, ".zst", zstd, &[]).with_kind(MimeKind::ARCHIVE);
 
-static LZIP: MimeType = MimeType::new(APPLICATION_LZIP, ".lz", lzip, &[])
-    .with_aliases(&[APPLICATION_X_LZIP])
-    .with_kind(MimeKind::ARCHIVE);
+mimetype!(LZIP, APPLICATION_LZIP, ".lz", b"LZIP", kind: ARCHIVE, aliases: [APPLICATION_X_LZIP]);
 
-static CAB: MimeType =
-    MimeType::new(APPLICATION_VND_MS_CAB_COMPRESSED, ".cab", cab, &[]).with_kind(MimeKind::ARCHIVE);
+// LZ4 - Fast compression format
+mimetype!(LZ4, APPLICATION_X_LZ4, ".lz4", [0x04, 0x22, 0x4D, 0x18], kind: ARCHIVE);
+
+mimetype!(CAB, APPLICATION_VND_MS_CAB_COMPRESSED, ".cab", b"MSCF", kind: ARCHIVE);
 
 static INSTALL_SHIELD_CAB: MimeType =
     MimeType::new(APPLICATION_X_INSTALLSHIELD, ".cab", install_shield_cab, &[])
@@ -427,27 +412,34 @@ static INSTALL_SHIELD_CAB: MimeType =
 static CPIO: MimeType =
     MimeType::new(APPLICATION_X_CPIO, ".cpio", cpio, &[]).with_kind(MimeKind::ARCHIVE);
 
-static AR: MimeType = MimeType::new(APPLICATION_X_ARCHIVE, ".a", ar, &[&DEB])
-    .with_aliases(&[APPLICATION_X_UNIX_ARCHIVE])
-    .with_extension_aliases(&[".deb"])
-    .with_kind(MimeKind::ARCHIVE);
+static AR: MimeType = MimeType::new(
+    APPLICATION_X_ARCHIVE,
+    ".a",
+    |input| input.starts_with(b"!<arch>"),
+    &[&DEB],
+)
+.with_aliases(&[APPLICATION_X_UNIX_ARCHIVE])
+.with_extension_aliases(&[".deb"])
+.with_kind(MimeKind::ARCHIVE);
 
-static RPM: MimeType =
-    MimeType::new(APPLICATION_X_RPM, ".rpm", rpm, &[]).with_kind(MimeKind::ARCHIVE);
+mimetype!(RPM, APPLICATION_X_RPM, ".rpm", b"\xed\xab\xee\xdb", kind: ARCHIVE);
 
-static TORRENT: MimeType = MimeType::new(APPLICATION_X_BITTORRENT, ".torrent", torrent, &[]);
+mimetype!(TORRENT, APPLICATION_X_BITTORRENT, ".torrent", b"d8:announce" | b"d7:comment" | b"d4:info", kind: ARCHIVE);
 
-static FITS: MimeType = MimeType::new(APPLICATION_FITS, ".fits", fits, &[])
-    .with_aliases(&[IMAGE_FITS])
-    .with_kind(MimeKind::IMAGE);
+mimetype!(FITS, APPLICATION_FITS, ".fits", b"SIMPLE  =                    T", kind: IMAGE, aliases: [IMAGE_FITS]);
 
-static XAR: MimeType =
-    MimeType::new(APPLICATION_X_XAR, ".xar", xar, &[]).with_kind(MimeKind::ARCHIVE);
+mimetype!(XAR, APPLICATION_X_XAR, ".xar", b"xar!", kind: ARCHIVE);
+
+// ARJ - Legacy DOS compression format
+mimetype!(ARJ, APPLICATION_ARJ, ".arj", [0x60, 0xEA], kind: ARCHIVE);
+
+// LHA/LZH - Japanese compression standard
+mimetype!(LHA, APPLICATION_X_LZH_COMPRESSED, ".lzh", b"-lh", kind: ARCHIVE);
 
 static DEB: MimeType = MimeType::new(APPLICATION_VND_DEBIAN_BINARY_PACKAGE, ".deb", deb, &[])
     .with_kind(MimeKind::ARCHIVE);
 
-static WARC: MimeType = MimeType::new(APPLICATION_WARC, ".warc", warc, &[])
+static WARC: MimeType = MimeType::new(APPLICATION_WARC, ".warc", |input| input.starts_with(b"WARC/1.0") || input.starts_with(b"WARC/1.1"), &[])
     .with_kind(MimeKind::ARCHIVE)
     .with_parent(&UTF8);
 
@@ -551,14 +543,12 @@ static RTF_UTF16_LE: MimeType =
 // IMAGE FORMATS
 // ============================================================================
 
-static PNG: MimeType = MimeType::new(IMAGE_PNG, ".png", png, &[&APNG]).with_kind(MimeKind::IMAGE);
+mimetype!(PNG, IMAGE_PNG, ".png", b"\x89PNG\r\n\x1a\n", kind: IMAGE, children: [&APNG]);
 
 static APNG: MimeType =
     MimeType::new(IMAGE_VND_MOZILLA_APNG, ".apng", apng, &[]).with_kind(MimeKind::IMAGE);
 
-static JPG: MimeType = MimeType::new(IMAGE_JPEG, ".jpg", jpg, &[])
-    .with_extension_aliases(&[".jpeg", ".jpe", ".jif", ".jfif", ".jfi"])
-    .with_kind(MimeKind::IMAGE);
+mimetype!(JPG, IMAGE_JPEG, ".jpg", b"\xff\xd8\xff", kind: IMAGE, ext_aliases: [".jpeg", ".jpe", ".jif", ".jfif", ".jfi"]);
 
 static JP2: MimeType = MimeType::new(IMAGE_JP2, ".jp2", jp2, &[]).with_kind(MimeKind::IMAGE);
 
@@ -568,46 +558,38 @@ static JPM: MimeType = MimeType::new(IMAGE_JPM, ".jpm", jpm, &[])
     .with_aliases(&[VIDEO_JPM])
     .with_kind(MimeKind::IMAGE);
 
-static JXS: MimeType = MimeType::new(IMAGE_JXS, ".jxs", jxs, &[]).with_kind(MimeKind::IMAGE);
+mimetype!(JXS, IMAGE_JXS, ".jxs", b"\x00\x00\x00\x0C\x4A\x58\x53\x20\x0D\x0A\x87\x0A", kind: IMAGE);
 
-static JXR: MimeType = MimeType::new(IMAGE_JXR, ".jxr", jxr, &[])
+static JXR: MimeType = MimeType::new(IMAGE_JXR, ".jxr", |input| input.starts_with(b"\x49\x49\xBC\x01"), &[])
     .with_aliases(&[IMAGE_VND_MS_PHOTO])
     .with_kind(MimeKind::IMAGE);
 
-static JXL: MimeType = MimeType::new(IMAGE_JXL, ".jxl", jxl, &[]).with_kind(MimeKind::IMAGE);
+mimetype!(JXL, IMAGE_JXL, ".jxl", b"\xFF\x0A" | b"\x00\x00\x00\x0CJXL \x0D\x0A\x87\x0A", kind: IMAGE);
 
-static GIF: MimeType = MimeType::new(IMAGE_GIF, ".gif", gif, &[]).with_kind(MimeKind::IMAGE);
+mimetype!(GIF, IMAGE_GIF, ".gif", b"GIF87a" | b"GIF89a", kind: IMAGE);
 
-static WEBP: MimeType = MimeType::new(IMAGE_WEBP, ".webp", webp, &[]).with_kind(MimeKind::IMAGE);
+mimetype!(WEBP, IMAGE_WEBP, ".webp", offset: (8, b"WEBP", prefix: (0, b"RIFF")), kind: IMAGE);
 
-static TIFF: MimeType = MimeType::new(IMAGE_TIFF, ".tiff", tiff, &[])
-    .with_extension_aliases(&[".tif"])
-    .with_kind(MimeKind::IMAGE);
+mimetype!(TIFF, IMAGE_TIFF, ".tiff", b"II*\x00" | b"MM\x00*", kind: IMAGE, ext_aliases: [".tif"]);
 
-static BMP: MimeType = MimeType::new(IMAGE_BMP, ".bmp", bmp, &[])
+static BMP: MimeType = MimeType::new(IMAGE_BMP, ".bmp", |input| input.starts_with(b"BM"), &[])
     .with_aliases(&[IMAGE_X_BMP, IMAGE_X_MS_BMP])
     .with_extension_aliases(&[".dib"])
     .with_kind(MimeKind::IMAGE);
 
-static ICO: MimeType = MimeType::new(IMAGE_X_ICON, ".ico", ico, &[]).with_kind(MimeKind::IMAGE);
+mimetype!(ICO, IMAGE_X_ICON, ".ico", b"\x00\x00\x01\x00", kind: IMAGE);
 
-static ICNS: MimeType = MimeType::new(IMAGE_X_ICNS, ".icns", icns, &[]).with_kind(MimeKind::IMAGE);
+mimetype!(ICNS, IMAGE_X_ICNS, ".icns", b"icns", kind: IMAGE);
 
-static PSD: MimeType = MimeType::new(IMAGE_VND_ADOBE_PHOTOSHOP, ".psd", psd, &[])
-    .with_aliases(&[IMAGE_X_PSD, APPLICATION_PHOTOSHOP])
-    .with_kind(MimeKind::IMAGE);
+mimetype!(PSD, IMAGE_VND_ADOBE_PHOTOSHOP, ".psd", b"8BPS", kind: IMAGE, aliases: [IMAGE_X_PSD, APPLICATION_PHOTOSHOP]);
 
-static PBM: MimeType =
-    MimeType::new(IMAGE_X_PORTABLE_BITMAP, ".pbm", pbm, &[]).with_kind(MimeKind::IMAGE);
+mimetype!(PBM, IMAGE_X_PORTABLE_BITMAP, ".pbm", b"P1" | b"P4", kind: IMAGE);
 
-static PGM: MimeType =
-    MimeType::new(IMAGE_X_PORTABLE_GRAYMAP, ".pgm", pgm, &[]).with_kind(MimeKind::IMAGE);
+mimetype!(PGM, IMAGE_X_PORTABLE_GRAYMAP, ".pgm", b"P2" | b"P5", kind: IMAGE);
 
-static PPM: MimeType =
-    MimeType::new(IMAGE_X_PORTABLE_PIXMAP, ".ppm", ppm, &[]).with_kind(MimeKind::IMAGE);
+mimetype!(PPM, IMAGE_X_PORTABLE_PIXMAP, ".ppm", b"P3" | b"P6", kind: IMAGE);
 
-static PAM: MimeType =
-    MimeType::new(IMAGE_X_PORTABLE_ARBITRARYMAP, ".pam", pam, &[]).with_kind(MimeKind::IMAGE);
+mimetype!(PAM, IMAGE_X_PORTABLE_ARBITRARYMAP, ".pam", b"P7", kind: IMAGE);
 
 static HEIC: MimeType = MimeType::new(IMAGE_HEIC, ".heic", heic, &[])
     .with_kind(MimeKind::IMAGE)
@@ -622,18 +604,17 @@ static HEIF: MimeType = MimeType::new(IMAGE_HEIF, ".heif", heif, &[]).with_kind(
 static HEIF_SEQ: MimeType =
     MimeType::new(IMAGE_HEIF_SEQUENCE, ".heif", heif_sequence, &[]).with_kind(MimeKind::IMAGE);
 
-static BPG: MimeType = MimeType::new(IMAGE_BPG, ".bpg", bpg, &[]).with_kind(MimeKind::IMAGE);
+mimetype!(BPG, IMAGE_BPG, ".bpg", b"BPG\xFB", kind: IMAGE);
 
-static XCF: MimeType = MimeType::new(IMAGE_X_XCF, ".xcf", xcf, &[]).with_kind(MimeKind::IMAGE);
+mimetype!(XCF, IMAGE_X_XCF, ".xcf", b"gimp xcf", kind: IMAGE);
 
 static PAT: MimeType = MimeType::new(IMAGE_X_GIMP_PAT, ".pat", pat, &[]).with_kind(MimeKind::IMAGE);
 
 static GBR: MimeType = MimeType::new(IMAGE_X_GIMP_GBR, ".gbr", gbr, &[]).with_kind(MimeKind::IMAGE);
 
-static HDR: MimeType =
-    MimeType::new(IMAGE_VND_RADIANCE, ".hdr", hdr, &[]).with_kind(MimeKind::IMAGE);
+mimetype!(HDR, IMAGE_VND_RADIANCE, ".hdr", b"#?RADIANCE\n", kind: IMAGE);
 
-static XPM: MimeType = MimeType::new(IMAGE_X_XPIXMAP, ".xpm", xpm, &[]).with_kind(MimeKind::IMAGE);
+mimetype!(XPM, IMAGE_X_XPIXMAP, ".xpm", b"/* XPM */", kind: IMAGE);
 
 static DWG: MimeType = MimeType::new(IMAGE_VND_DWG, ".dwg", dwg, &[])
     .with_aliases(&[
@@ -648,10 +629,47 @@ static DWG: MimeType = MimeType::new(IMAGE_VND_DWG, ".dwg", dwg, &[])
     ])
     .with_kind(MimeKind::IMAGE);
 
-static DXF: MimeType = MimeType::new(IMAGE_VND_DXF, ".dxf", dxf, &[]).with_kind(MimeKind::IMAGE);
+static DXF: MimeType = MimeType::new(IMAGE_VND_DXF, ".dxf", |input| input.starts_with(b"  0\x0ASECTION\x0A") || input.starts_with(b"  0\x0D\x0ASECTION\x0D\x0A") || input.starts_with(b"0\x0ASECTION\x0A") || input.starts_with(b"0\x0D\x0ASECTION\x0D\x0A"), &[]).with_kind(MimeKind::IMAGE);
 
-static DJVU: MimeType =
-    MimeType::new(IMAGE_VND_DJVU, ".djvu", djvu, &[]).with_kind(MimeKind::IMAGE);
+mimetype!(DJVU, IMAGE_VND_DJVU, ".djvu", offset: (12, b"DJVU", prefix: (0, b"AT&TFORM")), kind: IMAGE);
+
+// DirectDraw Surface - Game textures
+mimetype!(DDS, IMAGE_VND_MS_DDS, ".dds", b"DDS ", kind: IMAGE);
+
+// PC Paintbrush - Classic bitmap format
+mimetype!(PCX, IMAGE_X_PCX, ".pcx", [0x0A], kind: IMAGE);
+
+// Khronos Texture - OpenGL/Vulkan textures
+mimetype!(KTX, IMAGE_KTX, ".ktx", [0xAB, 0x4B, 0x54, 0x58, 0x20], kind: IMAGE);
+
+// ARM Texture Compression - Mobile GPU textures
+mimetype!(ASTC, IMAGE_X_ASTC, ".astc", [0x13, 0xAB, 0xA1, 0x5C], kind: IMAGE);
+
+// Truevision TGA/Targa - Gaming and 3D graphics format
+mimetype!(TGA, IMAGE_X_TGA, ".tga", [0x00, 0x01, 0x0A, 0x00], kind: IMAGE);
+
+// Sun Raster - Legacy Unix image format
+mimetype!(SUN_RASTER, IMAGE_X_SUN_RASTER, ".ras", [0x59, 0xA6, 0x6A, 0x95], kind: IMAGE);
+
+// Silicon Graphics Image - Film/VFX format
+mimetype!(SGI, IMAGE_X_SGI, ".sgi", [0x01, 0xDA], kind: IMAGE);
+
+// Windows Animated Cursor - RIFF container
+mimetype!(ANI, APPLICATION_X_NAVI_ANIMATION, ".ani", offset: (8, b"ACON", prefix: (0, b"RIFF")), kind: IMAGE);
+
+// CorelDRAW - RIFF container
+static CDR: MimeType = MimeType::new(APPLICATION_VND_COREL_DRAW, ".cdr", |input| input.len() >= 11 && input.starts_with(b"RIFF") && &input[8..11] == b"CDR", &[])
+    .with_aliases(&[APPLICATION_CDR, APPLICATION_X_CDR])
+    .with_kind(MimeKind::IMAGE);
+
+// IFF/ILBM - Amiga graphics format (FORM container)
+static ILBM: MimeType = MimeType::new(IMAGE_X_ILBM, ".lbm", |input| input.len() >= 12 && input.starts_with(b"FORM") && &input[8..12] == b"ILBM", &[])
+    .with_extension_aliases(&[".iff", ".ilbm"])
+    .with_aliases(&[IMAGE_X_IFF])
+    .with_kind(MimeKind::IMAGE);
+
+static AVIF_FORMAT: MimeType =
+    MimeType::new(IMAGE_AVIF, ".avif", avif_format, &[]).with_kind(MimeKind::IMAGE);
 
 // ============================================================================
 // AUDIO FORMATS
@@ -661,24 +679,29 @@ static MP3: MimeType = MimeType::new(AUDIO_MPEG, ".mp3", mp3, &[])
     .with_aliases(&[AUDIO_X_MPEG, AUDIO_MP3])
     .with_kind(MimeKind::AUDIO);
 
-static FLAC: MimeType = MimeType::new(AUDIO_FLAC, ".flac", flac, &[]).with_kind(MimeKind::AUDIO);
+mimetype!(FLAC, AUDIO_FLAC, ".flac", b"fLaC", kind: AUDIO);
 
-static WAV: MimeType = MimeType::new(AUDIO_WAV, ".wav", wav, &[])
+static WAV: MimeType = MimeType::new(AUDIO_WAV, ".wav", |input| input.len() >= 12 && input.starts_with(b"RIFF") && &input[8..12] == b"WAVE", &[])
     .with_aliases(&[AUDIO_X_WAV, AUDIO_VND_WAVE, AUDIO_WAVE])
     .with_kind(MimeKind::AUDIO);
 
-static AIFF: MimeType = MimeType::new(AUDIO_AIFF, ".aiff", aiff, &[])
+static AIFF: MimeType = MimeType::new(AUDIO_AIFF, ".aiff", |input| input.len() >= 12 && input.starts_with(b"FORM") && &input[8..12] == b"AIFF", &[])
     .with_extension_aliases(&[".aif"])
     .with_kind(MimeKind::AUDIO);
 
-static MIDI: MimeType = MimeType::new(AUDIO_MIDI, ".midi", midi, &[])
+static MIDI: MimeType = MimeType::new(AUDIO_MIDI, ".midi", |input| input.starts_with(b"MThd"), &[])
     .with_aliases(&[AUDIO_MID])
     .with_extension_aliases(&[".mid"])
     .with_kind(MimeKind::AUDIO);
 
-static OGG: MimeType = MimeType::new(APPLICATION_OGG, ".ogg", ogg, &[&OGG_AUDIO, &OGG_VIDEO])
-    .with_extension_aliases(&[".oga", ".opus", ".ogv"])
-    .with_kind(MimeKind::AUDIO);
+static OGG: MimeType = MimeType::new(
+    APPLICATION_OGG,
+    ".ogg",
+    |input| input.starts_with(b"OggS"),
+    &[&OGG_AUDIO, &OGG_VIDEO],
+)
+.with_extension_aliases(&[".oga", ".opus", ".ogv"])
+.with_kind(MimeKind::AUDIO);
 
 static OGG_AUDIO: MimeType = MimeType::new(AUDIO_OGG, ".oga", ogg_audio, &[])
     .with_kind(MimeKind::AUDIO)
@@ -688,41 +711,50 @@ static OGG_VIDEO: MimeType = MimeType::new(VIDEO_OGG, ".ogv", ogg_video, &[])
     .with_kind(MimeKind::VIDEO)
     .with_parent(&OGG);
 
-static APE: MimeType = MimeType::new(AUDIO_APE, ".ape", ape, &[]).with_kind(MimeKind::AUDIO);
+static APE: MimeType = MimeType::new(AUDIO_APE, ".ape", |input| input.starts_with(b"MAC \x96\x0F\x00\x00\x34\x00\x00\x00\x18\x00\x00\x00\x90\xE3"), &[]).with_kind(MimeKind::AUDIO);
 
-static MUSEPACK: MimeType =
-    MimeType::new(AUDIO_MUSEPACK, ".mpc", musepack, &[]).with_kind(MimeKind::AUDIO);
+mimetype!(MUSEPACK, AUDIO_MUSEPACK, ".mpc", b"MPCK", kind: AUDIO);
 
-static AU: MimeType = MimeType::new(AUDIO_BASIC, ".au", au, &[])
+static AU: MimeType = MimeType::new(AUDIO_BASIC, ".au", |input| input.starts_with(b".snd"), &[])
     .with_extension_aliases(&[".snd"])
     .with_kind(MimeKind::AUDIO);
 
-static AMR: MimeType = MimeType::new(AUDIO_AMR, ".amr", amr, &[])
+static AMR: MimeType = MimeType::new(AUDIO_AMR, ".amr", |input| input.starts_with(b"#!AMR"), &[])
     .with_aliases(&[AUDIO_AMR_NB])
     .with_kind(MimeKind::AUDIO);
 
-static VOC: MimeType = MimeType::new(AUDIO_X_UNKNOWN, ".voc", voc, &[]).with_kind(MimeKind::AUDIO);
+mimetype!(VOC, AUDIO_X_UNKNOWN, ".voc", b"Creative Voice File", kind: AUDIO);
 
-static M3U: MimeType = MimeType::new(AUDIO_X_MPEGURL, ".m3u", m3u, &[])
+static M3U: MimeType = MimeType::new(AUDIO_X_MPEGURL, ".m3u", |input| input.starts_with(b"#EXTM3U"), &[])
     .with_aliases(&[AUDIO_MPEGURL])
     .with_extension_aliases(&[".m3u8"])
     .with_kind(MimeKind::TEXT);
 
-static AAC: MimeType = MimeType::new(AUDIO_AAC, ".aac", aac, &[]).with_kind(MimeKind::AUDIO);
+mimetype!(AAC, AUDIO_AAC, ".aac", b"\xFF\xF1" | b"\xFF\xF9", kind: AUDIO);
 
-static QCP: MimeType = MimeType::new(AUDIO_QCELP, ".qcp", qcp, &[]).with_kind(MimeKind::AUDIO);
+mimetype!(QCP, AUDIO_QCELP, ".qcp", offset: (8, b"QLCM", prefix: (0, b"RIFF")), kind: AUDIO);
 
-static M4A: MimeType = MimeType::new(AUDIO_X_M4A, ".m4a", m4a, &[]).with_kind(MimeKind::AUDIO);
+mimetype!(M4A, AUDIO_X_M4A, ".m4a", offset: (8, b"M4A ", prefix: (4, b"ftyp")), kind: AUDIO);
 
-static AMP4: MimeType = MimeType::new(AUDIO_MP4, ".mp4", amp4, &[])
-    .with_aliases(&[AUDIO_X_M4A, AUDIO_X_MP4A])
-    .with_kind(MimeKind::AUDIO);
+// Merged AMP4 into MP4 below
+
+// WavPack - Lossless/lossy audio compression
+mimetype!(WAVPACK, AUDIO_X_WAVPACK, ".wv", b"wvpk", kind: AUDIO);
+
+// True Audio - Lossless audio codec
+mimetype!(TTA, AUDIO_X_TTA, ".tta", b"TTA1", kind: AUDIO);
+
+// DSD Stream File - Direct Stream Digital audio
+mimetype!(DSF, AUDIO_X_DSF, ".dsf", b"DSD ", kind: AUDIO);
+
+// DSD Interchange File - Direct Stream Digital audio
+mimetype!(DFF, AUDIO_X_DFF, ".dff", b"FRM8", kind: AUDIO);
 
 // ============================================================================
 // VIDEO FORMATS
 // ============================================================================
 
-static MP4_PRECISE: MimeType = MimeType::new(
+static MP4: MimeType = MimeType::new(
     VIDEO_MP4,
     ".mp4",
     mp4_precise,
@@ -730,7 +762,6 @@ static MP4_PRECISE: MimeType = MimeType::new(
         &AVIF_FORMAT,
         &THREE_GPP,
         &THREE_GPP2,
-        &AMP4,
         &M4A,
         &M4V,
         &HEIC,
@@ -741,7 +772,8 @@ static MP4_PRECISE: MimeType = MimeType::new(
         &DVB,
     ],
 )
-.with_kind(MimeKind::VIDEO);
+.with_aliases(&[AUDIO_MP4, AUDIO_X_M4A, AUDIO_X_MP4A])
+.with_kind(MimeKind::AUDIO.union(MimeKind::VIDEO));
 
 static WEBM: MimeType = MimeType::new(VIDEO_WEBM, ".webm", webm, &[])
     .with_aliases(&[AUDIO_WEBM])
@@ -751,9 +783,7 @@ static MKV: MimeType = MimeType::new(VIDEO_X_MATROSKA, ".mkv", mkv, &[])
     .with_extension_aliases(&[".mk3d", ".mka", ".mks"])
     .with_kind(MimeKind::VIDEO);
 
-static AVI: MimeType = MimeType::new(VIDEO_X_MSVIDEO, ".avi", avi, &[])
-    .with_aliases(&[VIDEO_AVI, VIDEO_MSVIDEO])
-    .with_kind(MimeKind::VIDEO);
+mimetype!(AVI, VIDEO_X_MSVIDEO, ".avi", offset: (8, b"AVI LIST", prefix: (0, b"RIFF")), kind: VIDEO, aliases: [VIDEO_AVI, VIDEO_MSVIDEO]);
 
 static MPEG: MimeType = MimeType::new(VIDEO_MPEG, ".mpeg", mpeg, &[]).with_kind(MimeKind::VIDEO);
 
@@ -762,33 +792,44 @@ static QUICKTIME: MimeType =
 
 static MQV: MimeType = MimeType::new(VIDEO_QUICKTIME, ".mqv", mqv, &[]).with_kind(MimeKind::VIDEO);
 
-static FLV: MimeType = MimeType::new(VIDEO_X_FLV, ".flv", flv, &[]).with_kind(MimeKind::VIDEO);
+mimetype!(FLV, VIDEO_X_FLV, ".flv", b"FLV", kind: VIDEO);
 
-static ASF: MimeType = MimeType::new(VIDEO_X_MS_ASF, ".asf", asf, &[])
-    .with_aliases(&[VIDEO_ASF, VIDEO_X_MS_WMV])
+mimetype!(ASF, VIDEO_X_MS_ASF, ".asf", b"\x30\x26\xb2\x75\x8e\x66\xcf\x11\xa6\xd9\x00\xaa\x00\x62\xce\x6c", kind: VIDEO, aliases: [VIDEO_ASF, VIDEO_X_MS_WMV]);
+
+mimetype!(M4V, VIDEO_X_M4V, ".m4v", offset: (8, b"M4V ", prefix: (4, b"ftyp")), kind: VIDEO);
+
+mimetype!(RMVB, APPLICATION_VND_RN_REALMEDIA_VBR, ".rmvb", b".RMF", kind: VIDEO);
+
+static THREE_GPP: MimeType = MimeType::new(VIDEO_3GPP, ".3gp", three_gpp, &[])
+    .with_aliases(&[VIDEO_3GP, AUDIO_3GPP])
     .with_kind(MimeKind::VIDEO);
 
-static M4V: MimeType = MimeType::new(VIDEO_X_M4V, ".m4v", m4v, &[]).with_kind(MimeKind::VIDEO);
+static THREE_GPP2: MimeType = MimeType::new(VIDEO_3GPP2, ".3g2", three_gpp2, &[])
+    .with_aliases(&[VIDEO_3G2, AUDIO_3GPP2])
+    .with_kind(MimeKind::VIDEO);
 
-static RMVB: MimeType =
-    MimeType::new(APPLICATION_VND_RN_REALMEDIA_VBR, ".rmvb", rmvb, &[]).with_kind(MimeKind::VIDEO);
+static MJ2: MimeType = MimeType::new(VIDEO_MJ2, ".mj2", mj2, &[]);
+
+static DVB: MimeType =
+    MimeType::new(VIDEO_VND_DVB_FILE, ".dvb", dvb, &[]).with_kind(MimeKind::VIDEO);
+
+// Autodesk FLIC Animation - Game development animation format
+mimetype!(FLI, VIDEO_FLI, ".fli", [0x11, 0xAF], kind: VIDEO);
+mimetype!(FLC, VIDEO_FLC, ".flc", [0x12, 0xAF], kind: VIDEO);
+
+// Fast Search and Transfer Video - Surveillance video format
+mimetype!(FVT, VIDEO_VND_FVT, ".fvt", b"FVT", kind: VIDEO);
 
 // ============================================================================
 // EXECUTABLE & BINARY FORMATS
 // ============================================================================
 
-static EXE: MimeType = MimeType::new(
-    APPLICATION_VND_MICROSOFT_PORTABLE_EXECUTABLE,
-    ".exe",
-    exe,
-    &[],
-)
-.with_kind(MimeKind::EXECUTABLE);
+mimetype!(EXE, APPLICATION_VND_MICROSOFT_PORTABLE_EXECUTABLE, ".exe", b"MZ", kind: EXECUTABLE);
 
 static ELF: MimeType = MimeType::new(
     APPLICATION_X_ELF,
     "",
-    elf,
+    |input| input.starts_with(b"\x7fELF"),
     &[&ELF_OBJ, &ELF_EXE, &ELF_LIB, &ELF_DUMP],
 )
 .with_extension_aliases(&[".so"])
@@ -806,44 +847,37 @@ static ELF_LIB: MimeType =
 static ELF_DUMP: MimeType =
     MimeType::new(APPLICATION_X_COREDUMP, "", elf_dump, &[]).with_kind(MimeKind::EXECUTABLE);
 
-static CLASS: MimeType = MimeType::new(APPLICATION_X_JAVA_APPLET_BINARY, ".class", class, &[])
-    .with_aliases(&[APPLICATION_X_JAVA_APPLET])
-    .with_kind(MimeKind::APPLICATION);
+mimetype!(CLASS, APPLICATION_X_JAVA_APPLET_BINARY, ".class", b"\xca\xfe\xba\xbe", kind: APPLICATION, aliases: [APPLICATION_X_JAVA_APPLET]);
 
-static WASM: MimeType =
-    MimeType::new(APPLICATION_WASM, ".wasm", wasm, &[]).with_kind(MimeKind::EXECUTABLE);
+mimetype!(WASM, APPLICATION_WASM, ".wasm", b"\x00asm", kind: EXECUTABLE);
 
 // ============================================================================
 // FONT FORMATS
 // ============================================================================
 
-static TTF: MimeType = MimeType::new(FONT_TTF, ".ttf", ttf, &[])
-    .with_aliases(&[FONT_SFNT, APPLICATION_X_FONT_TTF, APPLICATION_FONT_SFNT])
-    .with_kind(MimeKind::FONT);
+mimetype!(TTF, FONT_TTF, ".ttf", b"\x00\x01\x00\x00" | b"true" | b"typ1", kind: FONT, aliases: [FONT_SFNT, APPLICATION_X_FONT_TTF, APPLICATION_FONT_SFNT]);
 
-static WOFF: MimeType = MimeType::new(FONT_WOFF, ".woff", woff, &[]).with_kind(MimeKind::FONT);
+mimetype!(WOFF, FONT_WOFF, ".woff", b"wOFF", kind: FONT);
 
-static WOFF2: MimeType = MimeType::new(FONT_WOFF2, ".woff2", woff2, &[]).with_kind(MimeKind::FONT);
+mimetype!(WOFF2, FONT_WOFF2, ".woff2", b"wOF2", kind: FONT);
 
-static OTF: MimeType = MimeType::new(FONT_OTF, ".otf", otf, &[]).with_kind(MimeKind::FONT);
+mimetype!(OTF, FONT_OTF, ".otf", b"OTTO", kind: FONT);
 
 static EOT: MimeType =
     MimeType::new(APPLICATION_VND_MS_FONTOBJECT, ".eot", eot, &[]).with_kind(MimeKind::FONT);
 
-static TTC: MimeType = MimeType::new(FONT_COLLECTION, ".ttc", ttc, &[]).with_kind(MimeKind::FONT);
+mimetype!(TTC, FONT_COLLECTION, ".ttc", b"ttcf", kind: FONT);
 
 // ============================================================================
 // WEB & MULTIMEDIA FORMATS
 // ============================================================================
 
-static SWF: MimeType =
-    MimeType::new(APPLICATION_X_SHOCKWAVE_FLASH, ".swf", swf, &[]).with_kind(MimeKind::APPLICATION);
+mimetype!(SWF, APPLICATION_X_SHOCKWAVE_FLASH, ".swf", b"FWS" | b"CWS" | b"ZWS", kind: APPLICATION);
 
 static CRX: MimeType = MimeType::new(APPLICATION_X_CHROME_EXTENSION, ".crx", crx, &[])
     .with_kind(MimeKind::APPLICATION);
 
-static P7S: MimeType =
-    MimeType::new(APPLICATION_PKCS7_SIGNATURE, ".p7s", p7s, &[]).with_kind(MimeKind::APPLICATION);
+mimetype!(P7S, APPLICATION_PKCS7_SIGNATURE, ".p7s", b"-----BEGIN PKCS7-----", kind: APPLICATION);
 
 // ============================================================================
 // SPECIALIZED FORMATS
@@ -855,17 +889,14 @@ static DCM: MimeType =
 static MOBI: MimeType =
     MimeType::new(APPLICATION_X_MOBIPOCKET_EBOOK, ".mobi", mobi, &[]).with_kind(MimeKind::DOCUMENT);
 
-static LIT: MimeType =
-    MimeType::new(APPLICATION_X_MS_READER, ".lit", lit, &[]).with_kind(MimeKind::DOCUMENT);
+mimetype!(LIT, APPLICATION_X_MS_READER, ".lit", b"ITOLITLS", kind: DOCUMENT);
 
-static SQLITE3: MimeType = MimeType::new(APPLICATION_VND_SQLITE3, ".sqlite", sqlite, &[])
-    .with_aliases(&[APPLICATION_X_SQLITE3])
-    .with_kind(MimeKind::DATABASE);
+mimetype!(SQLITE3, APPLICATION_VND_SQLITE3, ".sqlite", b"SQLite format 3\x00", kind: DATABASE, aliases: [APPLICATION_X_SQLITE3]);
 
 static FASOO: MimeType = MimeType::new(APPLICATION_X_FASOO, "", fasoo, &[]).with_parent(&OLE);
 
 static PGP_NET_SHARE: MimeType =
-    MimeType::new(APPLICATION_X_PGP_NET_SHARE, "", pgp_net_share, &[]).with_parent(&OLE);
+    MimeType::new(APPLICATION_X_PGP_NET_SHARE, "", |input| input.starts_with(b"-----BEGIN PGP"), &[]).with_parent(&OLE);
 
 // ============================================================================
 // MICROSOFT OFFICE & DOCUMENT FORMATS
@@ -1133,7 +1164,7 @@ static CSV_FORMAT: MimeType = MimeType::new(TEXT_CSV, ".csv", csv_format, &[]).w
 static TSV: MimeType =
     MimeType::new(TEXT_TAB_SEPARATED_VALUES, ".tsv", tsv, &[]).with_parent(&UTF8);
 
-static RTF: MimeType = MimeType::new(TEXT_RTF, ".rtf", rtf, &[])
+static RTF: MimeType = MimeType::new(TEXT_RTF, ".rtf", |input| input.starts_with(b"{\\rtf"), &[])
     .with_aliases(&[APPLICATION_RTF])
     .with_kind(MimeKind::DOCUMENT)
     .with_parent(&UTF8);
@@ -1230,40 +1261,22 @@ static HAR: MimeType = MimeType::new(APPLICATION_JSON_HAR, ".har", har, &[])
 
 static SHP: MimeType = MimeType::new(APPLICATION_VND_SHP, ".shp", shp, &[]);
 
-static SHX: MimeType = MimeType::new(APPLICATION_VND_SHX, ".shx", shx, &[&SHP]);
+static SHX: MimeType = MimeType::new(APPLICATION_VND_SHX, ".shx", |input| input.starts_with(b"\x00\x00\x27\x0A"), &[&SHP]);
 
-static GLB: MimeType =
-    MimeType::new(MODEL_GLTF_BINARY, ".glb", glb, &[]).with_kind(MimeKind::MODEL);
+mimetype!(GLB, MODEL_GLTF_BINARY, ".glb", b"glTF\x02\x00\x00\x00" | b"glTF\x01\x00\x00\x00", kind: MODEL);
 
 static GLTF: MimeType = MimeType::new(MODEL_GLTF_JSON, ".gltf", gltf, &[])
     .with_kind(MimeKind::MODEL)
     .with_parent(&JSON);
 
+// Universal 3D - PDF 3D embedding format
+mimetype!(U3D, MODEL_U3D, ".u3d", b"U3D\0", kind: MODEL);
+
 // ============================================================================
 // GAMING FORMATS
 // ============================================================================
 
-static NES: MimeType = MimeType::new(APPLICATION_VND_NINTENDO_SNES_ROM, ".nes", nes, &[]);
-
-// ============================================================================
-// ADDITIONAL VIDEO FORMATS
-// ============================================================================
-
-static THREE_GPP: MimeType = MimeType::new(VIDEO_3GPP, ".3gp", three_gpp, &[])
-    .with_aliases(&[VIDEO_3GP, AUDIO_3GPP])
-    .with_kind(MimeKind::VIDEO);
-
-static THREE_GPP2: MimeType = MimeType::new(VIDEO_3GPP2, ".3g2", three_gpp2, &[])
-    .with_aliases(&[VIDEO_3G2, AUDIO_3GPP2])
-    .with_kind(MimeKind::VIDEO);
-
-static MJ2: MimeType = MimeType::new(VIDEO_MJ2, ".mj2", mj2, &[]);
-
-static DVB: MimeType =
-    MimeType::new(VIDEO_VND_DVB_FILE, ".dvb", dvb, &[]).with_kind(MimeKind::VIDEO);
-
-static AVIF_FORMAT: MimeType =
-    MimeType::new(IMAGE_AVIF, ".avif", avif_format, &[]).with_kind(MimeKind::IMAGE);
+mimetype!(NES, APPLICATION_VND_NINTENDO_SNES_ROM, ".nes", b"NES\x1A", kind: APPLICATION);
 
 // ============================================================================
 // MISCELLANEOUS FORMATS
@@ -1272,18 +1285,42 @@ static AVIF_FORMAT: MimeType =
 static HDF: MimeType =
     MimeType::new(APPLICATION_X_HDF, ".hdf", hdf, &[]).with_kind(MimeKind::DATABASE);
 
-static CBOR_FORMAT: MimeType = MimeType::new(APPLICATION_CBOR, ".cbor", cbor_format, &[]);
+mimetype!(CBOR_FORMAT, APPLICATION_CBOR, ".cbor", b"\xd9\xd9\xf7", kind: APPLICATION);
 
-static PARQUET: MimeType = MimeType::new(APPLICATION_VND_APACHE_PARQUET, ".parquet", parquet, &[])
-    .with_aliases(&[APPLICATION_X_PARQUET])
-    .with_kind(MimeKind::DATABASE);
+mimetype!(PARQUET, APPLICATION_VND_APACHE_PARQUET, ".parquet", b"PAR1", kind: DATABASE, aliases: [APPLICATION_X_PARQUET]);
 
-static LNK: MimeType = MimeType::new(APPLICATION_X_MS_SHORTCUT, ".lnk", lnk, &[]);
+mimetype!(LNK, APPLICATION_X_MS_SHORTCUT, ".lnk", b"L\x00\x00\x00\x01\x14\x02\x00", kind: APPLICATION);
 
 static MACHO: MimeType =
     MimeType::new(APPLICATION_X_MACH_BINARY, ".macho", macho, &[]).with_kind(MimeKind::EXECUTABLE);
 
-static TZIF: MimeType = MimeType::new(APPLICATION_TZIF, "", tzif, &[]);
+mimetype!(TZIF, APPLICATION_TZIF, "", b"TZif", kind: APPLICATION);
+
+// ============================================================================
+// NETWORK & DEBUGGING FORMATS
+// ============================================================================
+
+// PCAP - Network packet capture (libpcap format) - big-endian or little-endian
+fn pcap(input: &[u8]) -> bool {
+    const PCAP_BE: &[u8] = &[0xA1, 0xB2, 0xC3, 0xD4];
+    const PCAP_LE: &[u8] = &[0xD4, 0xC3, 0xB2, 0xA1];
+    input.starts_with(PCAP_BE) || input.starts_with(PCAP_LE)
+}
+static PCAP: MimeType =
+    MimeType::new(APPLICATION_VND_TCPDUMP_PCAP, ".pcap", pcap, &[]).with_kind(MimeKind::DOCUMENT);
+
+// PCAPNG - Next generation packet capture
+mimetype!(PCAPNG, APPLICATION_X_PCAPNG, ".pcapng", [0x0A, 0x0D, 0x0D, 0x0A], kind: DOCUMENT);
+
+// ============================================================================
+// 3D & CAD FORMATS
+// ============================================================================
+
+// Blender - 3D modeling and animation
+mimetype!(BLEND, APPLICATION_X_BLENDER, ".blend", b"BLENDER", kind: DOCUMENT);
+
+// PLY - Polygon File Format (3D models)
+mimetype!(PLY, APPLICATION_PLY, ".ply", b"ply\n", kind: DOCUMENT);
 
 // ============================================================================
 // XML FORMAT DETECTION FUNCTIONS
@@ -1396,89 +1433,13 @@ pub fn init_tree() {
 // - Implement enhanced detection for complex formats
 // - Prioritize performance while maintaining accuracy
 
-/// Detects 7-Zip archives by their distinctive 6-byte signature.
-///
-/// 7Z files begin with the signature "7z¼¯'⁴" (0x377ABCAF271C).
-/// This is one of the most reliable format signatures available.
-fn seven_z(input: &[u8]) -> bool {
-    input.starts_with(b"7z\xbc\xaf\x27\x1c")
-}
-
-/// Detects ZIP archives and ZIP-based formats.
-///
-/// ZIP files use the "PK" signature (named after Phil Katz) followed by
-/// different headers for various ZIP record types:
-/// - PK\x03\x04: Local file header (most common)
-/// - PK\x05\x06: End of central directory record
-/// - PK\x07\x08: Data descriptor record
-///
-/// This also matches ZIP-based formats like DOCX, XLSX, EPUB, JAR, etc.
-fn zip(input: &[u8]) -> bool {
-    input.starts_with(b"PK\x03\x04")
-        || input.starts_with(b"PK\x05\x06")
-        || input.starts_with(b"PK\x07\x08")
-}
-
-fn pdf(input: &[u8]) -> bool {
-    input.starts_with(b"%PDF-")
-}
-
-fn gzip(input: &[u8]) -> bool {
-    input.starts_with(b"\x1f\x8b")
-}
-
-fn bz2(input: &[u8]) -> bool {
-    input.starts_with(b"BZ")
-}
-
-fn xz(input: &[u8]) -> bool {
-    input.starts_with(b"\xfd7zXZ\x00")
-}
-
-fn png(input: &[u8]) -> bool {
-    input.starts_with(b"\x89PNG\r\n\x1a\n")
-}
-
-fn jpg(input: &[u8]) -> bool {
-    input.starts_with(b"\xff\xd8\xff")
-}
-
-fn gif(input: &[u8]) -> bool {
-    input.starts_with(b"GIF87a") || input.starts_with(b"GIF89a")
-}
-
-fn webp(input: &[u8]) -> bool {
-    input.len() >= 12 && input.starts_with(b"RIFF") && &input[8..12] == b"WEBP"
-}
-
-fn tiff(input: &[u8]) -> bool {
-    input.starts_with(b"II*\x00") || input.starts_with(b"MM\x00*")
-}
-
-fn bmp(input: &[u8]) -> bool {
-    input.starts_with(b"BM")
-}
-
-fn ico(input: &[u8]) -> bool {
-    input.starts_with(b"\x00\x00\x01\x00")
-}
-
-fn flac(input: &[u8]) -> bool {
-    input.starts_with(b"fLaC")
-}
-
-fn wav(input: &[u8]) -> bool {
-    input.len() >= 12 && input.starts_with(b"RIFF") && &input[8..12] == b"WAVE"
-}
-
-fn exe(input: &[u8]) -> bool {
-    input.starts_with(b"MZ")
-}
-
-fn elf(input: &[u8]) -> bool {
-    input.starts_with(b"\x7fELF")
-}
-
+// Detects ZIP archives and ZIP-based formats.
+// ZIP files use the "PK" signature (named after Phil Katz) followed by
+// different headers for various ZIP record types:
+// - PK\x03\x04: Local file header (most common)
+// - PK\x05\x06: End of central directory record
+// - PK\x07\x08: Data descriptor record
+// This also matches ZIP-based formats like DOCX, XLSX, EPUB, JAR, etc.
 // ============================================================================
 // TEXT ENCODING DETECTION
 // ============================================================================
@@ -1498,7 +1459,10 @@ fn utf8(input: &[u8]) -> bool {
     }
 
     // Check for UTF BOMs first
-    if utf8_bom(input) || utf16_be(input) || utf16_le(input) {
+    if input.starts_with(b"\xEF\xBB\xBF")
+        || input.starts_with(b"\xFE\xFF")
+        || input.starts_with(b"\xFF\xFE")
+    {
         return true;
     }
 
@@ -1511,18 +1475,6 @@ fn utf8(input: &[u8]) -> bool {
     }
 
     std::str::from_utf8(input).is_ok()
-}
-
-fn utf8_bom(input: &[u8]) -> bool {
-    input.starts_with(b"\xEF\xBB\xBF")
-}
-
-fn utf16_be(input: &[u8]) -> bool {
-    input.starts_with(b"\xFE\xFF")
-}
-
-fn utf16_le(input: &[u8]) -> bool {
-    input.starts_with(b"\xFF\xFE")
 }
 
 /// Detects HTML documents with sophisticated tag analysis.
@@ -1583,24 +1535,13 @@ fn xml(input: &[u8]) -> bool {
     input.starts_with(b"<?xml")
 }
 
-fn wasm(input: &[u8]) -> bool {
-    input.starts_with(b"\x00asm")
-}
-
-fn aiff(input: &[u8]) -> bool {
-    input.len() >= 12 && input.starts_with(b"FORM") && &input[8..12] == b"AIFF"
-}
-
 fn eot(input: &[u8]) -> bool {
-    if input.len() < 36 {
-        return false;
-    }
     // 34 NULL bytes followed by "LP"
-    input[0..34].iter().all(|&b| b == 0) && &input[34..36] == b"LP"
-}
-
-fn ttc(input: &[u8]) -> bool {
-    input.starts_with(b"ttcf")
+    const PREFIX: &[u8] = &[
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, b'L', b'P',
+    ];
+    input.starts_with(PREFIX)
 }
 
 fn mp4_precise(input: &[u8]) -> bool {
@@ -1615,42 +1556,6 @@ fn mp4_precise(input: &[u8]) -> bool {
 
     // Detect all ISOBMFF files (MP4, 3GPP, etc.) by checking for ftyp box
     &input[4..8] == b"ftyp"
-}
-
-fn midi(input: &[u8]) -> bool {
-    input.starts_with(b"MThd")
-}
-
-fn ole(input: &[u8]) -> bool {
-    input.starts_with(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1")
-}
-
-fn ps(input: &[u8]) -> bool {
-    input.starts_with(b"%!PS-Adobe-")
-}
-
-fn psd(input: &[u8]) -> bool {
-    input.starts_with(b"8BPS")
-}
-
-fn pbm(input: &[u8]) -> bool {
-    input.starts_with(b"P1") || input.starts_with(b"P4")
-}
-
-fn pgm(input: &[u8]) -> bool {
-    input.starts_with(b"P2") || input.starts_with(b"P5")
-}
-
-fn ppm(input: &[u8]) -> bool {
-    input.starts_with(b"P3") || input.starts_with(b"P6")
-}
-
-fn pam(input: &[u8]) -> bool {
-    input.starts_with(b"P7")
-}
-
-fn ogg(input: &[u8]) -> bool {
-    input.starts_with(b"OggS")
 }
 
 fn ogg_audio(input: &[u8]) -> bool {
@@ -1678,36 +1583,6 @@ fn ogg_video(input: &[u8]) -> bool {
         || offset_28.starts_with(b"\x01video\x00\x00\x00") // OGM video
 }
 
-fn class(input: &[u8]) -> bool {
-    input.starts_with(b"\xca\xfe\xba\xbe")
-}
-
-fn swf(input: &[u8]) -> bool {
-    input.starts_with(b"FWS") || input.starts_with(b"CWS") || input.starts_with(b"ZWS")
-}
-
-fn woff(input: &[u8]) -> bool {
-    input.starts_with(b"wOFF")
-}
-
-fn woff2(input: &[u8]) -> bool {
-    input.starts_with(b"wOF2")
-}
-
-fn ttf(input: &[u8]) -> bool {
-    input.starts_with(b"\x00\x01\x00\x00")
-        || input.starts_with(b"true")
-        || input.starts_with(b"typ1")
-}
-
-fn otf(input: &[u8]) -> bool {
-    input.starts_with(b"OTTO")
-}
-
-fn ar(input: &[u8]) -> bool {
-    input.starts_with(b"!<arch>")
-}
-
 fn dcm(input: &[u8]) -> bool {
     if input.len() < 132 {
         return false;
@@ -1715,31 +1590,11 @@ fn dcm(input: &[u8]) -> bool {
     &input[128..132] == b"DICM"
 }
 
-fn rar(input: &[u8]) -> bool {
-    input.starts_with(b"Rar!\x1a\x07\x00") || input.starts_with(b"Rar!\x1a\x07\x01\x00")
-}
-
-fn djvu(input: &[u8]) -> bool {
-    input.starts_with(b"AT&TFORM") && input.len() >= 12 && &input[12..16] == b"DJVU"
-}
-
 fn mobi(input: &[u8]) -> bool {
     if input.len() < 68 {
         return false;
     }
     &input[60..64] == b"BOOKMOBI"
-}
-
-fn lit(input: &[u8]) -> bool {
-    input.starts_with(b"ITOLITLS")
-}
-
-fn sqlite(input: &[u8]) -> bool {
-    input.starts_with(b"SQLite format 3\x00")
-}
-
-fn icns(input: &[u8]) -> bool {
-    input.starts_with(b"icns")
 }
 
 fn heic(input: &[u8]) -> bool {
@@ -1770,24 +1625,6 @@ fn heif_sequence(input: &[u8]) -> bool {
     &input[4..8] == b"ftyp" && &input[8..12] == b"msf1"
 }
 
-fn cab(input: &[u8]) -> bool {
-    input.starts_with(b"MSCF")
-}
-
-fn rpm(input: &[u8]) -> bool {
-    input.starts_with(b"\xed\xab\xee\xdb")
-}
-
-fn lzip(input: &[u8]) -> bool {
-    input.starts_with(b"LZIP")
-}
-
-fn torrent(input: &[u8]) -> bool {
-    input.starts_with(b"d8:announce")
-        || input.starts_with(b"d7:comment")
-        || input.starts_with(b"d4:info")
-}
-
 fn cpio(input: &[u8]) -> bool {
     if input.len() < 6 {
         return false;
@@ -1811,10 +1648,6 @@ fn fasoo(input: &[u8]) -> bool {
         && &input[512..520] == b"FASOO   "
 }
 
-fn pgp_net_share(input: &[u8]) -> bool {
-    input.starts_with(b"-----BEGIN PGP")
-}
-
 fn quicktime(input: &[u8]) -> bool {
     if input.len() < 12 {
         return false;
@@ -1829,42 +1662,13 @@ fn mqv(input: &[u8]) -> bool {
     &input[4..8] == b"ftyp" && &input[8..12] == b"mqt "
 }
 
-fn flv(input: &[u8]) -> bool {
-    input.starts_with(b"FLV")
-}
-
-fn asf(input: &[u8]) -> bool {
-    input.starts_with(b"\x30\x26\xb2\x75\x8e\x66\xcf\x11\xa6\xd9\x00\xaa\x00\x62\xce\x6c")
-}
-
-fn amp4(input: &[u8]) -> bool {
-    if input.len() < 12 {
-        return false;
-    }
-    &input[4..8] == b"ftyp" && &input[8..12] == b"M4A "
-}
-
-fn m4a(input: &[u8]) -> bool {
-    if input.len() < 12 {
-        return false;
-    }
-    &input[4..8] == b"ftyp" && &input[8..12] == b"M4A "
-}
-
-fn m4v(input: &[u8]) -> bool {
-    if input.len() < 12 {
-        return false;
-    }
-    &input[4..8] == b"ftyp" && &input[8..12] == b"M4V "
-}
-
 // Additional image format detectors from new Go implementation
 fn apng(input: &[u8]) -> bool {
     if input.len() < 41 {
         return false;
     }
     // Check for PNG signature first, then look for acTL chunk at offset 37
-    png(input) && &input[37..41] == b"acTL"
+    input.starts_with(b"\x89PNG\r\n\x1a\n") && &input[37..41] == b"acTL"
 }
 
 fn jp2(input: &[u8]) -> bool {
@@ -1892,40 +1696,12 @@ fn jpeg2k(input: &[u8], sig: &[u8]) -> bool {
     &input[20..24] == sig
 }
 
-fn bpg(input: &[u8]) -> bool {
-    input.starts_with(b"BPG\xFB")
-}
-
-fn xcf(input: &[u8]) -> bool {
-    input.starts_with(b"gimp xcf")
-}
-
 fn pat(input: &[u8]) -> bool {
     input.len() > 24 && &input[20..24] == b"GPAT"
 }
 
 fn gbr(input: &[u8]) -> bool {
     input.len() > 24 && &input[20..24] == b"GIMP"
-}
-
-fn hdr(input: &[u8]) -> bool {
-    input.starts_with(b"#?RADIANCE\n")
-}
-
-fn xpm(input: &[u8]) -> bool {
-    input.starts_with(b"/* XPM */")
-}
-
-fn jxs(input: &[u8]) -> bool {
-    input.starts_with(b"\x00\x00\x00\x0C\x4A\x58\x53\x20\x0D\x0A\x87\x0A")
-}
-
-fn jxr(input: &[u8]) -> bool {
-    input.starts_with(b"\x49\x49\xBC\x01")
-}
-
-fn jxl(input: &[u8]) -> bool {
-    input.starts_with(b"\xFF\x0A") || input.starts_with(b"\x00\x00\x00\x0CJXL \x0D\x0A\x87\x0A")
 }
 
 // Enhanced DWG detection with more versions
@@ -1944,15 +1720,6 @@ fn dwg(input: &[u8]) -> bool {
 }
 
 // DXF (Drawing Exchange Format) detection
-fn dxf(input: &[u8]) -> bool {
-    // DXF files are ASCII text files with various headers
-    // Check for common DXF signatures
-    input.starts_with(b"  0\x0ASECTION\x0A")
-        || input.starts_with(b"  0\x0D\x0ASECTION\x0D\x0A")
-        || input.starts_with(b"0\x0ASECTION\x0A")
-        || input.starts_with(b"0\x0D\x0ASECTION\x0D\x0A")
-}
-
 // WordPerfect document detection
 fn wpd(input: &[u8]) -> bool {
     if input.len() < 10 {
@@ -1965,38 +1732,6 @@ fn wpd(input: &[u8]) -> bool {
 }
 
 // Additional audio format detectors
-fn ape(input: &[u8]) -> bool {
-    input.starts_with(b"MAC \x96\x0F\x00\x00\x34\x00\x00\x00\x18\x00\x00\x00\x90\xE3")
-}
-
-fn musepack(input: &[u8]) -> bool {
-    input.starts_with(b"MPCK")
-}
-
-fn au(input: &[u8]) -> bool {
-    input.starts_with(b".snd")
-}
-
-fn amr(input: &[u8]) -> bool {
-    input.starts_with(b"#!AMR")
-}
-
-fn voc(input: &[u8]) -> bool {
-    input.starts_with(b"Creative Voice File")
-}
-
-fn m3u(input: &[u8]) -> bool {
-    input.starts_with(b"#EXTM3U")
-}
-
-fn aac(input: &[u8]) -> bool {
-    input.starts_with(b"\xFF\xF1") || input.starts_with(b"\xFF\xF9")
-}
-
-fn qcp(input: &[u8]) -> bool {
-    input.len() >= 12 && input.starts_with(b"RIFF") && &input[8..12] == b"QLCM"
-}
-
 // Enhanced MP3 detection
 // ============================================================================
 // ENHANCED AUDIO DETECTION
@@ -2026,10 +1761,6 @@ fn mp3(input: &[u8]) -> bool {
 }
 
 // Additional video format detectors
-fn rmvb(input: &[u8]) -> bool {
-    input.starts_with(b".RMF")
-}
-
 fn webm(input: &[u8]) -> bool {
     if !input.starts_with(b"\x1A\x45\xDF\xA3") {
         return false;
@@ -2075,25 +1806,9 @@ fn mpeg(input: &[u8]) -> bool {
     input.len() > 3 && input.starts_with(b"\x00\x00\x01") && input[3] >= 0xB0 && input[3] <= 0xBF
 }
 
-fn avi(input: &[u8]) -> bool {
-    input.len() > 16 && input.starts_with(b"RIFF") && &input[8..16] == b"AVI LIST"
-}
-
 // Additional archive format detectors
-fn fits(input: &[u8]) -> bool {
-    input.starts_with(b"SIMPLE  =                    T")
-}
-
-fn xar(input: &[u8]) -> bool {
-    input.starts_with(b"xar!")
-}
-
 fn deb(input: &[u8]) -> bool {
     input.len() > 21 && &input[8..21] == b"debian-binary"
-}
-
-fn warc(input: &[u8]) -> bool {
-    input.starts_with(b"WARC/1.0") || input.starts_with(b"WARC/1.1")
 }
 
 fn install_shield_cab(input: &[u8]) -> bool {
@@ -2123,7 +1838,12 @@ fn crx(input: &[u8]) -> bool {
         return false;
     }
 
-    zip(&input[zip_offset..])
+    {
+        let data = &input[zip_offset..];
+        data.starts_with(b"PK\x03\x04")
+            || data.starts_with(b"PK\x05\x06")
+            || data.starts_with(b"PK\x07\x08")
+    }
 }
 
 /// Detects TAR archives using header checksum validation.
@@ -2298,7 +2018,7 @@ fn apk(input: &[u8]) -> bool {
 
 /// OLE-based legacy Microsoft Office formats
 fn doc(input: &[u8]) -> bool {
-    if !ole(input) {
+    if !input.starts_with(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1") {
         return false;
     }
 
@@ -2328,7 +2048,7 @@ fn doc(input: &[u8]) -> bool {
 }
 
 fn xls(input: &[u8]) -> bool {
-    if !ole(input) {
+    if !input.starts_with(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1") {
         return false;
     }
 
@@ -2378,7 +2098,7 @@ fn xls(input: &[u8]) -> bool {
 }
 
 fn ppt(input: &[u8]) -> bool {
-    if !ole(input) {
+    if !input.starts_with(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1") {
         return false;
     }
 
@@ -2690,10 +2410,6 @@ fn tsv(input: &[u8]) -> bool {
     detect_csv_generic(lines, |line| count_occurrences(line, b'\t'))
 }
 
-fn rtf(input: &[u8]) -> bool {
-    input.starts_with(b"{\\rtf")
-}
-
 fn srt(input: &[u8]) -> bool {
     let text = input.trim_ascii_start();
     if text.starts_with(b"1\n") || text.starts_with(b"1\r\n") {
@@ -2767,14 +2483,6 @@ fn shp(input: &[u8]) -> bool {
     file_code == 9994
 }
 
-fn shx(input: &[u8]) -> bool {
-    input.starts_with(b"\x00\x00\x27\x0A")
-}
-
-fn glb(input: &[u8]) -> bool {
-    input.starts_with(b"glTF\x02\x00\x00\x00") || input.starts_with(b"glTF\x01\x00\x00\x00")
-}
-
 fn gltf(input: &[u8]) -> bool {
     json(input)
         && input.windows(8).any(|w| w == b"\"scenes\"")
@@ -2786,12 +2494,8 @@ fn gltf(input: &[u8]) -> bool {
 // GAMING FORMAT DETECTORS
 // ============================================================================
 
-fn nes(input: &[u8]) -> bool {
-    input.starts_with(b"NES\x1A")
-}
-
 // ============================================================================
-// ADDITIONAL VIDEO FORMAT DETECTORS
+// VIDEO FORMAT DETECTORS
 // ============================================================================
 
 fn three_gpp(input: &[u8]) -> bool {
@@ -2867,18 +2571,6 @@ fn hdf(input: &[u8]) -> bool {
     input.starts_with(b"\x89HDF\r\n\x1a\n") || input.starts_with(b"\x0e\x03\x13\x01")
 }
 
-fn cbor_format(input: &[u8]) -> bool {
-    input.starts_with(b"\xd9\xd9\xf7")
-}
-
-fn parquet(input: &[u8]) -> bool {
-    input.starts_with(b"PAR1")
-}
-
-fn lnk(input: &[u8]) -> bool {
-    input.starts_with(b"L\x00\x00\x00\x01\x14\x02\x00")
-}
-
 fn macho(input: &[u8]) -> bool {
     if input.len() < 4 {
         return false;
@@ -2889,10 +2581,6 @@ fn macho(input: &[u8]) -> bool {
         magic,
         0xfeedface | 0xfeedfacf | 0xcafebabe | 0xcffaedfe | 0xcefaedfe
     )
-}
-
-fn tzif(input: &[u8]) -> bool {
-    input.starts_with(b"TZif")
 }
 
 // ============================================================================
@@ -3478,7 +3166,7 @@ fn elf_obj(input: &[u8]) -> bool {
     if input.len() < 18 {
         return false;
     }
-    elf(input) && input[16] == 1 && input[17] == 0
+    input.starts_with(b"\x7fELF") && input[16] == 1 && input[17] == 0
 }
 
 /// ELF Executable (ET_EXEC)
@@ -3486,7 +3174,7 @@ fn elf_exe(input: &[u8]) -> bool {
     if input.len() < 18 {
         return false;
     }
-    elf(input) && input[16] == 2 && input[17] == 0
+    input.starts_with(b"\x7fELF") && input[16] == 2 && input[17] == 0
 }
 
 /// ELF Shared Library (ET_DYN)
@@ -3494,7 +3182,7 @@ fn elf_lib(input: &[u8]) -> bool {
     if input.len() < 18 {
         return false;
     }
-    elf(input) && input[16] == 3 && input[17] == 0
+    input.starts_with(b"\x7fELF") && input[16] == 3 && input[17] == 0
 }
 
 /// ELF Core Dump (ET_CORE)
@@ -3502,22 +3190,12 @@ fn elf_dump(input: &[u8]) -> bool {
     if input.len() < 18 {
         return false;
     }
-    elf(input) && input[16] == 4 && input[17] == 0
-}
-
-/// FDF (Forms Data Format) - PDF variant
-fn fdf(input: &[u8]) -> bool {
-    input.starts_with(b"%FDF-")
-}
-
-/// P7S (PKCS#7 Signature)
-fn p7s(input: &[u8]) -> bool {
-    input.starts_with(b"-----BEGIN PKCS7-----")
+    input.starts_with(b"\x7fELF") && input[16] == 4 && input[17] == 0
 }
 
 /// AAF (Advanced Authoring Format)
 fn aaf(input: &[u8]) -> bool {
-    if !ole(input) {
+    if !input.starts_with(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1") {
         return false;
     }
 
@@ -3576,5 +3254,5 @@ fn detect_opendocument_format(input: &[u8], mimetype: &[u8]) -> bool {
 /// This pattern is used by multiple Office formats
 #[inline]
 fn detect_ole_with_clsid(input: &[u8], clsid: &[u8; 16]) -> bool {
-    ole(input) && ole_matches_clsid(input, clsid)
+    input.starts_with(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1") && ole_matches_clsid(input, clsid)
 }

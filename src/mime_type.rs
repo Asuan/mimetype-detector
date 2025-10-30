@@ -5,10 +5,12 @@ pub struct MimeType {
     aliases: &'static [&'static str],
     extension: &'static str,
     extension_aliases: &'static [&'static str],
-    matcher: fn(&[u8]) -> bool,
+    pub(crate) matcher: fn(&[u8]) -> bool,
     children: &'static [&'static MimeType],
     parent: Option<&'static MimeType>,
     kind: MimeKind,
+    /// Optional prefix vector for optimized lookups (used only by ROOT)
+    prefix_vec: Option<&'static [&'static [&'static MimeType]; 256]>,
 }
 
 impl MimeType {
@@ -27,6 +29,7 @@ impl MimeType {
             children,
             parent: None,
             kind: MimeKind::UNKNOWN,
+            prefix_vec: None,
         }
     }
 
@@ -53,8 +56,15 @@ impl MimeType {
         self
     }
 
+    pub const fn with_prefix_vec(
+        mut self,
+        prefix_vec: &'static [&'static [&'static MimeType]; 256],
+    ) -> Self {
+        self.prefix_vec = Some(prefix_vec);
+        self
+    }
+
     pub fn register(&'static self) {
-        // Register this MIME type
         register_mime(self.mime, self.matcher);
         if !self.extension.is_empty() {
             register_extension(self.extension, self.matcher);
@@ -68,7 +78,6 @@ impl MimeType {
             register_extension(ext_alias, self.matcher);
         }
 
-        // Recursively register all children
         for child in self.children {
             child.register();
         }
@@ -100,8 +109,6 @@ impl MimeType {
         if let Some(parent) = self.parent {
             return self.kind.union(parent.kind());
         }
-
-        // No explicit parent - just return own kind
         self.kind
     }
 
@@ -116,6 +123,19 @@ impl MimeType {
     }
 
     pub fn match_bytes(&'static self, input: &[u8]) -> &'static MimeType {
+        // Use prefix vector for O(1) lookup if available
+        if let Some(prefix_vec) = self.prefix_vec {
+            if !input.is_empty() {
+                let first_byte = input[0] as usize;
+                for child in prefix_vec[first_byte] {
+                    if (child.matcher)(input) {
+                        return child.match_bytes(input);
+                    }
+                }
+            }
+        }
+
+        // Linear search through remaining children
         for child in self.children {
             if (child.matcher)(input) {
                 return child.match_bytes(input);

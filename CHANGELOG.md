@@ -8,6 +8,12 @@ Used prefixes:
 `Deleted`
 `BREAKING`
 
+## 0.2.6 - 2025-10-30
+
+* Added: 24 new file format detections
+* Added: Prefix map optimization for fast child lookup via
+* Added: Unified `mimetype!` macro that consolidates all MIME type definition functionality
+
 ## 0.2.5 - 2025-10-23
 
 * Added: `MimeKind` categorization to 175+ file formats across 13 categories
