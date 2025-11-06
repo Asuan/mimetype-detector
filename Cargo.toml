@@ -2,7 +2,7 @@
 name = "mimetype-detector"
 version = "0.2.6"
 edition = "2021"
-description = "Fast, accurate, and thread-safe MIME type detection for ~200 file formats with zero dependencies"
+description = "Fast, accurate, and thread-safe MIME type detection for ~450 file formats with zero dependencies"
 license = "MIT"
 authors = ["Siargei"]
 repository = "https://github.com/Asuan/mimetype-detector"
@@ -12,8 +12,7 @@ readme = "README.md"
 keywords = ["mime", "mimetype", "file-detection","file-type"]
 categories = ["filesystem", "parsing", "web-programming"]
 rust-version = "1.80.0"
-
-exclude = ["target/", "*.tmp", "test-data/"]
+exclude = ["/.github", "/benches", "/examples", "/tests", ".gitignore", "target/", "*.tmp", "/test-data", "CHANGELOG.md", "SUPPORTED_FORMATS.md"]
 
 [features]
 default = []

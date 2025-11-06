@@ -81,6 +81,15 @@ impl MimeType {
         for child in self.children {
             child.register();
         }
+
+        // Register all MIME types referenced in the prefix_vec
+        if let Some(prefix_vec) = self.prefix_vec {
+            (0..256).for_each(|byte_index| {
+                for pchild in prefix_vec[byte_index] {
+                    pchild.register();
+                }
+            });
+        }
     }
 
     pub fn mime(&self) -> &'static str {

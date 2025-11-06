@@ -8,6 +8,13 @@ Used prefixes:
 `Deleted`
 `BREAKING`
 
+## Unreleased
+
+## 0.2.7 - 2025-11-07
+
+* Updated: Updated `mimetype!` macro to have optional param and reduce cases
+* Updated: Package description to reflect ~450 supported file formats
+
 ## 0.2.6 - 2025-10-30
 
 * Added: 24 new file format detections

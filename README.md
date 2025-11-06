@@ -1,14 +1,15 @@
 # mimetype-detector
 
-Fast MIME type detection for 231+ file formats with zero dependencies.
+Fast MIME type detection for 450+ file formats with zero dependencies.
 
 ## Features
 
-- **231 supported formats** - Images, audio, video, documents, archives, and more
+- **450+ supported formats** - Comprehensive coverage including images, audio, video, documents, archives, CAD, 3D models, and more
 - **Fast & lightweight** - Reads only file headers (≤3KB)
 - **Thread-safe** - Zero dependencies, pure Rust
-- **Smart detection** - Hierarchical format relationships (ZIP→DOCX/JAR/APK)
+- **Smart detection** - Hierarchical format relationships (ZIP→DOCX/JAR/APK, OLE→Office/CAD)
 - **Type-safe constants** - Compile-time MIME type validation
+- **Professional formats** - Adobe Creative Suite, Microsoft Office, CAD (SolidWorks, Inventor, 3DS Max), and design tools (Sketch, Figma)
 
 ## Installation
 
@@ -60,22 +61,49 @@ let jar = detect(b"PK\x03\x04...META-INF/MANIFEST.MF");
 println!("Kind: {}", jar.kind()); // Output: "ARCHIVE | APPLICATION"
 ```
 
-## Supported Formats (231+)
+## Supported Formats (450+)
 
-- **Images**: PNG, JPEG, GIF, WebP, AVIF, HEIC, SVG, TIFF, BMP
-- **Audio**: MP3, FLAC, WAV, AAC, OGG, MIDI
-- **Video**: MP4, WebM, AVI, MKV, MOV
-- **Archives**: ZIP, 7Z, TAR, RAR, GZIP
-- **Documents**: PDF, DOCX, XLSX, PPTX, ODT, HTML, XML
-- **Programming**: JavaScript, Python, PHP, JSON, CSV
-- **Executables**: ELF, PE/EXE, Mach-O, WASM
-- **Fonts**: TTF, OTF, WOFF, WOFF2
+### Common Formats
+- **Images**: PNG, JPEG, GIF, WebP, AVIF, HEIC, HEIF, SVG, TIFF, BMP, ICO, PSD
+- **Audio**: MP3, FLAC, WAV, AAC, OGG, MIDI, M4A, WMA, OPUS
+- **Video**: MP4, WebM, AVI, MKV, MOV, FLV, WMV, 3GP, M4V
+- **Archives**: ZIP, 7Z, TAR, RAR, GZIP, BZIP2, XZ, ZSTD, LZ4
+- **Documents**: PDF, DOCX, XLSX, PPTX, ODT, ODS, ODP, RTF, EPUB
+
+### Professional & Creative Tools
+- **Adobe**: Photoshop (PSD), Illustrator (AI), InDesign (INDD, IDML), Flash (SWF, FLA)
+- **Microsoft Office**: Word (DOC, DOCX), Excel (XLS, XLSX), PowerPoint (PPT, PPTX), Visio (VSD, VSDX), Publisher, OneNote, Project
+- **CAD/3D**: SolidWorks (SLDASM, SLDDRW, SLDPRT), Autodesk Inventor (IAM, IDW, IPT), 3DS Max (MAX), AutoCAD (DWG, DXF), Blender, FBX, STL, STEP, IGES
+- **Design Tools**: Sketch, Figma, draw.io
+
+### Legacy & Office Formats
+- **OpenOffice/LibreOffice**: ODT, ODS, ODP, ODF, ODB, and templates
+- **StarOffice**: StarWriter, StarCalc, StarImpress, StarDraw (SDA, SDC, SDD, SDW)
+- **Sun XML**: SXW, SXC, SXI, SXM, and templates (STC, STD, STI, STW)
+- **WordPerfect**: WPD, WPG, WPS
+- **Lotus**: 1-2-3 spreadsheets (WK1, WK3, WK4)
+
+### Development & System
+- **Programming**: JavaScript, Python, PHP, Ruby, Perl, Lua, Shell, Batch, LaTeX
+- **Data**: JSON, XML, CSV, TSV, YAML, TOML
+- **Executables**: ELF, PE/EXE/DLL, Mach-O, WASM, Java Class/JAR, Android APK/AAB
+- **Fonts**: TTF, OTF, WOFF, WOFF2, EOT
+
+### Specialized Formats
+- **3D Models**: GLTF/GLB, USD/USDZ, COLLADA, FBX, Draco, VOX, IQM
+- **Camera RAW**: CR2, CR3, NEF, RAF, ORF, RW2, DNG, ARW
+- **eBooks**: EPUB, MOBI, FictionBook (FB2, FBZ), LIT, LRF
+- **Scientific**: HDF4/HDF5, FITS, Parquet, DICOM
+- **XML-Based**: RSS, Atom, SVG, KML, GPX, MathML, MusicXML, TTML, SOAP
+
+See [SUPPORTED_FORMATS.md](SUPPORTED_FORMATS.md) for the complete list with MIME types and detection details.
 
 ### Smart Detection
 
-- Container awareness (ZIP→DOCX/JAR/APK)
-- UTF encoding with BOM detection
-- Binary analysis (ELF subtypes)
+- **Container awareness**: ZIP→DOCX/JAR/APK/EPUB, OLE→Office/CAD files
+- **UTF encoding**: BOM detection for UTF-8/UTF-16 variants
+- **Binary analysis**: ELF subtypes (executable/library/core), PE variants (EXE/DLL/SYS)
+- **Content inspection**: XML namespaces, OLE metadata, ZIP manifest files
 
 ## API
 

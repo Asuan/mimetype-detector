@@ -82,48 +82,22 @@ macro_rules! mimetype {
         );
     };
 
-    // With kind
-    ($static_name:ident, $mime:expr, $ext:expr, $prefix:literal, kind: $kind:ident) => {
+    // Single literal prefix (unified pattern with optional parameters)
+    // Note: Parameters must be in this order: kind, aliases, ext_aliases, children, parent
+    ($static_name:ident, $mime:expr, $ext:expr, $prefix:literal,
+     kind: $kind:ident
+     $(, aliases: [$($alias:expr),* $(,)?])?
+     $(, ext_aliases: [$($ext_alias:expr),* $(,)?])?
+     $(, children: [$($child:expr),* $(,)?])?
+     $(, parent: $parent:expr)?
+    ) => {
         mimetype!(@build $static_name, $mime, $ext,
             |input| input.starts_with($prefix),
-            &[],
-            Some($crate::MimeKind::$kind), None, None, None
-        );
-    };
-
-    // With kind and aliases
-    ($static_name:ident, $mime:expr, $ext:expr, $prefix:literal, kind: $kind:ident, aliases: [$($alias:expr),*]) => {
-        mimetype!(@build $static_name, $mime, $ext,
-            |input| input.starts_with($prefix),
-            &[],
-            Some($crate::MimeKind::$kind), Some(&[$($alias),*]), None, None
-        );
-    };
-
-    // With kind and ext_aliases
-    ($static_name:ident, $mime:expr, $ext:expr, $prefix:literal, kind: $kind:ident, ext_aliases: [$($ext_alias:expr),*]) => {
-        mimetype!(@build $static_name, $mime, $ext,
-            |input| input.starts_with($prefix),
-            &[],
-            Some($crate::MimeKind::$kind), None, Some(&[$($ext_alias),*]), None
-        );
-    };
-
-    // With kind and children
-    ($static_name:ident, $mime:expr, $ext:expr, $prefix:literal, kind: $kind:ident, children: [$($child:expr),*]) => {
-        mimetype!(@build $static_name, $mime, $ext,
-            |input| input.starts_with($prefix),
-            &[$($child),*],
-            Some($crate::MimeKind::$kind), None, None, None
-        );
-    };
-
-    // With kind and parent
-    ($static_name:ident, $mime:expr, $ext:expr, $prefix:literal, kind: $kind:ident, parent: $parent:expr) => {
-        mimetype!(@build $static_name, $mime, $ext,
-            |input| input.starts_with($prefix),
-            &[],
-            Some($crate::MimeKind::$kind), None, None, Some($parent)
+            &[$($($child),*)?],
+            Some($crate::MimeKind::$kind),
+            mimetype!(@opt_slice $($($alias),*)?),
+            mimetype!(@opt_slice $($($ext_alias),*)?),
+            mimetype!(@opt_expr $($parent)?)
         );
     };
 
@@ -139,56 +113,89 @@ macro_rules! mimetype {
         );
     };
 
-    // Multiple literal prefixes
-    ($static_name:ident, $mime:expr, $ext:expr, $first:literal $(| $rest:literal)+, kind: $kind:ident) => {
+    // Multiple byte array alternatives
+    ($static_name:ident, $mime:expr, $ext:expr, [$($first_byte:expr),+ $(,)?] $(| [$($rest_byte:expr),+ $(,)?])+, kind: $kind:ident) => {
         mimetype!(@build $static_name, $mime, $ext,
-            |input| input.starts_with($first) $(|| input.starts_with($rest))+,
+            |input| {
+                const FIRST: &[u8] = &[$($first_byte),+];
+                input.starts_with(FIRST) $(|| input.starts_with(&[$($rest_byte),+]))+
+            },
             &[],
             Some($crate::MimeKind::$kind), None, None, None
         );
     };
 
-    // Multiple literal prefixes with aliases
-    ($static_name:ident, $mime:expr, $ext:expr, $first:literal $(| $rest:literal)+, kind: $kind:ident, aliases: [$($alias:expr),*]) => {
+    // Multiple byte array alternatives with extension aliases
+    ($static_name:ident, $mime:expr, $ext:expr, [$($first_byte:expr),+ $(,)?] $(| [$($rest_byte:expr),+ $(,)?])+, kind: $kind:ident, ext_aliases: [$($ext_alias:literal),* $(,)?]) => {
         mimetype!(@build $static_name, $mime, $ext,
-            |input| input.starts_with($first) $(|| input.starts_with($rest))+,
-            &[],
-            Some($crate::MimeKind::$kind), Some(&[$($alias),*]), None, None
-        );
-    };
-
-    // Multiple literal prefixes with ext_aliases
-    ($static_name:ident, $mime:expr, $ext:expr, $first:literal $(| $rest:literal)+, kind: $kind:ident, ext_aliases: [$($ext_alias:expr),*]) => {
-        mimetype!(@build $static_name, $mime, $ext,
-            |input| input.starts_with($first) $(|| input.starts_with($rest))+,
+            |input| {
+                const FIRST: &[u8] = &[$($first_byte),+];
+                input.starts_with(FIRST) $(|| input.starts_with(&[$($rest_byte),+]))+
+            },
             &[],
             Some($crate::MimeKind::$kind), None, Some(&[$($ext_alias),*]), None
         );
     };
 
-    // Multiple literal prefixes with parent
-    ($static_name:ident, $mime:expr, $ext:expr, $first:literal $(| $rest:literal)+, kind: $kind:ident, parent: $parent:expr) => {
+    // Multiple literal prefixes (unified pattern with optional parameters)
+    // Note: Parameters must be in this order: kind, aliases, ext_aliases, children, parent
+    ($static_name:ident, $mime:expr, $ext:expr, $first:literal $(| $rest:literal)+,
+     kind: $kind:ident
+     $(, aliases: [$($alias:expr),* $(,)?])?
+     $(, ext_aliases: [$($ext_alias:expr),* $(,)?])?
+     $(, children: [$($child:expr),* $(,)?])?
+     $(, parent: $parent:expr)?
+    ) => {
         mimetype!(@build $static_name, $mime, $ext,
             |input| input.starts_with($first) $(|| input.starts_with($rest))+,
-            &[],
-            Some($crate::MimeKind::$kind), None, None, Some($parent)
+            &[$($($child),*)?],
+            Some($crate::MimeKind::$kind),
+            mimetype!(@opt_slice $($($alias),*)?),
+            mimetype!(@opt_slice $($($ext_alias),*)?),
+            mimetype!(@opt_expr $($parent)?)
         );
     };
 
-    // Offset patterns
-    ($static_name:ident, $mime:expr, $ext:expr, offset: ($offset:expr, $bytes:expr), kind: $kind:ident) => {
+    // Helper for optional slice parameters
+    (@opt_slice $($items:expr),+) => { Some(&[$($items),+]) };
+    (@opt_slice) => { None };
+
+    // Helper for optional expression parameters
+    (@opt_expr $item:expr) => { Some($item) };
+    (@opt_expr) => { None };
+
+    // Simple offset patterns (unified with optional parameters)
+    // Note: Parameters must be in this order: kind, aliases, ext_aliases, children, parent
+    ($static_name:ident, $mime:expr, $ext:expr, offset: ($offset:expr, $bytes:expr),
+     kind: $kind:ident
+     $(, aliases: [$($alias:expr),* $(,)?])?
+     $(, ext_aliases: [$($ext_alias:expr),* $(,)?])?
+     $(, children: [$($child:expr),* $(,)?])?
+     $(, parent: $parent:expr)?
+    ) => {
         mimetype!(@build $static_name, $mime, $ext,
             |input| {
                 let offset = $offset;
                 let bytes: &[u8] = $bytes;
                 input.len() >= offset + bytes.len() && &input[offset..offset + bytes.len()] == bytes
             },
-            &[],
-            Some($crate::MimeKind::$kind), None, None, None
+            &[$($($child),*)?],
+            Some($crate::MimeKind::$kind),
+            mimetype!(@opt_slice $($($alias),*)?),
+            mimetype!(@opt_slice $($($ext_alias),*)?),
+            mimetype!(@opt_expr $($parent)?)
         );
     };
 
-    ($static_name:ident, $mime:expr, $ext:expr, offset: ($offset:expr, $bytes:expr, prefix: ($prefix_offset:expr, $prefix_bytes:expr)), kind: $kind:ident) => {
+    // Offset with prefix patterns (unified with optional parameters)
+    // Note: Parameters must be in this order: kind, aliases, ext_aliases, children, parent
+    ($static_name:ident, $mime:expr, $ext:expr, offset: ($offset:expr, $bytes:expr, prefix: ($prefix_offset:expr, $prefix_bytes:expr)),
+     kind: $kind:ident
+     $(, aliases: [$($alias:expr),* $(,)?])?
+     $(, ext_aliases: [$($ext_alias:expr),* $(,)?])?
+     $(, children: [$($child:expr),* $(,)?])?
+     $(, parent: $parent:expr)?
+    ) => {
         mimetype!(@build $static_name, $mime, $ext,
             |input| {
                 let prefix_offset = $prefix_offset;
@@ -200,26 +207,11 @@ macro_rules! mimetype {
                     && input.len() >= offset + bytes.len()
                     && &input[offset..offset + bytes.len()] == bytes
             },
-            &[],
-            Some($crate::MimeKind::$kind), None, None, None
-        );
-    };
-
-    // Offset with prefix and aliases
-    ($static_name:ident, $mime:expr, $ext:expr, offset: ($offset:expr, $bytes:expr, prefix: ($prefix_offset:expr, $prefix_bytes:expr)), kind: $kind:ident, aliases: [$($alias:expr),*]) => {
-        mimetype!(@build $static_name, $mime, $ext,
-            |input| {
-                let prefix_offset = $prefix_offset;
-                let prefix_bytes: &[u8] = $prefix_bytes;
-                let offset = $offset;
-                let bytes: &[u8] = $bytes;
-                input.len() >= prefix_offset + prefix_bytes.len()
-                    && &input[prefix_offset..prefix_offset + prefix_bytes.len()] == prefix_bytes
-                    && input.len() >= offset + bytes.len()
-                    && &input[offset..offset + bytes.len()] == bytes
-            },
-            &[],
-            Some($crate::MimeKind::$kind), Some(&[$($alias),*]), None, None
+            &[$($($child),*)?],
+            Some($crate::MimeKind::$kind),
+            mimetype!(@opt_slice $($($alias),*)?),
+            mimetype!(@opt_slice $($($ext_alias),*)?),
+            mimetype!(@opt_expr $($parent)?)
         );
     };
 }
