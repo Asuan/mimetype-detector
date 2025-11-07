@@ -15,7 +15,7 @@ Fast MIME type detection for 450+ file formats with zero dependencies.
 
 ```toml
 [dependencies]
-mimetype-detector = "0.2.6"
+mimetype-detector = "0.2.7"
 ```
 
 ## Usage
@@ -64,6 +64,7 @@ println!("Kind: {}", jar.kind()); // Output: "ARCHIVE | APPLICATION"
 ## Supported Formats (450+)
 
 ### Common Formats
+
 - **Images**: PNG, JPEG, GIF, WebP, AVIF, HEIC, HEIF, SVG, TIFF, BMP, ICO, PSD
 - **Audio**: MP3, FLAC, WAV, AAC, OGG, MIDI, M4A, WMA, OPUS
 - **Video**: MP4, WebM, AVI, MKV, MOV, FLV, WMV, 3GP, M4V
@@ -71,12 +72,14 @@ println!("Kind: {}", jar.kind()); // Output: "ARCHIVE | APPLICATION"
 - **Documents**: PDF, DOCX, XLSX, PPTX, ODT, ODS, ODP, RTF, EPUB
 
 ### Professional & Creative Tools
+
 - **Adobe**: Photoshop (PSD), Illustrator (AI), InDesign (INDD, IDML), Flash (SWF, FLA)
 - **Microsoft Office**: Word (DOC, DOCX), Excel (XLS, XLSX), PowerPoint (PPT, PPTX), Visio (VSD, VSDX), Publisher, OneNote, Project
 - **CAD/3D**: SolidWorks (SLDASM, SLDDRW, SLDPRT), Autodesk Inventor (IAM, IDW, IPT), 3DS Max (MAX), AutoCAD (DWG, DXF), Blender, FBX, STL, STEP, IGES
 - **Design Tools**: Sketch, Figma, draw.io
 
 ### Legacy & Office Formats
+
 - **OpenOffice/LibreOffice**: ODT, ODS, ODP, ODF, ODB, and templates
 - **StarOffice**: StarWriter, StarCalc, StarImpress, StarDraw (SDA, SDC, SDD, SDW)
 - **Sun XML**: SXW, SXC, SXI, SXM, and templates (STC, STD, STI, STW)
@@ -84,12 +87,14 @@ println!("Kind: {}", jar.kind()); // Output: "ARCHIVE | APPLICATION"
 - **Lotus**: 1-2-3 spreadsheets (WK1, WK3, WK4)
 
 ### Development & System
+
 - **Programming**: JavaScript, Python, PHP, Ruby, Perl, Lua, Shell, Batch, LaTeX
 - **Data**: JSON, XML, CSV, TSV, YAML, TOML
 - **Executables**: ELF, PE/EXE/DLL, Mach-O, WASM, Java Class/JAR, Android APK/AAB
 - **Fonts**: TTF, OTF, WOFF, WOFF2, EOT
 
 ### Specialized Formats
+
 - **3D Models**: GLTF/GLB, USD/USDZ, COLLADA, FBX, Draco, VOX, IQM
 - **Camera RAW**: CR2, CR3, NEF, RAF, ORF, RW2, DNG, ARW
 - **eBooks**: EPUB, MOBI, FictionBook (FB2, FBZ), LIT, LRF
