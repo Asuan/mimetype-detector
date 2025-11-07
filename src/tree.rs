@@ -1914,7 +1914,7 @@ static PYTHON_PICKLE: MimeType = MimeType::new(
             return false;
         }
         // Check for PROTO opcode (0x80) followed by protocol version (2-5)
-        input[0] == 0x80 && matches!(input[1], 0x02 | 0x03 | 0x04 | 0x05)
+        input[0] == 0x80 && matches!(input[1], 0x02..=0x05)
     },
     &[],
 )
