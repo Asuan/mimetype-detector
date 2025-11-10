@@ -4093,7 +4093,8 @@ fn xls(input: &[u8]) -> bool {
 
     let lin = input.len();
 
-    // Check for XLS sub-headers at offset 512 (from Go implementation)
+    // Check for XLS sub-headers at various offsets (from Go implementation)
+    // Note: Workbook stream can start at different offsets depending on file structure
     if lin >= 520 {
         const XLS_SUB_HEADERS: [&[u8]; 7] = [
             &[0x09, 0x08, 0x10, 0x00, 0x00, 0x06, 0x05, 0x00],
@@ -4105,9 +4106,15 @@ fn xls(input: &[u8]) -> bool {
             &[0xFD, 0xFF, 0xFF, 0xFF, 0x29],
         ];
 
-        for &header in &XLS_SUB_HEADERS {
-            if input.len() > 512 + header.len() && input[512..].starts_with(header) {
-                return true;
+        // Check at multiple sector-aligned offsets
+        for offset in [512, 1024, 1536, 2048, 2560] {
+            if input.len() <= offset {
+                break;
+            }
+            for &header in &XLS_SUB_HEADERS {
+                if input.len() > offset + header.len() && input[offset..].starts_with(header) {
+                    return true;
+                }
             }
         }
     }
@@ -4152,10 +4159,11 @@ fn ppt(input: &[u8]) -> bool {
     }
 
     // Check for PPT sub-headers at offset 512 (from Go implementation)
-    const PPT_SUB_HEADERS: [&[u8]; 3] = [
+    const PPT_SUB_HEADERS: [&[u8]; 4] = [
         &[0xA0, 0x46, 0x1D, 0xF0],
         &[0x00, 0x6E, 0x1E, 0xF0],
         &[0x0F, 0x00, 0xE8, 0x03],
+        &[0x60, 0x21, 0x1B, 0xF0], // Additional PPT record container
     ];
 
     for &header in &PPT_SUB_HEADERS {
@@ -4164,14 +4172,9 @@ fn ppt(input: &[u8]) -> bool {
         }
     }
 
-    // Check for specific PPT pattern
-    if input.len() > 519
-        && input[512..516] == [0xFD, 0xFF, 0xFF, 0xFF]
-        && input[518] == 0x00
-        && input[519] == 0x00
-    {
-        return true;
-    }
+    // Note: Removed overly broad FD FF FF FF pattern check at offset 512
+    // as this is a common FAT sector marker present in many OLE files (MSG, MSI, PUB, etc.)
+    // and was causing false positives. Relying on CLSID and more specific patterns instead.
 
     // Check for UTF-16 encoded "PowerPoint Document" string at offset 1152
     if lin > 1152 {

@@ -10,6 +10,10 @@ Used prefixes:
 
 ## Unreleased
 
+## 0.2.8 - 2025-11-10
+
+* Updated: Fixed CLSID-based OLE format detection to prevent false positives (MSG, MSI, PUB files were incorrectly detected as PPT)
+
 ## 0.2.7 - 2025-11-07
 
 * Updated: Updated `mimetype!` macro to have optional param and reduce cases
