@@ -19,6 +19,10 @@ fn test_detect_basic() {
     assert_eq!(mime.mime(), IMAGE_PNG);
     assert_eq!(mime.extension(), ".png");
     assert!(mime.kind().is_image());
+    assert!(
+        !mime.name().is_empty(),
+        "Format should have a non-empty name"
+    );
 }
 
 #[test]
@@ -26,6 +30,10 @@ fn test_detect_empty_data() {
     let data = b"";
     let mime = detect(data);
     assert_eq!(mime.mime(), APPLICATION_X_EMPTY);
+    assert!(
+        !mime.name().is_empty(),
+        "Format should have a non-empty name"
+    );
 }
 
 #[test]
@@ -33,6 +41,10 @@ fn test_detect_short_data() {
     let data = b"AB";
     let mime = detect(data);
     assert!(!mime.mime().is_empty());
+    assert!(
+        !mime.name().is_empty(),
+        "Format should have a non-empty name"
+    );
 }
 
 #[test]
@@ -42,6 +54,10 @@ fn test_detect_reader_from_cursor() {
     let mime = detect_reader(cursor).expect("Should detect from reader");
     assert_eq!(mime.mime(), APPLICATION_PDF);
     assert_eq!(mime.extension(), ".pdf");
+    assert!(
+        !mime.name().is_empty(),
+        "Format should have a non-empty name"
+    );
 }
 
 #[test]
@@ -49,6 +65,10 @@ fn test_detect_reader_from_slice() {
     let data = b"\xff\xd8\xff\xe0JFIF";
     let mime = detect_reader(&data[..]).expect("Should detect from slice");
     assert_eq!(mime.mime(), IMAGE_JPEG);
+    assert!(
+        !mime.name().is_empty(),
+        "Format should have a non-empty name"
+    );
 }
 
 #[test]
@@ -56,6 +76,10 @@ fn test_detect_reader_empty() {
     let data: &[u8] = b"";
     let mime = detect_reader(data).expect("Should handle empty reader");
     assert_eq!(mime.mime(), APPLICATION_X_EMPTY);
+    assert!(
+        !mime.name().is_empty(),
+        "Format should have a non-empty name"
+    );
 }
 
 #[test]
@@ -72,6 +96,10 @@ fn test_detect_file_png() {
     let mime = detect_file(temp_path).expect("Should detect file");
     assert_eq!(mime.mime(), IMAGE_PNG);
     assert_eq!(mime.extension(), ".png");
+    assert!(
+        !mime.name().is_empty(),
+        "Format should have a non-empty name"
+    );
 
     fs::remove_file(temp_path).ok();
 }
@@ -91,6 +119,10 @@ fn test_detect_file_empty() {
 
     let mime = detect_file(temp_path).expect("Should detect empty file");
     assert_eq!(mime.mime(), APPLICATION_X_EMPTY);
+    assert!(
+        !mime.name().is_empty(),
+        "Format should have a non-empty name"
+    );
 
     fs::remove_file(temp_path).ok();
 }
@@ -143,6 +175,10 @@ fn test_detect_large_data() {
 
     let mime = detect(&data);
     assert_eq!(mime.mime(), IMAGE_PNG);
+    assert!(
+        !mime.name().is_empty(),
+        "Format should have a non-empty name"
+    );
 }
 
 #[test]
@@ -150,6 +186,10 @@ fn test_detect_all_null_bytes() {
     let data = vec![0u8; 100];
     let mime = detect(&data);
     assert_eq!(mime.mime(), APPLICATION_OCTET_STREAM);
+    assert!(
+        !mime.name().is_empty(),
+        "Format should have a non-empty name"
+    );
 }
 
 #[test]
@@ -157,6 +197,10 @@ fn test_detect_all_printable_ascii() {
     let data = b"This is a plain text file with only printable ASCII characters.";
     let mime = detect(data);
     assert_eq!(mime.mime(), TEXT_UTF8);
+    assert!(
+        !mime.name().is_empty(),
+        "Format should have a non-empty name"
+    );
 }
 
 // ============================================================================
@@ -170,6 +214,10 @@ fn test_mime_type_aliases() {
 
     assert!(mime.is(APPLICATION_PDF));
     assert!(mime.is(APPLICATION_X_PDF));
+    assert!(
+        !mime.name().is_empty(),
+        "Format should have a non-empty name"
+    );
 }
 
 // ============================================================================
@@ -196,6 +244,11 @@ fn test_concurrent_detect() {
     for handle in handles {
         let mime = handle.join().expect("Thread panicked");
         assert!(!mime.mime().is_empty());
+        assert!(
+            !mime.name().is_empty(),
+            "Format {} should have a non-empty name",
+            mime.mime()
+        );
     }
 }
 
@@ -575,6 +628,10 @@ fn test_mimetype_all_methods_consistency() {
     assert_eq!(mime.extension(), ".png");
     assert!(mime.kind().is_image());
     assert!(mime.is(IMAGE_PNG));
+    assert!(
+        !mime.name().is_empty(),
+        "Format should have a non-empty name"
+    );
 }
 
 // ============================================================================
@@ -677,6 +734,11 @@ fn test_common_file_format_detection_workflow() {
         assert_eq!(mime.extension(), expected_ext);
         assert!(!mime.mime().is_empty());
         assert!(mime.extension().starts_with('.'));
+        assert!(
+            !mime.name().is_empty(),
+            "Format {} should have a non-empty name",
+            mime.mime()
+        );
     }
 }
 
@@ -699,5 +761,169 @@ fn test_batch_detection() {
         assert!(!mime.mime().is_empty());
         assert!(!mime.extension().is_empty());
         assert!(mime.extension().starts_with('.'));
+        // Ensure all formats have verbose names
+        assert!(
+            !mime.name().is_empty(),
+            "Format {} should have a non-empty name",
+            mime.mime()
+        );
     }
+}
+
+// ============================================================================
+// UTF-8 BOM CHILDREN TESTS
+// ============================================================================
+
+#[test]
+fn test_utf8_bom_html() {
+    let data = b"\xEF\xBB\xBF<!DOCTYPE html><html><head><title>Test</title></head><body>Content</body></html>";
+    let mime = detect(data);
+
+    assert_eq!(mime.mime(), TEXT_HTML);
+    assert_eq!(mime.extension(), ".html");
+    assert!(mime.kind().is_text());
+    assert_eq!(mime.name(), "HyperText Markup Language (UTF-8 BOM)");
+}
+
+#[test]
+fn test_utf8_bom_xml() {
+    let data = b"\xEF\xBB\xBF<?xml version=\"1.0\" encoding=\"UTF-8\"?><root><element>Test</element></root>";
+    let mime = detect(data);
+
+    assert_eq!(mime.mime(), TEXT_XML);
+    assert_eq!(mime.extension(), ".xml");
+    assert!(mime.kind().is_text());
+    assert_eq!(mime.name(), "Extensible Markup Language (UTF-8 BOM)");
+}
+
+#[test]
+fn test_utf8_bom_svg() {
+    let data = b"\xEF\xBB\xBF<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100\" height=\"100\"><circle cx=\"50\" cy=\"50\" r=\"40\"/></svg>";
+    let mime = detect(data);
+
+    assert_eq!(mime.mime(), IMAGE_SVG_XML);
+    assert_eq!(mime.extension(), ".svg");
+    assert_eq!(mime.name(), "Scalable Vector Graphics (UTF-8 BOM)");
+}
+
+#[test]
+fn test_utf8_bom_rtf() {
+    let data = b"\xEF\xBB\xBF{\\rtf1\\ansi\\deff0 {\\fonttbl{\\f0 Times New Roman;}}\\f0\\fs60 Hello World}";
+    let mime = detect(data);
+
+    assert_eq!(mime.mime(), TEXT_RTF);
+    assert_eq!(mime.extension(), ".rtf");
+    assert_eq!(mime.name(), "Rich Text Format (UTF-8 BOM)");
+}
+
+#[test]
+fn test_utf8_bom_json() {
+    let data = b"\xEF\xBB\xBF{\"name\":\"John\",\"age\":30,\"city\":\"New York\"}";
+    let mime = detect(data);
+
+    assert_eq!(mime.mime(), APPLICATION_JSON);
+    assert_eq!(mime.extension(), ".json");
+    assert!(mime.kind().is_text());
+    assert_eq!(mime.name(), "JavaScript Object Notation (UTF-8 BOM)");
+}
+
+#[test]
+fn test_utf8_bom_json_array() {
+    let data = b"\xEF\xBB\xBF[{\"id\":1,\"name\":\"Item 1\"},{\"id\":2,\"name\":\"Item 2\"}]";
+    let mime = detect(data);
+
+    assert_eq!(mime.mime(), APPLICATION_JSON);
+    assert_eq!(mime.extension(), ".json");
+    assert_eq!(mime.name(), "JavaScript Object Notation (UTF-8 BOM)");
+}
+
+#[test]
+fn test_utf8_bom_csv() {
+    let data = b"\xEF\xBB\xBFname,age,city\nJohn,30,NYC\nJane,25,LA\nBob,35,Chicago";
+    let mime = detect(data);
+
+    assert_eq!(mime.mime(), TEXT_CSV);
+    assert_eq!(mime.extension(), ".csv");
+    assert!(mime.kind().is_text());
+    assert_eq!(mime.name(), "Comma-Separated Values (UTF-8 BOM)");
+}
+
+#[test]
+fn test_utf8_bom_tsv() {
+    let data = b"\xEF\xBB\xBFname\tage\tcity\nJohn\t30\tNYC\nJane\t25\tLA\nBob\t35\tChicago\nAlice\t28\tBoston";
+    let mime = detect(data);
+
+    assert_eq!(mime.mime(), TEXT_TAB_SEPARATED_VALUES);
+    assert_eq!(mime.extension(), ".tsv");
+    assert!(mime.kind().is_text());
+    assert_eq!(mime.name(), "Tab-Separated Values (UTF-8 BOM)");
+}
+
+#[test]
+fn test_utf8_bom_srt() {
+    let data = b"\xEF\xBB\xBF1\n00:00:01,000 --> 00:00:02,500\nFirst subtitle line\n\n2\n00:00:03,000 --> 00:00:05,000\nSecond subtitle line";
+    let mime = detect(data);
+
+    assert_eq!(mime.mime(), APPLICATION_X_SUBRIP);
+    assert_eq!(mime.extension(), ".srt");
+    assert_eq!(mime.name(), "SubRip Subtitle (UTF-8 BOM)");
+}
+
+#[test]
+fn test_utf8_bom_vtt() {
+    let data = b"\xEF\xBB\xBFWEBVTT\n\n00:00.000 --> 00:01.000\nFirst caption\n\n00:01.500 --> 00:02.500\nSecond caption";
+    let mime = detect(data);
+
+    assert_eq!(mime.mime(), TEXT_VTT);
+    assert_eq!(mime.extension(), ".vtt");
+    assert!(mime.kind().is_text());
+    assert_eq!(mime.name(), "WebVTT Subtitle (UTF-8 BOM)");
+}
+
+#[test]
+fn test_utf8_bom_vcard() {
+    let data = b"\xEF\xBB\xBFBEGIN:VCARD\nVERSION:3.0\nFN:John Doe\nTEL:+1234567890\nEMAIL:john@example.com\nEND:VCARD";
+    let mime = detect(data);
+
+    assert_eq!(mime.mime(), TEXT_VCARD);
+    assert_eq!(mime.extension(), ".vcf");
+    assert!(mime.kind().is_text());
+    assert_eq!(mime.name(), "vCard (UTF-8 BOM)");
+}
+
+#[test]
+fn test_utf8_bom_icalendar() {
+    let data = b"\xEF\xBB\xBFBEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Test//Test//EN\nBEGIN:VEVENT\nSUMMARY:Test Event\nEND:VEVENT\nEND:VCALENDAR";
+    let mime = detect(data);
+
+    assert_eq!(mime.mime(), TEXT_CALENDAR);
+    assert_eq!(mime.extension(), ".ics");
+    assert!(mime.kind().is_text());
+    assert_eq!(mime.name(), "iCalendar (UTF-8 BOM)");
+}
+
+#[test]
+fn test_utf8_bom_plain_text() {
+    let data = b"\xEF\xBB\xBFThis is plain text content with UTF-8 BOM marker.";
+    let mime = detect(data);
+
+    assert_eq!(mime.mime(), TEXT_UTF8_BOM);
+    assert_eq!(mime.extension(), ".txt");
+    assert!(mime.kind().is_text());
+    assert_eq!(mime.name(), "UTF-8 with BOM");
+}
+
+#[test]
+fn test_utf8_bom_priority_rtf_over_json() {
+    // RTF should be detected before JSON since both start with {
+    let rtf_data = b"\xEF\xBB\xBF{\\rtf1 Test}";
+    let mime = detect(rtf_data);
+    assert_eq!(mime.mime(), TEXT_RTF);
+    assert_eq!(mime.name(), "Rich Text Format (UTF-8 BOM)");
+
+    // But JSON should still be detected when it's valid JSON
+    let json_data = b"\xEF\xBB\xBF{\"test\": true}";
+    let mime = detect(json_data);
+    assert_eq!(mime.mime(), APPLICATION_JSON);
+    assert_eq!(mime.name(), "JavaScript Object Notation (UTF-8 BOM)");
 }

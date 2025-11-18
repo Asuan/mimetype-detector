@@ -157,6 +157,7 @@ build_prefix_vec! {
 /// 11. Generic text (UTF-8) - lowest priority fallback
 pub static ROOT: MimeType = MimeType::new(
     APPLICATION_OCTET_STREAM,
+    "Binary Data",
     "",
     |_| true,
     &[
@@ -253,12 +254,13 @@ pub static ROOT: MimeType = MimeType::new(
 /// - Proper tag termination validation
 /// - DOCTYPE declarations and comments
 /// - Whitespace tolerance at the beginning of files
-static HTML: MimeType = MimeType::new(TEXT_HTML, ".html", html, &[])
+static HTML: MimeType = MimeType::new(TEXT_HTML, "HyperText Markup Language", ".html", html, &[])
     .with_extension_aliases(&[".htm"])
     .with_parent(&UTF8);
 
 static XML: MimeType = MimeType::new(
     TEXT_XML,
+    "Extensible Markup Language",
     ".xml",
     xml,
     &[
@@ -269,11 +271,22 @@ static XML: MimeType = MimeType::new(
 .with_aliases(&[APPLICATION_XML])
 .with_parent(&UTF8);
 
-mimetype!(UTF8_BOM, TEXT_UTF8_BOM, ".txt", b"\xEF\xBB\xBF", kind: TEXT, children: [
+mimetype!(UTF8_BOM, TEXT_UTF8_BOM, ".txt", b"\xEF\xBB\xBF", name: "UTF-8 with BOM", kind: TEXT, children: [
+    &HTML_UTF8_BOM,
+    &XML_UTF8_BOM,
+    &SVG_UTF8_BOM,
+    &RTF_UTF8_BOM, // RTF must come before JSON (both start with {, RTF has more specific pattern)
+    &JSON_UTF8_BOM,
+    &CSV_UTF8_BOM,
+    &TSV_UTF8_BOM,
+    &SRT_UTF8_BOM,
+    &VTT_UTF8_BOM,
+    &VCARD_UTF8_BOM,
+    &ICALENDAR_UTF8_BOM,
     &VISUAL_STUDIO_SOLUTION
 ]);
 
-mimetype!(UTF16_BE, TEXT_UTF16_BE, ".txt", b"\xFE\xFF", kind: TEXT, children: [
+mimetype!(UTF16_BE, TEXT_UTF16_BE, ".txt", b"\xFE\xFF", name: "UTF-16 Big Endian", kind: TEXT, children: [
     &HTML_UTF16_BE,
     &XML_UTF16_BE,
     &SVG_UTF16_BE,
@@ -287,7 +300,7 @@ mimetype!(UTF16_BE, TEXT_UTF16_BE, ".txt", b"\xFE\xFF", kind: TEXT, children: [
     &RTF_UTF16_BE
 ]);
 
-mimetype!(UTF16_LE, TEXT_UTF16_LE, ".txt", b"\xFF\xFE", kind: TEXT, children: [
+mimetype!(UTF16_LE, TEXT_UTF16_LE, ".txt", b"\xFF\xFE", name: "UTF-16 Little Endian", kind: TEXT, children: [
     &HTML_UTF16_LE,
     &XML_UTF16_LE,
     &SVG_UTF16_LE,
@@ -303,6 +316,7 @@ mimetype!(UTF16_LE, TEXT_UTF16_LE, ".txt", b"\xFF\xFE", kind: TEXT, children: [
 
 static UTF8: MimeType = MimeType::new(
     TEXT_UTF8,
+    "UTF-8 Unicode Text",
     ".txt",
     utf8,
     &[
@@ -380,18 +394,24 @@ static UTF8: MimeType = MimeType::new(
 // DOCUMENT FORMATS
 // ============================================================================
 
-mimetype!(PDF, APPLICATION_PDF, ".pdf", b"%PDF-", kind: DOCUMENT, aliases: [APPLICATION_X_PDF], ext_aliases: [".ai"], children: [&AI]);
+mimetype!(PDF, APPLICATION_PDF, ".pdf", b"%PDF-", name: "Portable Document Format", kind: DOCUMENT, aliases: [APPLICATION_X_PDF], ext_aliases: [".ai"], children: [&AI]);
 
-mimetype!(FDF, APPLICATION_VND_FDF, ".fdf", b"%FDF-", kind: DOCUMENT);
+mimetype!(FDF, APPLICATION_VND_FDF, ".fdf", b"%FDF-", name: "Forms Data Format", kind: DOCUMENT);
 
-static AI: MimeType = MimeType::new(APPLICATION_VND_ADOBE_ILLUSTRATOR, ".ai", ai, &[])
-    .with_kind(MimeKind::IMAGE)
-    .with_parent(&PDF);
+static AI: MimeType = MimeType::new(
+    APPLICATION_VND_ADOBE_ILLUSTRATOR,
+    "Adobe Illustrator",
+    ".ai",
+    ai,
+    &[],
+)
+.with_kind(MimeKind::IMAGE)
+.with_parent(&PDF);
 
-mimetype!(PS, APPLICATION_POSTSCRIPT, ".ps", b"%!PS-Adobe-", kind: DOCUMENT);
+mimetype!(PS, APPLICATION_POSTSCRIPT, ".ps", b"%!PS-Adobe-", name: "PostScript", kind: DOCUMENT);
 
 // Encapsulated PostScript - Binary EPS with TIFF/WMF preview
-mimetype!(EPS, APPLICATION_EPS, ".eps", [0xC5, 0xD0, 0xD3, 0xC6], kind: DOCUMENT);
+mimetype!(EPS, APPLICATION_EPS, ".eps", [0xC5, 0xD0, 0xD3, 0xC6], name: "Encapsulated PostScript", kind: DOCUMENT);
 
 // OLE (Object Linking and Embedding) container format - parent of Microsoft Office and CAD formats
 // Detection uses CLSID (Class ID) at dynamic offset (512 or 4096 bytes depending on version)
@@ -406,6 +426,7 @@ mimetype!(EPS, APPLICATION_EPS, ".eps", [0xC5, 0xD0, 0xD3, 0xC6], kind: DOCUMENT
 // The ordering here is purely for performance optimization.
 static OLE: MimeType = MimeType::new(
     APPLICATION_X_OLE_STORAGE,
+    "OLE Compound Document",
     "",
     |input| input.starts_with(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"),
     &[
@@ -447,7 +468,14 @@ static OLE: MimeType = MimeType::new(
 ])
 .with_kind(MimeKind::DOCUMENT);
 
-static AAF: MimeType = MimeType::new(APPLICATION_X_AAF, ".aaf", aaf, &[]).with_parent(&OLE);
+static AAF: MimeType = MimeType::new(
+    APPLICATION_X_AAF,
+    "Advanced Authoring Format",
+    ".aaf",
+    aaf,
+    &[],
+)
+.with_parent(&OLE);
 
 // ============================================================================
 // ARCHIVE & COMPRESSION FORMATS
@@ -462,7 +490,7 @@ static AAF: MimeType = MimeType::new(APPLICATION_X_AAF, ".aaf", aaf, &[]).with_p
 // 7-Zip archive format with distinctive signature.
 // 7Z files start with a unique 6-byte signature that makes detection reliable.
 // This format supports multiple compression algorithms and strong encryption.
-mimetype!(SEVEN_Z, APPLICATION_X_7Z_COMPRESSED, ".7z", b"7z\xbc\xaf\x27\x1c", kind: ARCHIVE);
+mimetype!(SEVEN_Z, APPLICATION_X_7Z_COMPRESSED, ".7z", b"7z\xbc\xaf\x27\x1c", name: "7-Zip Archive", kind: ARCHIVE);
 
 // ZIP container format - parent of many document, archive, and application formats
 // IMPORTANT: Child ordering matters for correct detection!
@@ -475,7 +503,7 @@ mimetype!(SEVEN_Z, APPLICATION_X_7Z_COMPRESSED, ".7z", b"7z\xbc\xaf\x27\x1c", ki
 // 3. PATTERN CONFLICTS: When patterns overlap, the more specific format must be first
 //
 // Current ordering balances performance (common formats first) with correctness (specific before general)
-mimetype!(ZIP, APPLICATION_ZIP, ".zip", b"PK\x03\x04" | b"PK\x05\x06" | b"PK\x07\x08", kind: ARCHIVE,
+mimetype!(ZIP, APPLICATION_ZIP, ".zip", b"PK\x03\x04" | b"PK\x05\x06" | b"PK\x07\x08", name: "ZIP Archive", kind: ARCHIVE,
 aliases: [APPLICATION_X_ZIP, APPLICATION_X_ZIP_COMPRESSED],
 ext_aliases: [".xlsx", ".docx", ".pptx", ".vsdx", ".epub", ".jar", ".war", ".ear", ".odt", ".ods", ".odp", ".odg", ".odf", ".sxc", ".kmz", ".ora", ".aab", ".appx", ".appxbundle", ".ipa", ".xap", ".air", ".fla", ".idml", ".vsix", ".xpi", ".xps", ".sda", ".sdc", ".sdd", ".sds", ".sdw", ".smf", ".sxd", ".sxi", ".sxm", ".sxw", ".stc", ".std", ".sti", ".stw", ".sgw", ".uop", ".uos", ".uot", ".usdz", ".sketch", ".123dx", ".f3d", ".fig", ".mxl", ".fbz"],
 children: [
@@ -527,69 +555,81 @@ children: [
     &XPI, &XAP, &MXL, &FBZ
 ]);
 
-mimetype!(RAR, APPLICATION_X_RAR_COMPRESSED, ".rar", b"Rar!\x1a\x07\x00" | b"Rar!\x1a\x07\x01\x00", kind: ARCHIVE, aliases: [APPLICATION_X_RAR]);
+mimetype!(RAR, APPLICATION_X_RAR_COMPRESSED, ".rar", b"Rar!\x1a\x07\x00" | b"Rar!\x1a\x07\x01\x00", name: "RAR Archive", kind: ARCHIVE, aliases: [APPLICATION_X_RAR]);
 
-mimetype!(GZIP, APPLICATION_GZIP, ".gz", b"\x1f\x8b", kind: ARCHIVE,
+mimetype!(GZIP, APPLICATION_GZIP, ".gz", b"\x1f\x8b", name: "GNU Zip", kind: ARCHIVE,
     aliases: [APPLICATION_X_GZIP, APPLICATION_X_GUNZIP, APPLICATION_GZIPPED,
               APPLICATION_GZIP_COMPRESSED, APPLICATION_X_GZIP_COMPRESSED, GZIP_DOCUMENT],
     ext_aliases: [".tgz", ".taz", ".abw"],
     children: [&ABW]);
 
-static ABW: MimeType = MimeType::new(APPLICATION_X_ABIWORD, ".abw", abw, &[&AWT])
-    .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&GZIP);
+static ABW: MimeType = MimeType::new(
+    APPLICATION_X_ABIWORD,
+    "AbiWord Document",
+    ".abw",
+    abw,
+    &[&AWT],
+)
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&GZIP);
 
 static TAR: MimeType =
-    MimeType::new(APPLICATION_X_TAR, ".tar", tar, &[]).with_kind(MimeKind::ARCHIVE);
+    MimeType::new(APPLICATION_X_TAR, "Tape Archive", ".tar", tar, &[]).with_kind(MimeKind::ARCHIVE);
 
-mimetype!(BZIP, APPLICATION_X_BZIP, ".bz", b"BZ0", kind: ARCHIVE);
+mimetype!(BZIP, APPLICATION_X_BZIP, ".bz", b"BZ0", name: "Bzip Archive", kind: ARCHIVE);
 
-mimetype!(BZ2, APPLICATION_X_BZIP2, ".bz2", b"BZ", kind: ARCHIVE);
+mimetype!(BZ2, APPLICATION_X_BZIP2, ".bz2", b"BZ", name: "Bzip2 Archive", kind: ARCHIVE);
 
-mimetype!(XZ, APPLICATION_X_XZ, ".xz", b"\xfd7zXZ\x00", kind: ARCHIVE);
+mimetype!(XZ, APPLICATION_X_XZ, ".xz", b"\xfd7zXZ\x00", name: "XZ Compressed Archive", kind: ARCHIVE);
 
-static ZSTD: MimeType =
-    MimeType::new(APPLICATION_ZSTD, ".zst", zstd, &[]).with_kind(MimeKind::ARCHIVE);
+static ZSTD: MimeType = MimeType::new(APPLICATION_ZSTD, "Zstandard Compression", ".zst", zstd, &[])
+    .with_kind(MimeKind::ARCHIVE);
 
-mimetype!(LZIP, APPLICATION_LZIP, ".lz", b"LZIP", kind: ARCHIVE, aliases: [APPLICATION_X_LZIP]);
+mimetype!(LZIP, APPLICATION_LZIP, ".lz", b"LZIP", name: "Lzip Compressed Archive", kind: ARCHIVE, aliases: [APPLICATION_X_LZIP]);
 
 // LZ4 - Fast compression format
-mimetype!(LZ4, APPLICATION_X_LZ4, ".lz4", [0x04, 0x22, 0x4D, 0x18], kind: ARCHIVE);
+mimetype!(LZ4, APPLICATION_X_LZ4, ".lz4", [0x04, 0x22, 0x4D, 0x18], name: "LZ4 Compressed Archive", kind: ARCHIVE);
 
-mimetype!(CAB, APPLICATION_VND_MS_CAB_COMPRESSED, ".cab", b"MSCF", kind: ARCHIVE);
+mimetype!(CAB, APPLICATION_VND_MS_CAB_COMPRESSED, ".cab", b"MSCF", name: "Microsoft Cabinet Archive", kind: ARCHIVE);
 
-static INSTALL_SHIELD_CAB: MimeType =
-    MimeType::new(APPLICATION_X_INSTALLSHIELD, ".cab", install_shield_cab, &[])
-        .with_kind(MimeKind::ARCHIVE);
+static INSTALL_SHIELD_CAB: MimeType = MimeType::new(
+    APPLICATION_X_INSTALLSHIELD,
+    "InstallShield Cabinet Archive",
+    ".cab",
+    install_shield_cab,
+    &[],
+)
+.with_kind(MimeKind::ARCHIVE);
 
-static CPIO: MimeType =
-    MimeType::new(APPLICATION_X_CPIO, ".cpio", cpio, &[]).with_kind(MimeKind::ARCHIVE);
+static CPIO: MimeType = MimeType::new(APPLICATION_X_CPIO, "CPIO Archive", ".cpio", cpio, &[])
+    .with_kind(MimeKind::ARCHIVE);
 
-mimetype!(AR, APPLICATION_X_ARCHIVE, ".a", b"!<arch>", kind: ARCHIVE, aliases: [APPLICATION_X_UNIX_ARCHIVE], ext_aliases: [".deb"], children: [&DEB]);
+mimetype!(AR, APPLICATION_X_ARCHIVE, ".a", b"!<arch>", name: "Unix Archive", kind: ARCHIVE, aliases: [APPLICATION_X_UNIX_ARCHIVE], ext_aliases: [".deb"], children: [&DEB]);
 
-mimetype!(RPM, APPLICATION_X_RPM, ".rpm", b"\xed\xab\xee\xdb", kind: ARCHIVE);
+mimetype!(RPM, APPLICATION_X_RPM, ".rpm", b"\xed\xab\xee\xdb", name: "Red Hat Package Manager", kind: ARCHIVE);
 
-mimetype!(TORRENT, APPLICATION_X_BITTORRENT, ".torrent", b"d8:announce" | b"d7:comment" | b"d4:info", kind: ARCHIVE);
+mimetype!(TORRENT, APPLICATION_X_BITTORRENT, ".torrent", b"d8:announce" | b"d7:comment" | b"d4:info", name: "BitTorrent Metadata", kind: ARCHIVE);
 
-mimetype!(FITS, APPLICATION_FITS, ".fits", b"SIMPLE  =                    T", kind: IMAGE, aliases: [IMAGE_FITS]);
+mimetype!(FITS, APPLICATION_FITS, ".fits", b"SIMPLE  =                    T", name: "Flexible Image Transport System", kind: IMAGE, aliases: [IMAGE_FITS]);
 
-mimetype!(XAR, APPLICATION_X_XAR, ".xar", b"xar!", kind: ARCHIVE);
+mimetype!(XAR, APPLICATION_X_XAR, ".xar", b"xar!", name: "eXtensible ARchive", kind: ARCHIVE);
 
 // ARJ - Legacy DOS compression format
-mimetype!(ARJ, APPLICATION_ARJ, ".arj", [0x60, 0xEA], kind: ARCHIVE);
+mimetype!(ARJ, APPLICATION_ARJ, ".arj", [0x60, 0xEA], name: "ARJ Archive", kind: ARCHIVE);
 
 // LHA/LZH - Japanese compression standard
-mimetype!(LHA, APPLICATION_X_LZH_COMPRESSED, ".lzh", b"-lh", kind: ARCHIVE);
+mimetype!(LHA, APPLICATION_X_LZH_COMPRESSED, ".lzh", b"-lh", name: "LHA Archive", kind: ARCHIVE);
 
 // LArc/LZS - Legacy Japanese compression format (similar to LZH)
-mimetype!(LZS, APPLICATION_X_LZS_COMPRESSED, ".lzs", b"-lz", kind: ARCHIVE);
+mimetype!(LZS, APPLICATION_X_LZS_COMPRESSED, ".lzs", b"-lz", name: "LArc Archive", kind: ARCHIVE);
 
 // DEB - Debian package, checks for "debian-binary" at offset 8
-mimetype!(DEB, APPLICATION_VND_DEBIAN_BINARY_PACKAGE, ".deb", offset: (8, b"debian-binary"), kind: ARCHIVE, parent: &AR);
+mimetype!(DEB, APPLICATION_VND_DEBIAN_BINARY_PACKAGE, ".deb", offset: (8, b"debian-binary"), name: "Debian Package", kind: ARCHIVE, parent: &AR);
 
 // ACE Archive - Popular compression format in the early 2000s.
 static ACE: MimeType = MimeType::new(
     APPLICATION_X_ACE_COMPRESSED,
+    "ACE Archive",
     ".ace",
     |input| input.len() >= 14 && &input[7..14] == b"**ACE**",
     &[],
@@ -599,6 +639,7 @@ static ACE: MimeType = MimeType::new(
 // ISO 9660 CD/DVD Image - Standard format for optical disc images.
 static ISO9660: MimeType = MimeType::new(
     APPLICATION_X_ISO9660_IMAGE,
+    "ISO 9660",
     ".iso",
     |input| {
         (input.len() >= 32774 && &input[32769..32774] == b"CD001")
@@ -610,19 +651,20 @@ static ISO9660: MimeType = MimeType::new(
 .with_kind(MimeKind::ARCHIVE);
 
 // ALZ Archive - Korean compression format.
-mimetype!(ALZ, APPLICATION_X_ALZ_COMPRESSED, ".alz", b"ALZ\x01", kind: ARCHIVE);
+mimetype!(ALZ, APPLICATION_X_ALZ_COMPRESSED, ".alz", b"ALZ\x01", name: "ALZ Archive", kind: ARCHIVE);
 
 // StuffIt Archive - Classic Mac compression format.
-mimetype!(STUFFIT, APPLICATION_X_STUFFIT, ".sit", b"SIT!", kind: ARCHIVE);
+mimetype!(STUFFIT, APPLICATION_X_STUFFIT, ".sit", b"SIT!", name: "StuffIt Archive", kind: ARCHIVE);
 
 // StuffIt X Archive - Improved Mac compression format.
-mimetype!(STUFFITX, APPLICATION_X_STUFFITX, ".sitx", b"StuffIt ", kind: ARCHIVE);
+mimetype!(STUFFITX, APPLICATION_X_STUFFITX, ".sitx", b"StuffIt ", name: "StuffIt X Archive", kind: ARCHIVE);
 
-mimetype!(WARC, APPLICATION_WARC, ".warc", b"WARC/1.0" | b"WARC/1.1", kind: ARCHIVE, parent: &UTF8);
+mimetype!(WARC, APPLICATION_WARC, ".warc", b"WARC/1.0" | b"WARC/1.1", name: "Web Archive", kind: ARCHIVE, parent: &UTF8);
 
 /// Email message (RFC822)
 static EMAIL: MimeType = MimeType::new(
     MESSAGE_RFC822,
+    "Email Message",
     ".eml",
     |input| {
         // Email messages typically start with "From " or "From: " or other RFC822 headers
@@ -646,142 +688,381 @@ static EMAIL: MimeType = MimeType::new(
 // ============================================================================
 
 /// HTML format for UTF-16 Big Endian
-static HTML_UTF16_BE: MimeType =
-    MimeType::new(TEXT_HTML_UTF16, ".html", html_utf16_be, &[]).with_parent(&UTF16_BE);
+static HTML_UTF16_BE: MimeType = MimeType::new(
+    TEXT_HTML_UTF16,
+    "HyperText Markup Language (UTF-16 BE)",
+    ".html",
+    html_utf16_be,
+    &[],
+)
+.with_parent(&UTF16_BE);
 
-/// HTML format for UTF-16 Little Endian  
-static HTML_UTF16_LE: MimeType =
-    MimeType::new(TEXT_HTML_UTF16, ".html", html_utf16_le, &[]).with_parent(&UTF16_LE);
+/// HTML format for UTF-16 Little Endian
+static HTML_UTF16_LE: MimeType = MimeType::new(
+    TEXT_HTML_UTF16,
+    "HyperText Markup Language (UTF-16 LE)",
+    ".html",
+    html_utf16_le,
+    &[],
+)
+.with_parent(&UTF16_LE);
 
 /// XML format for UTF-16 Big Endian
-static XML_UTF16_BE: MimeType = MimeType::new(TEXT_XML_UTF16, ".xml", xml_utf16_be, &[])
-    .with_aliases(&[APPLICATION_XML_UTF16])
-    .with_parent(&UTF16_BE);
+static XML_UTF16_BE: MimeType = MimeType::new(
+    TEXT_XML_UTF16,
+    "Extensible Markup Language (UTF-16 BE)",
+    ".xml",
+    xml_utf16_be,
+    &[],
+)
+.with_aliases(&[APPLICATION_XML_UTF16])
+.with_parent(&UTF16_BE);
 
 /// XML format for UTF-16 Little Endian
-static XML_UTF16_LE: MimeType = MimeType::new(TEXT_XML_UTF16, ".xml", xml_utf16_le, &[])
-    .with_aliases(&[APPLICATION_XML_UTF16])
-    .with_parent(&UTF16_LE);
+static XML_UTF16_LE: MimeType = MimeType::new(
+    TEXT_XML_UTF16,
+    "Extensible Markup Language (UTF-16 LE)",
+    ".xml",
+    xml_utf16_le,
+    &[],
+)
+.with_aliases(&[APPLICATION_XML_UTF16])
+.with_parent(&UTF16_LE);
 
 /// SVG format for UTF-16 Big Endian
-static SVG_UTF16_BE: MimeType =
-    MimeType::new(IMAGE_SVG_XML_UTF16, ".svg", svg_utf16_be, &[]).with_parent(&UTF16_BE);
+static SVG_UTF16_BE: MimeType = MimeType::new(
+    IMAGE_SVG_XML_UTF16,
+    "Scalable Vector Graphics (UTF-16 BE)",
+    ".svg",
+    svg_utf16_be,
+    &[],
+)
+.with_parent(&UTF16_BE);
 
 /// SVG format for UTF-16 Little Endian
-static SVG_UTF16_LE: MimeType =
-    MimeType::new(IMAGE_SVG_XML_UTF16, ".svg", svg_utf16_le, &[]).with_parent(&UTF16_LE);
+static SVG_UTF16_LE: MimeType = MimeType::new(
+    IMAGE_SVG_XML_UTF16,
+    "Scalable Vector Graphics (UTF-16 LE)",
+    ".svg",
+    svg_utf16_le,
+    &[],
+)
+.with_parent(&UTF16_LE);
 
 /// JSON format for UTF-16 Big Endian
-static JSON_UTF16_BE: MimeType =
-    MimeType::new(APPLICATION_JSON_UTF16, ".json", json_utf16_be, &[]).with_parent(&UTF16_BE);
+static JSON_UTF16_BE: MimeType = MimeType::new(
+    APPLICATION_JSON_UTF16,
+    "JavaScript Object Notation (UTF-16 BE)",
+    ".json",
+    json_utf16_be,
+    &[],
+)
+.with_parent(&UTF16_BE);
 
 /// JSON format for UTF-16 Little Endian
-static JSON_UTF16_LE: MimeType =
-    MimeType::new(APPLICATION_JSON_UTF16, ".json", json_utf16_le, &[]).with_parent(&UTF16_LE);
+static JSON_UTF16_LE: MimeType = MimeType::new(
+    APPLICATION_JSON_UTF16,
+    "JavaScript Object Notation (UTF-16 BE)",
+    ".json",
+    json_utf16_le,
+    &[],
+)
+.with_parent(&UTF16_LE);
 
 /// CSV format for UTF-16 Big Endian
-static CSV_UTF16_BE: MimeType =
-    MimeType::new(TEXT_CSV_UTF16, ".csv", csv_utf16_be, &[]).with_parent(&UTF16_BE);
+static CSV_UTF16_BE: MimeType = MimeType::new(
+    TEXT_CSV_UTF16,
+    "Comma-Separated Values (UTF-16 BE)",
+    ".csv",
+    csv_utf16_be,
+    &[],
+)
+.with_parent(&UTF16_BE);
 
 /// CSV format for UTF-16 Little Endian
-static CSV_UTF16_LE: MimeType =
-    MimeType::new(TEXT_CSV_UTF16, ".csv", csv_utf16_le, &[]).with_parent(&UTF16_LE);
+static CSV_UTF16_LE: MimeType = MimeType::new(
+    TEXT_CSV_UTF16,
+    "Comma-Separated Values (UTF-16 BE)",
+    ".csv",
+    csv_utf16_le,
+    &[],
+)
+.with_parent(&UTF16_LE);
 
 /// TSV format for UTF-16 Big Endian
-static TSV_UTF16_BE: MimeType =
-    MimeType::new(TEXT_TAB_SEPARATED_VALUES_UTF16, ".tsv", tsv_utf16_be, &[])
-        .with_parent(&UTF16_BE);
+static TSV_UTF16_BE: MimeType = MimeType::new(
+    TEXT_TAB_SEPARATED_VALUES_UTF16,
+    "Tab-Separated Values (UTF-16 BE)",
+    ".tsv",
+    tsv_utf16_be,
+    &[],
+)
+.with_parent(&UTF16_BE);
 
 /// TSV format for UTF-16 Little Endian
-static TSV_UTF16_LE: MimeType =
-    MimeType::new(TEXT_TAB_SEPARATED_VALUES_UTF16, ".tsv", tsv_utf16_le, &[])
-        .with_parent(&UTF16_LE);
+static TSV_UTF16_LE: MimeType = MimeType::new(
+    TEXT_TAB_SEPARATED_VALUES_UTF16,
+    "Tab-Separated Values (UTF-16 BE)",
+    ".tsv",
+    tsv_utf16_le,
+    &[],
+)
+.with_parent(&UTF16_LE);
 
 /// SRT subtitle format for UTF-16 Big Endian
-static SRT_UTF16_BE: MimeType =
-    MimeType::new(APPLICATION_X_SUBRIP_UTF16, ".srt", srt_utf16_be, &[]).with_parent(&UTF16_BE);
+static SRT_UTF16_BE: MimeType = MimeType::new(
+    APPLICATION_X_SUBRIP_UTF16,
+    "SubRip Subtitle (UTF-16 BE)",
+    ".srt",
+    srt_utf16_be,
+    &[],
+)
+.with_parent(&UTF16_BE);
 
 /// SRT subtitle format for UTF-16 Little Endian
-static SRT_UTF16_LE: MimeType =
-    MimeType::new(APPLICATION_X_SUBRIP_UTF16, ".srt", srt_utf16_le, &[]).with_parent(&UTF16_LE);
+static SRT_UTF16_LE: MimeType = MimeType::new(
+    APPLICATION_X_SUBRIP_UTF16,
+    "SubRip Subtitle (UTF-16 BE)",
+    ".srt",
+    srt_utf16_le,
+    &[],
+)
+.with_parent(&UTF16_LE);
 
 /// VTT subtitle format for UTF-16 Big Endian
-static VTT_UTF16_BE: MimeType =
-    MimeType::new(TEXT_VTT_UTF16, ".vtt", vtt_utf16_be, &[]).with_parent(&UTF16_BE);
+static VTT_UTF16_BE: MimeType = MimeType::new(
+    TEXT_VTT_UTF16,
+    "Web Video Text Tracks (UTF-16 BE)",
+    ".vtt",
+    vtt_utf16_be,
+    &[],
+)
+.with_parent(&UTF16_BE);
 
 /// VTT subtitle format for UTF-16 Little Endian
-static VTT_UTF16_LE: MimeType =
-    MimeType::new(TEXT_VTT_UTF16, ".vtt", vtt_utf16_le, &[]).with_parent(&UTF16_LE);
+static VTT_UTF16_LE: MimeType = MimeType::new(
+    TEXT_VTT_UTF16,
+    "Web Video Text Tracks (UTF-16 BE)",
+    ".vtt",
+    vtt_utf16_le,
+    &[],
+)
+.with_parent(&UTF16_LE);
 
 /// vCard format for UTF-16 Big Endian
-static VCARD_UTF16_BE: MimeType =
-    MimeType::new(TEXT_VCARD_UTF16, ".vcf", vcard_utf16_be, &[]).with_parent(&UTF16_BE);
+static VCARD_UTF16_BE: MimeType = MimeType::new(
+    TEXT_VCARD_UTF16,
+    "vCard (UTF-16)",
+    ".vcf",
+    vcard_utf16_be,
+    &[],
+)
+.with_parent(&UTF16_BE);
 
 /// vCard format for UTF-16 Little Endian
-static VCARD_UTF16_LE: MimeType =
-    MimeType::new(TEXT_VCARD_UTF16, ".vcf", vcard_utf16_le, &[]).with_parent(&UTF16_LE);
+static VCARD_UTF16_LE: MimeType = MimeType::new(
+    TEXT_VCARD_UTF16,
+    "vCard (UTF-16)",
+    ".vcf",
+    vcard_utf16_le,
+    &[],
+)
+.with_parent(&UTF16_LE);
 
 /// iCalendar format for UTF-16 Big Endian
-static ICALENDAR_UTF16_BE: MimeType =
-    MimeType::new(TEXT_CALENDAR_UTF16, ".ics", icalendar_utf16_be, &[]).with_parent(&UTF16_BE);
+static ICALENDAR_UTF16_BE: MimeType = MimeType::new(
+    TEXT_CALENDAR_UTF16,
+    "iCalendar (UTF-16)",
+    ".ics",
+    icalendar_utf16_be,
+    &[],
+)
+.with_parent(&UTF16_BE);
 
 /// iCalendar format for UTF-16 Little Endian
-static ICALENDAR_UTF16_LE: MimeType =
-    MimeType::new(TEXT_CALENDAR_UTF16, ".ics", icalendar_utf16_le, &[]).with_parent(&UTF16_LE);
+static ICALENDAR_UTF16_LE: MimeType = MimeType::new(
+    TEXT_CALENDAR_UTF16,
+    "iCalendar (UTF-16)",
+    ".ics",
+    icalendar_utf16_le,
+    &[],
+)
+.with_parent(&UTF16_LE);
 
 /// RTF format for UTF-16 Big Endian
-static RTF_UTF16_BE: MimeType =
-    MimeType::new(TEXT_RTF_UTF16, ".rtf", rtf_utf16_be, &[]).with_parent(&UTF16_BE);
+static RTF_UTF16_BE: MimeType = MimeType::new(
+    TEXT_RTF_UTF16,
+    "Rich Text Format (UTF-16 BE)",
+    ".rtf",
+    rtf_utf16_be,
+    &[],
+)
+.with_parent(&UTF16_BE);
 
 /// RTF format for UTF-16 Little Endian
-static RTF_UTF16_LE: MimeType =
-    MimeType::new(TEXT_RTF_UTF16, ".rtf", rtf_utf16_le, &[]).with_parent(&UTF16_LE);
+static RTF_UTF16_LE: MimeType = MimeType::new(
+    TEXT_RTF_UTF16,
+    "Rich Text Format (UTF-16 BE)",
+    ".rtf",
+    rtf_utf16_le,
+    &[],
+)
+.with_parent(&UTF16_LE);
+
+/// HTML format for UTF-8 with BOM
+static HTML_UTF8_BOM: MimeType = MimeType::new(
+    TEXT_HTML,
+    "HyperText Markup Language (UTF-8 BOM)",
+    ".html",
+    html_utf8_bom,
+    &[],
+)
+.with_parent(&UTF8_BOM);
+
+/// XML format for UTF-8 with BOM
+static XML_UTF8_BOM: MimeType = MimeType::new(
+    TEXT_XML,
+    "Extensible Markup Language (UTF-8 BOM)",
+    ".xml",
+    xml_utf8_bom,
+    &[],
+)
+.with_aliases(&[APPLICATION_XML])
+.with_parent(&UTF8_BOM);
+
+/// SVG format for UTF-8 with BOM
+static SVG_UTF8_BOM: MimeType = MimeType::new(
+    IMAGE_SVG_XML,
+    "Scalable Vector Graphics (UTF-8 BOM)",
+    ".svg",
+    svg_utf8_bom,
+    &[],
+)
+.with_parent(&UTF8_BOM);
+
+/// JSON format for UTF-8 with BOM
+static JSON_UTF8_BOM: MimeType = MimeType::new(
+    APPLICATION_JSON,
+    "JavaScript Object Notation (UTF-8 BOM)",
+    ".json",
+    json_utf8_bom,
+    &[],
+)
+.with_parent(&UTF8_BOM);
+
+/// CSV format for UTF-8 with BOM
+static CSV_UTF8_BOM: MimeType = MimeType::new(
+    TEXT_CSV,
+    "Comma-Separated Values (UTF-8 BOM)",
+    ".csv",
+    csv_utf8_bom,
+    &[],
+)
+.with_parent(&UTF8_BOM);
+
+/// TSV format for UTF-8 with BOM
+static TSV_UTF8_BOM: MimeType = MimeType::new(
+    TEXT_TAB_SEPARATED_VALUES,
+    "Tab-Separated Values (UTF-8 BOM)",
+    ".tsv",
+    tsv_utf8_bom,
+    &[],
+)
+.with_parent(&UTF8_BOM);
+
+/// SRT subtitle format for UTF-8 with BOM
+static SRT_UTF8_BOM: MimeType = MimeType::new(
+    APPLICATION_X_SUBRIP,
+    "SubRip Subtitle (UTF-8 BOM)",
+    ".srt",
+    srt_utf8_bom,
+    &[],
+)
+.with_parent(&UTF8_BOM);
+
+/// VTT subtitle format for UTF-8 with BOM
+static VTT_UTF8_BOM: MimeType = MimeType::new(
+    TEXT_VTT,
+    "WebVTT Subtitle (UTF-8 BOM)",
+    ".vtt",
+    vtt_utf8_bom,
+    &[],
+)
+.with_parent(&UTF8_BOM);
+
+/// vCard format for UTF-8 with BOM
+static VCARD_UTF8_BOM: MimeType =
+    MimeType::new(TEXT_VCARD, "vCard (UTF-8 BOM)", ".vcf", vcard_utf8_bom, &[])
+        .with_parent(&UTF8_BOM);
+
+/// iCalendar format for UTF-8 with BOM
+static ICALENDAR_UTF8_BOM: MimeType = MimeType::new(
+    TEXT_CALENDAR,
+    "iCalendar (UTF-8 BOM)",
+    ".ics",
+    icalendar_utf8_bom,
+    &[],
+)
+.with_parent(&UTF8_BOM);
+
+/// RTF format for UTF-8 with BOM
+static RTF_UTF8_BOM: MimeType = MimeType::new(
+    TEXT_RTF,
+    "Rich Text Format (UTF-8 BOM)",
+    ".rtf",
+    rtf_utf8_bom,
+    &[],
+)
+.with_parent(&UTF8_BOM);
 
 // ============================================================================
 // IMAGE FORMATS
 // ============================================================================
 
-mimetype!(PNG, IMAGE_PNG, ".png", b"\x89PNG\r\n\x1a\n", kind: IMAGE, children: [&APNG]);
+mimetype!(PNG, IMAGE_PNG, ".png", b"\x89PNG\r\n\x1a\n", name: "Portable Network Graphics", kind: IMAGE, children: [&APNG]);
 
 // APNG - Animated PNG, checks for acTL (Animation Control) chunk at offset 37
-mimetype!(APNG, IMAGE_VND_MOZILLA_APNG, ".apng", offset: (37, b"acTL", prefix: (0, b"\x89PNG\r\n\x1a\n")), kind: IMAGE, parent: &PNG);
+mimetype!(APNG, IMAGE_VND_MOZILLA_APNG, ".apng", offset: (37, b"acTL", prefix: (0, b"\x89PNG\r\n\x1a\n")), name: "Animated Portable Network Graphics", kind: IMAGE, parent: &PNG);
 
 // MNG - Multiple-image Network Graphics, animated PNG-like format.
-mimetype!(MNG, IMAGE_X_MNG, ".mng", [0x8A, 0x4D, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], kind: IMAGE);
+mimetype!(MNG, IMAGE_X_MNG, ".mng", [0x8A, 0x4D, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], name: "Multiple-image Network Graphics", kind: IMAGE);
 
 // JNG - JPEG Network Graphics, JPEG with PNG-style chunks and optional alpha channel.
-mimetype!(JNG, IMAGE_X_JNG, ".jng", [0x8B, 0x4A, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], kind: IMAGE);
+mimetype!(JNG, IMAGE_X_JNG, ".jng", [0x8B, 0x4A, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], name: "JPEG Network Graphics", kind: IMAGE);
 
-mimetype!(JPG, IMAGE_JPEG, ".jpg", b"\xff\xd8\xff", kind: IMAGE, ext_aliases: [".jpeg", ".jpe", ".jif", ".jfif", ".jfi"]);
+mimetype!(JPG, IMAGE_JPEG, ".jpg", b"\xff\xd8\xff", name: "Joint Photographic Experts Group", kind: IMAGE, ext_aliases: [".jpeg", ".jpe", ".jif", ".jfif", ".jfi"]);
 
-static JP2: MimeType = MimeType::new(IMAGE_JP2, ".jp2", jp2, &[]).with_kind(MimeKind::IMAGE);
+static JP2: MimeType =
+    MimeType::new(IMAGE_JP2, "JPEG 2000 Image", ".jp2", jp2, &[]).with_kind(MimeKind::IMAGE);
 
-static JPX: MimeType = MimeType::new(IMAGE_JPX, ".jpx", jpx, &[]).with_kind(MimeKind::IMAGE);
+static JPX: MimeType =
+    MimeType::new(IMAGE_JPX, "JPEG 2000 Extended", ".jpx", jpx, &[]).with_kind(MimeKind::IMAGE);
 
-static JPM: MimeType = MimeType::new(IMAGE_JPM, ".jpm", jpm, &[])
+static JPM: MimeType = MimeType::new(IMAGE_JPM, "JPEG 2000 Part 6", ".jpm", jpm, &[])
     .with_aliases(&[VIDEO_JPM])
     .with_kind(MimeKind::IMAGE);
 
 // JPEG 2000 Codestream - Raw codestream without JP2 container
-mimetype!(JP2_CODESTREAM, IMAGE_X_JP2_CODESTREAM, ".j2c", b"\xff\x4f\xff\x51", kind: IMAGE, ext_aliases: [".jpc", ".j2k"]);
+mimetype!(JP2_CODESTREAM, IMAGE_X_JP2_CODESTREAM, ".j2c", b"\xff\x4f\xff\x51", name: "JPEG 2000 Codestream", kind: IMAGE, ext_aliases: [".jpc", ".j2k"]);
 
-mimetype!(JXS, IMAGE_JXS, ".jxs", b"\x00\x00\x00\x0C\x4A\x58\x53\x20\x0D\x0A\x87\x0A", kind: IMAGE);
+mimetype!(JXS, IMAGE_JXS, ".jxs", b"\x00\x00\x00\x0C\x4A\x58\x53\x20\x0D\x0A\x87\x0A", name: "JPEG XS", kind: IMAGE);
 
-mimetype!(JXR, IMAGE_JXR, ".jxr", b"\x49\x49\xBC\x01", kind: IMAGE, aliases: [IMAGE_VND_MS_PHOTO]);
+mimetype!(JXR, IMAGE_JXR, ".jxr", b"\x49\x49\xBC\x01", name: "JPEG XR", kind: IMAGE, aliases: [IMAGE_VND_MS_PHOTO]);
 
-mimetype!(JXL, IMAGE_JXL, ".jxl", b"\xFF\x0A" | b"\x00\x00\x00\x0CJXL \x0D\x0A\x87\x0A", kind: IMAGE);
+mimetype!(JXL, IMAGE_JXL, ".jxl", b"\xFF\x0A" | b"\x00\x00\x00\x0CJXL \x0D\x0A\x87\x0A", name: "JPEG XL", kind: IMAGE);
 
-mimetype!(GIF, IMAGE_GIF, ".gif", b"GIF87a" | b"GIF89a", kind: IMAGE);
+mimetype!(GIF, IMAGE_GIF, ".gif", b"GIF87a" | b"GIF89a", name: "Graphics Interchange Format", kind: IMAGE);
 
-mimetype!(WEBP, IMAGE_WEBP, ".webp", offset: (8, b"WEBP", prefix: (0, b"RIFF")), kind: IMAGE);
+mimetype!(WEBP, IMAGE_WEBP, ".webp", offset: (8, b"WEBP", prefix: (0, b"RIFF")), name: "WebP Image", kind: IMAGE);
 
 // Forward declarations for TIFF children
 // Canon Raw 2 - TIFF-based with CR2 marker
-mimetype!(CR2, IMAGE_X_CANON_CR2, ".cr2", offset: (8, b"CR\x02\x00"), kind: IMAGE);
+mimetype!(CR2, IMAGE_X_CANON_CR2, ".cr2", offset: (8, b"CR\x02\x00"), name: "Canon Raw 2", kind: IMAGE);
 
 // Nikon Electronic File - TIFF-based
 static NEF: MimeType = MimeType::new(
     IMAGE_X_NIKON_NEF,
+    "Nikon NEF",
     ".nef",
     |input| {
         // Don't check TIFF header here - parent already checked it
@@ -798,6 +1079,7 @@ static NEF: MimeType = MimeType::new(
 
 static TIFF: MimeType = MimeType::new(
     IMAGE_TIFF,
+    "Tagged Image File Format",
     ".tiff",
     |input| input.starts_with(b"II*\x00") || input.starts_with(b"MM\x00*"),
     &[&CR2, &NEF, &HASSELBLAD_3FR, &SR2, &ARW, &PEF, &DNG], // TIFF-based RAW formats as children (larger/more specific first)
@@ -805,53 +1087,78 @@ static TIFF: MimeType = MimeType::new(
 .with_extension_aliases(&[".tif"])
 .with_kind(MimeKind::IMAGE);
 
-mimetype!(BMP, IMAGE_BMP, ".bmp", b"BM", kind: IMAGE, aliases: [IMAGE_X_BMP, IMAGE_X_MS_BMP], ext_aliases: [".dib"]);
+mimetype!(BMP, IMAGE_BMP, ".bmp", b"BM", name: "Bitmap Image File", kind: IMAGE, aliases: [IMAGE_X_BMP, IMAGE_X_MS_BMP], ext_aliases: [".dib"]);
 
-mimetype!(ICO, IMAGE_X_ICON, ".ico", b"\x00\x00\x01\x00", kind: IMAGE);
+mimetype!(ICO, IMAGE_X_ICON, ".ico", b"\x00\x00\x01\x00", name: "Icon File", kind: IMAGE);
 
-mimetype!(ICNS, IMAGE_X_ICNS, ".icns", b"icns", kind: IMAGE);
+mimetype!(ICNS, IMAGE_X_ICNS, ".icns", b"icns", name: "Apple Icon Image", kind: IMAGE);
 
-mimetype!(PSD, IMAGE_VND_ADOBE_PHOTOSHOP, ".psd", b"8BPS", kind: IMAGE, aliases: [IMAGE_X_PSD, APPLICATION_PHOTOSHOP]);
+mimetype!(PSD, IMAGE_VND_ADOBE_PHOTOSHOP, ".psd", b"8BPS", name: "Adobe Photoshop Document", kind: IMAGE, aliases: [IMAGE_X_PSD, APPLICATION_PHOTOSHOP]);
 
-mimetype!(PBM, IMAGE_X_PORTABLE_BITMAP, ".pbm", b"P1" | b"P4", kind: IMAGE);
+mimetype!(PBM, IMAGE_X_PORTABLE_BITMAP, ".pbm", b"P1" | b"P4", name: "Portable Bitmap", kind: IMAGE);
 
-mimetype!(PGM, IMAGE_X_PORTABLE_GRAYMAP, ".pgm", b"P2" | b"P5", kind: IMAGE);
+mimetype!(PGM, IMAGE_X_PORTABLE_GRAYMAP, ".pgm", b"P2" | b"P5", name: "Portable Graymap", kind: IMAGE);
 
-mimetype!(PPM, IMAGE_X_PORTABLE_PIXMAP, ".ppm", b"P3" | b"P6", kind: IMAGE);
+mimetype!(PPM, IMAGE_X_PORTABLE_PIXMAP, ".ppm", b"P3" | b"P6", name: "Portable Pixmap", kind: IMAGE);
 
-mimetype!(PAM, IMAGE_X_PORTABLE_ARBITRARYMAP, ".pam", b"P7", kind: IMAGE);
+mimetype!(PAM, IMAGE_X_PORTABLE_ARBITRARYMAP, ".pam", b"P7", name: "Portable Arbitrary Map", kind: IMAGE);
 
-static HEIC: MimeType = MimeType::new(IMAGE_HEIC, ".heic", heic, &[])
-    .with_kind(MimeKind::IMAGE)
-    .with_parent(&HEIF);
+static HEIC: MimeType = MimeType::new(
+    IMAGE_HEIC,
+    "High Efficiency Image Container",
+    ".heic",
+    heic,
+    &[],
+)
+.with_kind(MimeKind::IMAGE)
+.with_parent(&HEIF);
 
-static HEIC_SEQ: MimeType = MimeType::new(IMAGE_HEIC_SEQUENCE, ".heic", heic_sequence, &[])
-    .with_extension_aliases(&[".heics"])
-    .with_kind(MimeKind::IMAGE)
-    .with_parent(&HEIF);
+static HEIC_SEQ: MimeType = MimeType::new(
+    IMAGE_HEIC_SEQUENCE,
+    "High Efficiency Image Container Sequence",
+    ".heic",
+    heic_sequence,
+    &[],
+)
+.with_extension_aliases(&[".heics"])
+.with_kind(MimeKind::IMAGE)
+.with_parent(&HEIF);
 
-static HEIF: MimeType = MimeType::new(IMAGE_HEIF, ".heif", heif, &[]).with_kind(MimeKind::IMAGE);
+static HEIF: MimeType = MimeType::new(
+    IMAGE_HEIF,
+    "High Efficiency Image Format",
+    ".heif",
+    heif,
+    &[],
+)
+.with_kind(MimeKind::IMAGE);
 
-static HEIF_SEQ: MimeType = MimeType::new(IMAGE_HEIF_SEQUENCE, ".heif", heif_sequence, &[])
-    .with_extension_aliases(&[".heifs"])
-    .with_kind(MimeKind::IMAGE);
+static HEIF_SEQ: MimeType = MimeType::new(
+    IMAGE_HEIF_SEQUENCE,
+    "High Efficiency Image Format Sequence",
+    ".heif",
+    heif_sequence,
+    &[],
+)
+.with_extension_aliases(&[".heifs"])
+.with_kind(MimeKind::IMAGE);
 
-mimetype!(BPG, IMAGE_BPG, ".bpg", b"BPG\xFB", kind: IMAGE);
+mimetype!(BPG, IMAGE_BPG, ".bpg", b"BPG\xFB", name: "Better Portable Graphics", kind: IMAGE);
 
-mimetype!(XCF, IMAGE_X_XCF, ".xcf", b"gimp xcf", kind: IMAGE);
+mimetype!(XCF, IMAGE_X_XCF, ".xcf", b"gimp xcf", name: "GIMP Image", kind: IMAGE);
 
-mimetype!(PAT, IMAGE_X_GIMP_PAT, ".pat", offset: (20, b"GPAT"), kind: IMAGE);
+mimetype!(PAT, IMAGE_X_GIMP_PAT, ".pat", offset: (20, b"GPAT"), name: "GIMP Pattern", kind: IMAGE);
 
-mimetype!(GBR, IMAGE_X_GIMP_GBR, ".gbr", offset: (20, b"GIMP"), kind: IMAGE);
+mimetype!(GBR, IMAGE_X_GIMP_GBR, ".gbr", offset: (20, b"GIMP"), name: "GIMP Brush", kind: IMAGE);
 
-mimetype!(HDR, IMAGE_VND_RADIANCE, ".hdr", b"#?RADIANCE\n", kind: IMAGE);
+mimetype!(HDR, IMAGE_VND_RADIANCE, ".hdr", b"#?RADIANCE\n", name: "Radiance HDR Image", kind: IMAGE);
 
-mimetype!(XPM, IMAGE_X_XPIXMAP, ".xpm", b"/* XPM */", kind: IMAGE);
+mimetype!(XPM, IMAGE_X_XPIXMAP, ".xpm", b"/* XPM */", name: "X PixMap", kind: IMAGE);
 
 // X11 Bitmap format (C header format)
-mimetype!(XBM, IMAGE_X_XBITMAP, ".xbm", b"#define ", kind: IMAGE, parent: &UTF8);
+mimetype!(XBM, IMAGE_X_XBITMAP, ".xbm", b"#define ", name: "X BitMap", kind: IMAGE, parent: &UTF8);
 
-static DWG: MimeType = MimeType::new(IMAGE_VND_DWG, ".dwg", dwg, &[])
+static DWG: MimeType = MimeType::new(IMAGE_VND_DWG, "AutoCAD Drawing", ".dwg", dwg, &[])
     .with_aliases(&[
         IMAGE_X_DWG,
         APPLICATION_ACAD,
@@ -864,151 +1171,170 @@ static DWG: MimeType = MimeType::new(IMAGE_VND_DWG, ".dwg", dwg, &[])
     ])
     .with_kind(MimeKind::IMAGE);
 
-mimetype!(DXF, IMAGE_VND_DXF, ".dxf", b"  0\x0ASECTION\x0A" | b"  0\x0D\x0ASECTION\x0D\x0A" | b"0\x0ASECTION\x0A" | b"0\x0D\x0ASECTION\x0D\x0A", kind: IMAGE);
+mimetype!(DXF, IMAGE_VND_DXF, ".dxf", b"  0\x0ASECTION\x0A" | b"  0\x0D\x0ASECTION\x0D\x0A" | b"0\x0ASECTION\x0A" | b"0\x0D\x0ASECTION\x0D\x0A", name: "Drawing Exchange Format", kind: IMAGE);
 
 // DXF Binary - AutoCAD Drawing Exchange Format binary variant
-mimetype!(DXF_BINARY, APPLICATION_X_DXF, ".dxf", b"AutoCAD Binary DXF", kind: MODEL);
+mimetype!(DXF_BINARY, APPLICATION_X_DXF, ".dxf", b"AutoCAD Binary DXF", name: "Drawing Exchange Format Binary", kind: MODEL);
 
 // DjVu document format
-mimetype!(DJVU, IMAGE_VND_DJVU, ".djvu", offset: (12, b"DJVU", prefix: (0, b"AT&TFORM")), kind: IMAGE);
+mimetype!(DJVU, IMAGE_VND_DJVU, ".djvu", offset: (12, b"DJVU", prefix: (0, b"AT&TFORM")), name: "DjVu Document", kind: IMAGE);
 
 // DirectDraw Surface - Game textures
-mimetype!(DDS, IMAGE_VND_MS_DDS, ".dds", b"DDS ", kind: IMAGE);
+mimetype!(DDS, IMAGE_VND_MS_DDS, ".dds", b"DDS ", name: "DirectDraw Surface", kind: IMAGE);
 
 // PC Paintbrush - Classic bitmap format
-mimetype!(PCX, IMAGE_X_PCX, ".pcx", [0x0A], kind: IMAGE);
+mimetype!(PCX, IMAGE_X_PCX, ".pcx", [0x0A], name: "PC Paintbrush", kind: IMAGE);
 
 // PICtor/PC Paint - DOS graphics format
-mimetype!(PICTOR, IMAGE_X_PICTOR, ".pic", [0x34, 0x12], kind: IMAGE);
+mimetype!(PICTOR, IMAGE_X_PICTOR, ".pic", [0x34, 0x12], name: "PICtor PC Paint", kind: IMAGE);
 
 // Khronos Texture - OpenGL/Vulkan textures
-mimetype!(KTX, IMAGE_KTX, ".ktx", [0xAB, 0x4B, 0x54, 0x58, 0x20], kind: IMAGE);
+mimetype!(KTX, IMAGE_KTX, ".ktx", [0xAB, 0x4B, 0x54, 0x58, 0x20], name: "Khronos Texture", kind: IMAGE);
 
 // ARM Texture Compression - Mobile GPU textures
-mimetype!(ASTC, IMAGE_X_ASTC, ".astc", [0x13, 0xAB, 0xA1, 0x5C], kind: IMAGE);
+mimetype!(ASTC, IMAGE_X_ASTC, ".astc", [0x13, 0xAB, 0xA1, 0x5C], name: "Adaptive Scalable Texture Compression", kind: IMAGE);
 
 // Truevision TGA/Targa - Gaming and 3D graphics format
-mimetype!(TGA, IMAGE_X_TGA, ".tga", [0x00, 0x01, 0x0A, 0x00], kind: IMAGE);
+mimetype!(TGA, IMAGE_X_TGA, ".tga", [0x00, 0x01, 0x0A, 0x00], name: "Truevision Targa", kind: IMAGE);
 
 // Sun Raster - Legacy Unix image format
-mimetype!(SUN_RASTER, IMAGE_X_SUN_RASTER, ".ras", [0x59, 0xA6, 0x6A, 0x95], kind: IMAGE);
+mimetype!(SUN_RASTER, IMAGE_X_SUN_RASTER, ".ras", [0x59, 0xA6, 0x6A, 0x95], name: "Sun Raster Image", kind: IMAGE);
 
 // Silicon Graphics Image - Film/VFX format
-mimetype!(SGI, IMAGE_X_SGI, ".sgi", [0x01, 0xDA], kind: IMAGE);
+mimetype!(SGI, IMAGE_X_SGI, ".sgi", [0x01, 0xDA], name: "Silicon Graphics Image", kind: IMAGE);
 
 // Windows Animated Cursor - RIFF container
-mimetype!(ANI, APPLICATION_X_NAVI_ANIMATION, ".ani", offset: (8, b"ACON", prefix: (0, b"RIFF")), kind: IMAGE);
+mimetype!(ANI, APPLICATION_X_NAVI_ANIMATION, ".ani", offset: (8, b"ACON", prefix: (0, b"RIFF")), name: "Windows Animated Cursor", kind: IMAGE);
 
 // CorelDRAW - RIFF container
-mimetype!(CDR, APPLICATION_VND_COREL_DRAW, ".cdr", offset: (8, b"CDR", prefix: (0, b"RIFF")), kind: IMAGE, aliases: [APPLICATION_CDR, APPLICATION_X_CDR]);
+mimetype!(CDR, APPLICATION_VND_COREL_DRAW, ".cdr", offset: (8, b"CDR", prefix: (0, b"RIFF")), name: "CorelDRAW Image", kind: IMAGE, aliases: [APPLICATION_CDR, APPLICATION_X_CDR]);
 
 // IFF/ILBM - Amiga graphics format (FORM container)
-mimetype!(ILBM, IMAGE_X_ILBM, ".lbm", offset: (8, b"ILBM", prefix: (0, b"FORM")), kind: IMAGE, aliases: [IMAGE_X_IFF], ext_aliases: [".iff", ".ilbm"]);
+mimetype!(ILBM, IMAGE_X_ILBM, ".lbm", offset: (8, b"ILBM", prefix: (0, b"FORM")), name: "Interchange File Format", kind: IMAGE, aliases: [IMAGE_X_IFF], ext_aliases: [".iff", ".ilbm"]);
 
-static AVIF_FORMAT: MimeType =
-    MimeType::new(IMAGE_AVIF, ".avif", avif_format, &[&AVIF_SEQUENCE]).with_kind(MimeKind::IMAGE);
+static AVIF_FORMAT: MimeType = MimeType::new(
+    IMAGE_AVIF,
+    "AV1 Image File Format",
+    ".avif",
+    avif_format,
+    &[&AVIF_SEQUENCE],
+)
+.with_kind(MimeKind::IMAGE);
 
 // AVIF Sequence - Animated AVIF images
-static AVIF_SEQUENCE: MimeType =
-    MimeType::new(IMAGE_AVIF_SEQUENCE, ".avifs", avif_sequence, &[]).with_kind(MimeKind::IMAGE);
+static AVIF_SEQUENCE: MimeType = MimeType::new(
+    IMAGE_AVIF_SEQUENCE,
+    "AV1 Image File Format Sequence",
+    ".avifs",
+    avif_sequence,
+    &[],
+)
+.with_kind(MimeKind::IMAGE);
 
 // Quite OK Image Format - A fast, lossless image format.
-mimetype!(QOI, IMAGE_X_QOI, ".qoi", b"qoif", kind: IMAGE);
+mimetype!(QOI, IMAGE_X_QOI, ".qoi", b"qoif", name: "Quite OK Image Format", kind: IMAGE);
 
 // FLIF - Free Lossless Image Format (deprecated, concepts moved to JPEG XL).
-mimetype!(FLIF, IMAGE_FLIF, ".flif", b"FLIF", kind: IMAGE);
+mimetype!(FLIF, IMAGE_FLIF, ".flif", b"FLIF", name: "Free Lossless Image Format", kind: IMAGE);
 
 // Khronos Texture 2.0 - Modern GPU texture format for games and 3D applications.
-mimetype!(KTX2, IMAGE_KTX2, ".ktx2", b"\xABKTX 20\xBB\r\n\x1A\n", kind: IMAGE);
+mimetype!(KTX2, IMAGE_KTX2, ".ktx2", b"\xABKTX 20\xBB\r\n\x1A\n", name: "Khronos Texture 2.0", kind: IMAGE);
 
 // OpenEXR - High Dynamic Range imaging format used in visual effects and film.
-mimetype!(OPENEXR, IMAGE_X_EXR, ".exr", b"\x76\x2F\x31\x01", kind: IMAGE);
+mimetype!(OPENEXR, IMAGE_X_EXR, ".exr", b"\x76\x2F\x31\x01", name: "OpenEXR High Dynamic Range Image", kind: IMAGE);
 
 // Farbfeld - Suckless lossless image format designed for simplicity and piping in UNIX.
-mimetype!(FARBFELD, IMAGE_X_FARBFELD, ".ff", b"farbfeld", kind: IMAGE);
+mimetype!(FARBFELD, IMAGE_X_FARBFELD, ".ff", b"farbfeld", name: "Farbfeld Image Format", kind: IMAGE);
 
 // JPEG-LS - Lossless/near-lossless JPEG compression standard (ISO-14495-1).
 // Used primarily in medical imaging applications.
-mimetype!(JPEG_LS, IMAGE_JLS, ".jls", [0xFF, 0xD8, 0xFF, 0xF7], kind: IMAGE);
+mimetype!(JPEG_LS, IMAGE_JLS, ".jls", [0xFF, 0xD8, 0xFF, 0xF7], name: "JPEG-LS Lossless Image", kind: IMAGE);
 
 // MIFF - Magick Image File Format, ImageMagick's native format.
-mimetype!(MIFF, IMAGE_X_MIFF, ".miff", b"id=ImageMagick", kind: IMAGE);
+mimetype!(MIFF, IMAGE_X_MIFF, ".miff", b"id=ImageMagick", name: "Magick Image File Format", kind: IMAGE);
 
 // PFM - Portable FloatMap, Netpbm HDR format for floating-point pixel data.
 // Magic bytes: "PF\n" (RGB color) or "Pf\n" (grayscale).
-mimetype!(PFM, IMAGE_X_PFM, ".pfm", b"PF\n" | b"Pf\n", kind: IMAGE);
+mimetype!(PFM, IMAGE_X_PFM, ".pfm", b"PF\n" | b"Pf\n", name: "Portable FloatMap", kind: IMAGE);
 
 // Enhanced Metafile - Windows vector graphics format.
-mimetype!(EMF, IMAGE_EMF, ".emf", offset: (40, b" EMF", prefix: (0, b"\x01\x00\x00\x00")), kind: IMAGE);
+mimetype!(EMF, IMAGE_EMF, ".emf", offset: (40, b" EMF", prefix: (0, b"\x01\x00\x00\x00")), name: "Enhanced Metafile", kind: IMAGE);
 
 // Windows Metafile - Legacy Windows vector graphics format.
-mimetype!(WMF, IMAGE_WMF, ".wmf", b"\x01\x00\x09\x00" | b"\x02\x00\x09\x00" | b"\xD7\xCD\xC6\x9A", kind: IMAGE);
+mimetype!(WMF, IMAGE_WMF, ".wmf", b"\x01\x00\x09\x00" | b"\x02\x00\x09\x00" | b"\xD7\xCD\xC6\x9A", name: "Windows Metafile", kind: IMAGE);
 
 // ============================================================================
 // AUDIO FORMATS
 // ============================================================================
 
-static MP3: MimeType = MimeType::new(AUDIO_MPEG, ".mp3", mp3, &[])
+static MP3: MimeType = MimeType::new(AUDIO_MPEG, "MPEG Audio Layer III", ".mp3", mp3, &[])
     .with_aliases(&[AUDIO_X_MPEG, AUDIO_MP3])
     .with_kind(MimeKind::AUDIO);
 
 // MPEG-1/2 Audio Layer 2 - Predecessor to MP3, still used in broadcasting
-static MP2: MimeType = MimeType::new(AUDIO_MP2, ".mp2", mp2, &[]).with_kind(MimeKind::AUDIO);
+static MP2: MimeType =
+    MimeType::new(AUDIO_MP2, "MPEG Audio Layer II", ".mp2", mp2, &[]).with_kind(MimeKind::AUDIO);
 
-mimetype!(FLAC, AUDIO_FLAC, ".flac", b"fLaC", kind: AUDIO);
+mimetype!(FLAC, AUDIO_FLAC, ".flac", b"fLaC", name: "Free Lossless Audio Codec", kind: AUDIO);
 
-mimetype!(WAV, AUDIO_WAV, ".wav", offset: (8, b"WAVE", prefix: (0, b"RIFF")), kind: AUDIO, aliases: [AUDIO_X_WAV, AUDIO_VND_WAVE, AUDIO_WAVE]);
+mimetype!(WAV, AUDIO_WAV, ".wav", offset: (8, b"WAVE", prefix: (0, b"RIFF")), name: "Waveform Audio File", kind: AUDIO, aliases: [AUDIO_X_WAV, AUDIO_VND_WAVE, AUDIO_WAVE]);
 
 // SoundFont 2 format (RIFF-based)
-mimetype!(SOUNDFONT2, AUDIO_X_SOUNDFONT, ".sf2", offset: (8, b"sfbk", prefix: (0, b"RIFF")), kind: AUDIO);
+mimetype!(SOUNDFONT2, AUDIO_X_SOUNDFONT, ".sf2", offset: (8, b"sfbk", prefix: (0, b"RIFF")), name: "SoundFont 2.0", kind: AUDIO);
 
-mimetype!(AIFF, AUDIO_AIFF, ".aiff", offset: (8, b"AIFF", prefix: (0, b"FORM")), kind: AUDIO, aliases: [AUDIO_X_AIFF], ext_aliases: [".aif"]);
+mimetype!(AIFF, AUDIO_AIFF, ".aiff", offset: (8, b"AIFF", prefix: (0, b"FORM")), name: "Audio Interchange File Format", kind: AUDIO, aliases: [AUDIO_X_AIFF], ext_aliases: [".aif"]);
 
-mimetype!(MIDI, AUDIO_MIDI, ".midi", b"MThd", kind: AUDIO, aliases: [AUDIO_MID], ext_aliases: [".mid"]);
+mimetype!(MIDI, AUDIO_MIDI, ".midi", b"MThd", name: "Musical Instrument Digital Interface", kind: AUDIO, aliases: [AUDIO_MID], ext_aliases: [".mid"]);
 
-mimetype!(OGG, APPLICATION_OGG, ".ogg", b"OggS", kind: AUDIO, aliases: [APPLICATION_X_OGG], ext_aliases: [".oga", ".opus", ".ogv", ".ogm", ".ogx", ".spx"], children: [&OGG_AUDIO, &OGG_MEDIA, &OGG_VIDEO, &OGG_MULTIPLEXED, &SPX]);
+mimetype!(OGG, APPLICATION_OGG, ".ogg", b"OggS", name: "Ogg Container Format", kind: AUDIO, aliases: [APPLICATION_X_OGG], ext_aliases: [".oga", ".opus", ".ogv", ".ogm", ".ogx", ".spx"], children: [&OGG_AUDIO, &OGG_MEDIA, &OGG_VIDEO, &OGG_MULTIPLEXED, &SPX]);
 
-static OGG_AUDIO: MimeType = MimeType::new(AUDIO_OGG, ".oga", ogg_audio, &[])
+static OGG_AUDIO: MimeType = MimeType::new(AUDIO_OGG, "Ogg Audio", ".oga", ogg_audio, &[])
     .with_kind(MimeKind::AUDIO)
     .with_parent(&OGG);
 
-static OGG_VIDEO: MimeType = MimeType::new(VIDEO_OGG, ".ogv", ogg_video, &[])
+static OGG_VIDEO: MimeType = MimeType::new(VIDEO_OGG, "Ogg Video", ".ogv", ogg_video, &[])
     .with_kind(MimeKind::VIDEO)
     .with_parent(&OGG);
 
-static OGG_MEDIA: MimeType = MimeType::new(VIDEO_OGG_MEDIA, ".ogm", ogg_media, &[])
+static OGG_MEDIA: MimeType = MimeType::new(VIDEO_OGG_MEDIA, "Ogg Media", ".ogm", ogg_media, &[])
     .with_kind(MimeKind::VIDEO)
     .with_parent(&OGG);
 
-static OGG_MULTIPLEXED: MimeType =
-    MimeType::new(APPLICATION_OGG_MULTIPLEXED, ".ogx", ogg_multiplexed, &[])
-        .with_kind(MimeKind::VIDEO)
-        .with_parent(&OGG);
+static OGG_MULTIPLEXED: MimeType = MimeType::new(
+    APPLICATION_OGG_MULTIPLEXED,
+    "Ogg Multiplexed",
+    ".ogx",
+    ogg_multiplexed,
+    &[],
+)
+.with_kind(MimeKind::VIDEO)
+.with_parent(&OGG);
 
-mimetype!(APE, AUDIO_APE, ".ape", b"MAC \x96\x0F\x00\x00\x34\x00\x00\x00\x18\x00\x00\x00\x90\xE3", kind: AUDIO);
+mimetype!(APE, AUDIO_APE, ".ape", b"MAC \x96\x0F\x00\x00\x34\x00\x00\x00\x18\x00\x00\x00\x90\xE3", name: "Monkey's Audio", kind: AUDIO);
 
-mimetype!(MUSEPACK, AUDIO_MUSEPACK, ".mpc", b"MPCK", kind: AUDIO);
+mimetype!(MUSEPACK, AUDIO_MUSEPACK, ".mpc", b"MPCK", name: "Musepack Audio", kind: AUDIO);
 
-mimetype!(AU, AUDIO_BASIC, ".au", b".snd", kind: AUDIO, ext_aliases: [".snd"]);
+mimetype!(AU, AUDIO_BASIC, ".au", b".snd", name: "Sun/NeXT Audio", kind: AUDIO, ext_aliases: [".snd"]);
 
-mimetype!(AMR, AUDIO_AMR, ".amr", b"#!AMR", kind: AUDIO, aliases: [AUDIO_AMR_NB]);
+mimetype!(AMR, AUDIO_AMR, ".amr", b"#!AMR", name: "Adaptive Multi-Rate Audio", kind: AUDIO, aliases: [AUDIO_AMR_NB]);
 
 // Creative Voice audio format (DOS/Sound Blaster)
-mimetype!(VOC, AUDIO_X_VOC, ".voc", b"Creative Voice File", kind: AUDIO);
+mimetype!(VOC, AUDIO_X_VOC, ".voc", b"Creative Voice File", name: "Creative Voice Audio", kind: AUDIO);
 
 // RealAudio format
 // RealAudio can start with .RA\xFD or .ra\xFD
-mimetype!(REALAUDIO, AUDIO_X_REALAUDIO, ".ra", [0x2E, 0x52, 0x41, 0xFD] | [0x2E, 0x72, 0x61, 0xFD], kind: AUDIO);
+mimetype!(REALAUDIO, AUDIO_X_REALAUDIO, ".ra", [0x2E, 0x52, 0x41, 0xFD] | [0x2E, 0x72, 0x61, 0xFD], name: "RealAudio", kind: AUDIO);
 
 // Audio Codec 3 (Dolby Digital) - Common audio codec used in DVDs and digital TV.
-mimetype!(AC3, AUDIO_AC3, ".ac3", b"\x0B\x77", kind: AUDIO);
+mimetype!(AC3, AUDIO_AC3, ".ac3", b"\x0B\x77", name: "Dolby Digital Audio", kind: AUDIO);
 
 // DTS Audio - Digital Theater Systems surround sound, used in Blu-ray and home theater.
-mimetype!(DTS, AUDIO_DTS, ".dts", b"\x7F\xFE\x80\x01", kind: AUDIO, aliases: [AUDIO_DTS_HD]);
+mimetype!(DTS, AUDIO_DTS, ".dts", b"\x7F\xFE\x80\x01", name: "Digital Theater Systems Audio", kind: AUDIO, aliases: [AUDIO_DTS_HD]);
 
 // Ogg Opus - Modern, high-quality audio codec with low latency.
 static OGG_OPUS: MimeType = MimeType::new(
     AUDIO_OPUS,
+    "Opus Audio",
     ".opus",
     |input| input.len() >= 36 && input.starts_with(b"OggS") && &input[28..36] == b"OpusHead",
     &[],
@@ -1016,48 +1342,48 @@ static OGG_OPUS: MimeType = MimeType::new(
 .with_kind(MimeKind::AUDIO)
 .with_parent(&OGG);
 
-mimetype!(M3U, AUDIO_X_MPEGURL, ".m3u", b"#EXTM3U", kind: TEXT, aliases: [AUDIO_MPEGURL], ext_aliases: [".m3u8"]);
+mimetype!(M3U, AUDIO_X_MPEGURL, ".m3u", b"#EXTM3U", name: "M3U Playlist", kind: TEXT, aliases: [AUDIO_MPEGURL], ext_aliases: [".m3u8"]);
 
-mimetype!(AAC, AUDIO_AAC, ".aac", b"\xFF\xF1" | b"\xFF\xF9", kind: AUDIO);
+mimetype!(AAC, AUDIO_AAC, ".aac", b"\xFF\xF1" | b"\xFF\xF9", name: "Advanced Audio Coding", kind: AUDIO);
 
-mimetype!(QCP, AUDIO_QCELP, ".qcp", offset: (8, b"QLCM", prefix: (0, b"RIFF")), kind: AUDIO);
+mimetype!(QCP, AUDIO_QCELP, ".qcp", offset: (8, b"QLCM", prefix: (0, b"RIFF")), name: "Qualcomm PureVoice Audio", kind: AUDIO);
 
-mimetype!(M4A, AUDIO_X_M4A, ".m4a", offset: (8, b"M4A ", prefix: (4, b"ftyp")), kind: AUDIO);
+mimetype!(M4A, AUDIO_X_M4A, ".m4a", offset: (8, b"M4A ", prefix: (4, b"ftyp")), name: "MPEG-4 Audio", kind: AUDIO);
 
 // Apple iTunes Audiobook - MP4-based audiobook format
-mimetype!(M4B, AUDIO_MP4, ".m4b", offset: (8, b"M4B ", prefix: (4, b"ftyp")), kind: AUDIO);
+mimetype!(M4B, AUDIO_MP4, ".m4b", offset: (8, b"M4B ", prefix: (4, b"ftyp")), name: "Apple iTunes Audiobook", kind: AUDIO);
 
 // Apple iTunes Protected Audio - DRM-protected MP4 audio
-mimetype!(M4P, AUDIO_MP4, ".m4p", offset: (8, b"M4P ", prefix: (4, b"ftyp")), kind: AUDIO);
+mimetype!(M4P, AUDIO_MP4, ".m4p", offset: (8, b"M4P ", prefix: (4, b"ftyp")), name: "Apple iTunes Protected Audio", kind: AUDIO);
 
 // Flash MP4 Audio - Adobe Flash MP4 audio format
-mimetype!(F4A, AUDIO_MP4, ".f4a", offset: (8, b"F4A ", prefix: (4, b"ftyp")), kind: AUDIO);
+mimetype!(F4A, AUDIO_MP4, ".f4a", offset: (8, b"F4A ", prefix: (4, b"ftyp")), name: "Flash MP4 Audio", kind: AUDIO);
 
 // Flash MP4 Audiobook - Adobe Flash MP4 audiobook format
-mimetype!(F4B, AUDIO_MP4, ".f4b", offset: (8, b"F4B ", prefix: (4, b"ftyp")), kind: AUDIO);
+mimetype!(F4B, AUDIO_MP4, ".f4b", offset: (8, b"F4B ", prefix: (4, b"ftyp")), name: "Flash MP4 Audiobook", kind: AUDIO);
 
 // Merged AMP4 into MP4 below
 
 // WavPack - Lossless/lossy audio compression
-mimetype!(WAVPACK, AUDIO_X_WAVPACK, ".wv", b"wvpk", kind: AUDIO);
+mimetype!(WAVPACK, AUDIO_X_WAVPACK, ".wv", b"wvpk", name: "WavPack Audio", kind: AUDIO);
 
 // True Audio - Lossless audio codec
-mimetype!(TTA, AUDIO_X_TTA, ".tta", b"TTA1", kind: AUDIO);
+mimetype!(TTA, AUDIO_X_TTA, ".tta", b"TTA1", name: "True Audio", kind: AUDIO);
 
 // DSD Stream File - Direct Stream Digital audio
-mimetype!(DSF, AUDIO_X_DSF, ".dsf", b"DSD ", kind: AUDIO);
+mimetype!(DSF, AUDIO_X_DSF, ".dsf", b"DSD ", name: "DSD Stream Audio", kind: AUDIO);
 
 // DSD Interchange File - Direct Stream Digital audio
-mimetype!(DFF, AUDIO_X_DFF, ".dff", b"FRM8", kind: AUDIO);
+mimetype!(DFF, AUDIO_X_DFF, ".dff", b"FRM8", name: "DSD Interchange Audio", kind: AUDIO);
 
 // Quite OK Audio - Modern lossless audio format
-mimetype!(QOA, AUDIO_X_QOA, ".qoa", b"qoaf", kind: AUDIO);
+mimetype!(QOA, AUDIO_X_QOA, ".qoa", b"qoaf", name: "Quite OK Audio", kind: AUDIO);
 
 // 8SVX Audio - Amiga IFF audio format
-mimetype!(EIGHTSVX, AUDIO_X_8SVX, ".8svx", offset: (8, b"8SVX", prefix: (0, b"FORM")), kind: AUDIO, ext_aliases: [".8sv"]);
+mimetype!(EIGHTSVX, AUDIO_X_8SVX, ".8svx", offset: (8, b"8SVX", prefix: (0, b"FORM")), name: "Amiga 8SVX Audio", kind: AUDIO, ext_aliases: [".8sv"]);
 
 // Audio Visual Research - Audio format used in Atari ST applications
-mimetype!(AVR, AUDIO_X_AVR, ".avr", b"2BIT", kind: AUDIO);
+mimetype!(AVR, AUDIO_X_AVR, ".avr", b"2BIT", name: "Audio Visual Research", kind: AUDIO);
 
 // ============================================================================
 // VIDEO FORMATS
@@ -1065,6 +1391,7 @@ mimetype!(AVR, AUDIO_X_AVR, ".avr", b"2BIT", kind: AUDIO);
 
 static MP4: MimeType = MimeType::new(
     VIDEO_MP4,
+    "Video Mp4",
     ".mp4",
     mp4_precise,
     &[
@@ -1091,19 +1418,20 @@ static MP4: MimeType = MimeType::new(
 .with_aliases(&[AUDIO_MP4, AUDIO_X_M4A, AUDIO_X_MP4A])
 .with_kind(MimeKind::AUDIO.union(MimeKind::VIDEO));
 
-static WEBM: MimeType = MimeType::new(VIDEO_WEBM, ".webm", webm, &[])
+static WEBM: MimeType = MimeType::new(VIDEO_WEBM, "WebM", ".webm", webm, &[])
     .with_aliases(&[AUDIO_WEBM])
     .with_kind(MimeKind::VIDEO);
 
-static MKV: MimeType = MimeType::new(VIDEO_X_MATROSKA, ".mkv", mkv, &[])
+static MKV: MimeType = MimeType::new(VIDEO_X_MATROSKA, "Matroska", ".mkv", mkv, &[])
     .with_extension_aliases(&[".mk3d", ".mka", ".mks"])
     .with_kind(MimeKind::VIDEO);
 
-mimetype!(AVI, VIDEO_X_MSVIDEO, ".avi", offset: (8, b"AVI LIST", prefix: (0, b"RIFF")), kind: VIDEO, aliases: [VIDEO_AVI, VIDEO_MSVIDEO]);
+mimetype!(AVI, VIDEO_X_MSVIDEO, ".avi", offset: (8, b"AVI LIST", prefix: (0, b"RIFF")), name: "Audio Video Interleave", kind: VIDEO, aliases: [VIDEO_AVI, VIDEO_MSVIDEO]);
 
 // MPEG Video (.mpg) - 00 00 01 B3
 static MPEG_VIDEO: MimeType = MimeType::new(
     VIDEO_MPEG,
+    "MPEG Video",
     ".mpg",
     |input| input.len() >= 4 && matches!(input, [0x00, 0x00, 0x01, 0xB3, ..]),
     &[],
@@ -1113,6 +1441,7 @@ static MPEG_VIDEO: MimeType = MimeType::new(
 // DVD Video Object / MPEG-2 Program Stream (.vob, .m2p) - 00 00 01 BA
 static VOB: MimeType = MimeType::new(
     VIDEO_MPEG,
+    "DVD Video Object",
     ".vob",
     |input| input.len() >= 4 && matches!(input, [0x00, 0x00, 0x01, 0xBA, ..]),
     &[],
@@ -1120,48 +1449,67 @@ static VOB: MimeType = MimeType::new(
 .with_extension_aliases(&[".m2p"])
 .with_kind(MimeKind::VIDEO);
 
-static MPEG: MimeType =
-    MimeType::new(VIDEO_MPEG, ".mpeg", mpeg, &[&MPEG_VIDEO, &VOB]).with_kind(MimeKind::VIDEO);
+static MPEG: MimeType = MimeType::new(
+    VIDEO_MPEG,
+    "MPEG Video",
+    ".mpeg",
+    mpeg,
+    &[&MPEG_VIDEO, &VOB],
+)
+.with_kind(MimeKind::VIDEO);
 
-mimetype!(QUICKTIME, VIDEO_QUICKTIME, ".mov", offset: (8, b"qt  ", prefix: (4, b"ftyp")), kind: VIDEO);
+mimetype!(QUICKTIME, VIDEO_QUICKTIME, ".mov", offset: (8, b"qt  ", prefix: (4, b"ftyp")), name: "QuickTime Video", kind: VIDEO);
 
-mimetype!(MQV, VIDEO_QUICKTIME, ".mqv", offset: (8, b"mqt ", prefix: (4, b"ftyp")), kind: VIDEO);
+mimetype!(MQV, VIDEO_QUICKTIME, ".mqv", offset: (8, b"mqt ", prefix: (4, b"ftyp")), name: "QuickTime MQV Video", kind: VIDEO);
 
-mimetype!(FLV, VIDEO_X_FLV, ".flv", b"FLV", kind: VIDEO);
+mimetype!(FLV, VIDEO_X_FLV, ".flv", b"FLV", name: "Flash Video", kind: VIDEO);
 
-mimetype!(ASF, VIDEO_X_MS_ASF, ".asf", b"\x30\x26\xb2\x75\x8e\x66\xcf\x11\xa6\xd9\x00\xaa\x00\x62\xce\x6c", kind: VIDEO, aliases: [VIDEO_ASF, VIDEO_X_MS_WMV], ext_aliases: [".asx", ".dvr-ms", ".wma", ".wmv"], children: [&WMA, &WMV, &DVR_MS, &ASX]);
+mimetype!(ASF, VIDEO_X_MS_ASF, ".asf", b"\x30\x26\xb2\x75\x8e\x66\xcf\x11\xa6\xd9\x00\xaa\x00\x62\xce\x6c", name: "Advanced Systems Format", kind: VIDEO, aliases: [VIDEO_ASF, VIDEO_X_MS_WMV], ext_aliases: [".asx", ".dvr-ms", ".wma", ".wmv"], children: [&WMA, &WMV, &DVR_MS, &ASX]);
 
-static DVR_MS: MimeType = MimeType::new(VIDEO_X_MS_DVR, ".dvr-ms", dvr_ms, &[])
-    .with_kind(MimeKind::VIDEO)
-    .with_parent(&ASF);
+static DVR_MS: MimeType = MimeType::new(
+    VIDEO_X_MS_DVR,
+    "Microsoft Digital Video Recording",
+    ".dvr-ms",
+    dvr_ms,
+    &[],
+)
+.with_kind(MimeKind::VIDEO)
+.with_parent(&ASF);
 
-static ASX: MimeType = MimeType::new(VIDEO_X_MS_ASX, ".asx", asx, &[])
-    .with_kind(MimeKind::VIDEO)
-    .with_parent(&ASF);
+static ASX: MimeType = MimeType::new(
+    VIDEO_X_MS_ASX,
+    "Advanced Stream Redirector",
+    ".asx",
+    asx,
+    &[],
+)
+.with_kind(MimeKind::VIDEO)
+.with_parent(&ASF);
 
-static WMA: MimeType = MimeType::new(AUDIO_X_MS_WMA, ".wma", wma, &[])
+static WMA: MimeType = MimeType::new(AUDIO_X_MS_WMA, "Windows Media Audio", ".wma", wma, &[])
     .with_kind(MimeKind::AUDIO)
     .with_parent(&ASF);
 
-static WMV: MimeType = MimeType::new(VIDEO_X_MS_WMV, ".wmv", wmv, &[])
+static WMV: MimeType = MimeType::new(VIDEO_X_MS_WMV, "Windows Media Video", ".wmv", wmv, &[])
     .with_kind(MimeKind::VIDEO)
     .with_parent(&ASF);
 
-mimetype!(CDA, APPLICATION_X_CDF, ".cda", offset: (8, b"CDDA", prefix: (0, b"RIFF")), kind: AUDIO);
+mimetype!(CDA, APPLICATION_X_CDF, ".cda", offset: (8, b"CDDA", prefix: (0, b"RIFF")), name: "CD Audio Track", kind: AUDIO);
 
-mimetype!(M4V, VIDEO_X_M4V, ".m4v", offset: (8, b"M4V ", prefix: (4, b"ftyp")), kind: VIDEO);
+mimetype!(M4V, VIDEO_X_M4V, ".m4v", offset: (8, b"M4V ", prefix: (4, b"ftyp")), name: "iTunes Video", kind: VIDEO);
 
 // Flash MP4 Video - Adobe Flash MP4 video format
-mimetype!(F4V, VIDEO_MP4, ".f4v", offset: (8, b"F4V ", prefix: (4, b"ftyp")), kind: VIDEO);
+mimetype!(F4V, VIDEO_MP4, ".f4v", offset: (8, b"F4V ", prefix: (4, b"ftyp")), name: "Flash MP4 Video", kind: VIDEO);
 
 // Flash MP4 Protected Video - Adobe Flash MP4 protected video format
-mimetype!(F4P, VIDEO_MP4, ".f4p", offset: (8, b"F4P ", prefix: (4, b"ftyp")), kind: VIDEO);
+mimetype!(F4P, VIDEO_MP4, ".f4p", offset: (8, b"F4P ", prefix: (4, b"ftyp")), name: "Flash MP4 Protected Video", kind: VIDEO);
 
 // RealMedia Variable Bitrate - Child of RealMedia
 // RMVB is a variant of RealMedia with variable bitrate encoding
 // RealVideo - RealNetworks video format variant
 static RV: MimeType = MimeType::new(
     VIDEO_X_PN_REALVIDEO,
+    "RealVideo",
     ".rv",
     |_input| {
         // Parent REALMEDIA already verified .RMF signature
@@ -1177,6 +1525,7 @@ static RV: MimeType = MimeType::new(
 // For now, detection falls back to parent REALMEDIA.
 static RMVB: MimeType = MimeType::new(
     APPLICATION_VND_RN_REALMEDIA_VBR,
+    "RealMedia VBR",
     ".rmvb",
     |_input| {
         // Parent REALMEDIA already verified .RMF signature
@@ -1191,6 +1540,7 @@ static RMVB: MimeType = MimeType::new(
 // RealMedia - Legacy streaming media format (parent to RMVB)
 static REALMEDIA: MimeType = MimeType::new(
     APPLICATION_VND_RN_REALMEDIA,
+    "RealMedia",
     ".rm",
     |input| input.starts_with(b".RMF"),
     &[&RV, &RMVB], // RV and RMVB are child variants
@@ -1198,34 +1548,42 @@ static REALMEDIA: MimeType = MimeType::new(
 .with_kind(MimeKind::VIDEO);
 
 // Silicon Graphics Movie - SGI movie/video format from IRIX systems
-mimetype!(SGI_MOVIE, VIDEO_X_SGI_MOVIE, ".sgi", b"MOVI", kind: VIDEO);
+mimetype!(SGI_MOVIE, VIDEO_X_SGI_MOVIE, ".sgi", b"MOVI", name: "Silicon Graphics Movie", kind: VIDEO);
 
-static THREE_GPP: MimeType = MimeType::new(VIDEO_3GPP, ".3gp", three_gpp, &[])
+static THREE_GPP: MimeType = MimeType::new(VIDEO_3GPP, "3GPP Multimedia", ".3gp", three_gpp, &[])
     .with_aliases(&[VIDEO_3GP, AUDIO_3GPP])
     .with_kind(MimeKind::VIDEO);
 
-static THREE_GPP2: MimeType = MimeType::new(VIDEO_3GPP2, ".3g2", three_gpp2, &[])
-    .with_aliases(&[VIDEO_3G2, AUDIO_3GPP2])
-    .with_kind(MimeKind::VIDEO);
+static THREE_GPP2: MimeType =
+    MimeType::new(VIDEO_3GPP2, "3GPP2 Multimedia", ".3g2", three_gpp2, &[])
+        .with_aliases(&[VIDEO_3G2, AUDIO_3GPP2])
+        .with_kind(MimeKind::VIDEO);
 
-static MJ2: MimeType = MimeType::new(VIDEO_MJ2, ".mj2", mj2, &[]);
+static MJ2: MimeType = MimeType::new(VIDEO_MJ2, "Motion JPEG 2000", ".mj2", mj2, &[]);
 
-static DVB: MimeType =
-    MimeType::new(VIDEO_VND_DVB_FILE, ".dvb", dvb, &[]).with_kind(MimeKind::VIDEO);
+static DVB: MimeType = MimeType::new(
+    VIDEO_VND_DVB_FILE,
+    "Digital Video Broadcasting",
+    ".dvb",
+    dvb,
+    &[],
+)
+.with_kind(MimeKind::VIDEO);
 
 // Autodesk FLIC Animation - Game development animation format
-mimetype!(FLI, VIDEO_FLI, ".fli", [0x11, 0xAF], kind: VIDEO);
-mimetype!(FLC, VIDEO_FLC, ".flc", [0x12, 0xAF], kind: VIDEO);
+mimetype!(FLI, VIDEO_FLI, ".fli", [0x11, 0xAF], name: "Autodesk FLIC Animation", kind: VIDEO);
+mimetype!(FLC, VIDEO_FLC, ".flc", [0x12, 0xAF], name: "Autodesk FLIC Animation", kind: VIDEO);
 
 // Fast Search and Transfer Video - Surveillance video format
-mimetype!(FVT, VIDEO_VND_FVT, ".fvt", b"FVT", kind: VIDEO);
+mimetype!(FVT, VIDEO_VND_FVT, ".fvt", b"FVT", name: "Fast Search & Transfer Video", kind: VIDEO);
 
 // MTV - MTV video format (RIFF-based)
-mimetype!(MTV, VIDEO_X_MTV, ".mtv", offset: (8, b"MTV", prefix: (0, b"RIFF")), kind: VIDEO);
+mimetype!(MTV, VIDEO_X_MTV, ".mtv", offset: (8, b"MTV", prefix: (0, b"RIFF")), name: "MTV Video", kind: VIDEO);
 
 // AbiWord Template - Template variant of AbiWord (gzip-compressed)
 static AWT: MimeType = MimeType::new(
     APPLICATION_X_ABIWORD_TEMPLATE,
+    "AbiWord Template",
     ".awt",
     |_input| {
         // Parent ABW already verified gzip + abiword marker
@@ -1240,6 +1598,7 @@ static AWT: MimeType = MimeType::new(
 // Ogg Speex - Audio codec for voice in Ogg container
 static SPX: MimeType = MimeType::new(
     AUDIO_OGG,
+    "Ogg Audio",
     ".spx",
     |_input| {
         // Parent OGG already verified OggS signature
@@ -1254,36 +1613,43 @@ static SPX: MimeType = MimeType::new(
 // PEM Certificate Signing Request
 mimetype!(CSR, APPLICATION_X_PEM_FILE, ".csr",
     b"-----BEGIN CERTIFICATE REQUEST-----" | b"-----BEGIN NEW CERTIFICATE REQUEST-----",
+    name: "Certificate Signing Request",
     kind: APPLICATION);
 
 // ActiveMime - Microsoft Office embedded OLE object
 // ActiveMime signature: "ActiveMime" at offset 0x32
-mimetype!(MSO, APPLICATION_X_MSO, ".mso", offset: (0x32, b"ActiveMime"), kind: APPLICATION);
+mimetype!(MSO, APPLICATION_X_MSO, ".mso", offset: (0x32, b"ActiveMime"), name: "Microsoft Office Embedded Object", kind: APPLICATION);
 
 // Empty file - Zero-length file
 // seek way to say file is empty
-static EMPTY: MimeType =
-    MimeType::new(APPLICATION_X_EMPTY, ".empty", |input| input.is_empty(), &[])
-        .with_kind(MimeKind::APPLICATION);
+static EMPTY: MimeType = MimeType::new(
+    APPLICATION_X_EMPTY,
+    "Empty File",
+    ".empty",
+    |input| input.is_empty(),
+    &[],
+)
+.with_kind(MimeKind::APPLICATION);
 
 // MLA - Multi Layer Archive
-mimetype!(MLA, APPLICATION_X_MLA, ".mla", b"MLA\x00", kind: ARCHIVE);
+mimetype!(MLA, APPLICATION_X_MLA, ".mla", b"MLA\x00", name: "Multi Layer Archive", kind: ARCHIVE);
 
 // PMA - PMarc (LZH variant)
-mimetype!(PMA, APPLICATION_X_LZH_COMPRESSED, ".pma", b"-pm0-" | b"-pm1-" | b"-pm2-", kind: ARCHIVE);
+mimetype!(PMA, APPLICATION_X_LZH_COMPRESSED, ".pma", b"-pm0-" | b"-pm1-" | b"-pm2-", name: "PMarc Archive", kind: ARCHIVE);
 
 // XCI - Nintendo Switch ROM (NX Card Image)
-mimetype!(XCI, APPLICATION_X_NINTENDO_SWITCH_ROM, ".xci", b"HEAD", kind: APPLICATION);
+mimetype!(XCI, APPLICATION_X_NINTENDO_SWITCH_ROM, ".xci", b"HEAD", name: "Nintendo Switch ROM", kind: APPLICATION);
 
 // MXF - Material Exchange Format for professional video/audio (SMPTE standard).
-mimetype!(MXF, APPLICATION_MXF, ".mxf", [0x06, 0x0E, 0x2B, 0x34], kind: VIDEO);
+mimetype!(MXF, APPLICATION_MXF, ".mxf", [0x06, 0x0E, 0x2B, 0x34], name: "Material Exchange Format", kind: VIDEO);
 
 // WTV - Windows Recorded TV Show format (successor to DVR-MS)
-mimetype!(WTV, VIDEO_X_WTV, ".wtv", [0xB7, 0xD8, 0x00, 0x20, 0x37, 0x49, 0xDA, 0x11, 0xA6, 0x4E, 0x00, 0x07, 0xE9, 0x5E, 0xAD, 0x8D], kind: VIDEO);
+mimetype!(WTV, VIDEO_X_WTV, ".wtv", [0xB7, 0xD8, 0x00, 0x20, 0x37, 0x49, 0xDA, 0x11, 0xA6, 0x4E, 0x00, 0x07, 0xE9, 0x5E, 0xAD, 0x8D], name: "Windows Recorded TV Show", kind: VIDEO);
 
 // MPEG-2 Transport Stream - Used for broadcasting and streaming.
 static MPEG2TS: MimeType = MimeType::new(
     VIDEO_MP2T,
+    "MPEG-2 TS",
     ".ts",
     |input| {
         input.len() >= 189 && input[0] == 0x47 && input[188] == 0x47 // Sync pattern repeats every 188 bytes
@@ -1294,21 +1660,34 @@ static MPEG2TS: MimeType = MimeType::new(
 .with_kind(MimeKind::VIDEO);
 
 // Actions Media Video - Used in portable media players.
-mimetype!(AMV, VIDEO_X_AMV, ".amv", b"AMV", kind: VIDEO);
+mimetype!(AMV, VIDEO_X_AMV, ".amv", b"AMV", name: "Actions Media Video", kind: VIDEO);
 
 // XPI - Mozilla XPInstall (Firefox/Thunderbird extension)
-static XPI: MimeType = MimeType::new(APPLICATION_X_XPINSTALL, ".xpi", xpi, &[])
-    .with_kind(MimeKind::ARCHIVE)
-    .with_parent(&ZIP);
+static XPI: MimeType = MimeType::new(
+    APPLICATION_X_XPINSTALL,
+    "Mozilla XPInstall Extension",
+    ".xpi",
+    xpi,
+    &[],
+)
+.with_kind(MimeKind::ARCHIVE)
+.with_parent(&ZIP);
 
 // XPS - OpenXPS (XML Paper Specification)
-static XPS: MimeType = MimeType::new(APPLICATION_OXPS, ".xps", xps, &[])
-    .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ZIP);
+static XPS: MimeType = MimeType::new(
+    APPLICATION_OXPS,
+    "XML Paper Specification",
+    ".xps",
+    xps,
+    &[],
+)
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&ZIP);
 
 // Microsoft Works Word Processor - OLE-based, extension-based detection only
 static WORKS_WPS: MimeType = MimeType::new(
     APPLICATION_VND_MS_WORKS,
+    "Microsoft Works Word Processor",
     ".wps",
     |_input| {
         // Parent OLE already verified signature
@@ -1321,219 +1700,369 @@ static WORKS_WPS: MimeType = MimeType::new(
 .with_parent(&OLE);
 
 // Microsoft Works 6 Spreadsheet
-mimetype!(WORKS_XLR, APPLICATION_VND_MS_WORKS, ".xlr", b"\x00\x00\x02\x00\x06\x04\x06\x00", kind: SPREADSHEET);
+mimetype!(WORKS_XLR, APPLICATION_VND_MS_WORKS, ".xlr", b"\x00\x00\x02\x00\x06\x04\x06\x00", name: "Microsoft Works Spreadsheet", kind: SPREADSHEET);
 
 // vCalendar 1.0 - Text-based calendar format (predecessor to iCalendar 2.0)
 static VCALENDAR: MimeType =
-    MimeType::new(TEXT_CALENDAR, ".vcs", vcalendar, &[]).with_parent(&UTF8);
+    MimeType::new(TEXT_CALENDAR, "vCalendar", ".vcs", vcalendar, &[]).with_parent(&UTF8);
 
 // Universal Subtitle Format - XML-based subtitle format
-static USF: MimeType = MimeType::new(APPLICATION_X_USF, ".usf", usf, &[]).with_parent(&XML);
+static USF: MimeType = MimeType::new(
+    APPLICATION_X_USF,
+    "Universal Subtitle Format",
+    ".usf",
+    usf,
+    &[],
+)
+.with_parent(&XML);
 
 // StarDraw - StarOffice/StarDivision Draw (graphics)
-static SDA: MimeType = MimeType::new(APPLICATION_VND_STARDIVISION_DRAW, ".sda", sda, &[])
-    .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ZIP);
+static SDA: MimeType = MimeType::new(
+    APPLICATION_VND_STARDIVISION_DRAW,
+    "StarDraw",
+    ".sda",
+    sda,
+    &[],
+)
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&ZIP);
 
 // StarCalc - StarOffice/StarDivision Calc (spreadsheet)
-static SDC: MimeType = MimeType::new(APPLICATION_VND_STARDIVISION_CALC, ".sdc", sdc, &[])
-    .with_kind(MimeKind::SPREADSHEET)
-    .with_parent(&ZIP);
+static SDC: MimeType = MimeType::new(
+    APPLICATION_VND_STARDIVISION_CALC,
+    "StarCalc",
+    ".sdc",
+    sdc,
+    &[],
+)
+.with_kind(MimeKind::SPREADSHEET)
+.with_parent(&ZIP);
 
 // StarImpress - StarOffice/StarDivision Impress (presentation)
-static SDD: MimeType = MimeType::new(APPLICATION_VND_STARDIVISION_IMPRESS, ".sdd", sdd, &[])
-    .with_kind(MimeKind::PRESENTATION)
-    .with_parent(&ZIP);
+static SDD: MimeType = MimeType::new(
+    APPLICATION_VND_STARDIVISION_IMPRESS,
+    "StarImpress",
+    ".sdd",
+    sdd,
+    &[],
+)
+.with_kind(MimeKind::PRESENTATION)
+.with_parent(&ZIP);
 
 // StarChart - StarOffice/StarDivision Chart
-static SDS: MimeType = MimeType::new(APPLICATION_VND_STARDIVISION_CHART, ".sds", sds, &[])
-    .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ZIP);
+static SDS: MimeType = MimeType::new(
+    APPLICATION_VND_STARDIVISION_CHART,
+    "StarChart",
+    ".sds",
+    sds,
+    &[],
+)
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&ZIP);
 
 // StarWriter - StarOffice/StarDivision Writer (word processor)
-static SDW: MimeType = MimeType::new(APPLICATION_VND_STARDIVISION_WRITER, ".sdw", sdw, &[])
-    .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ZIP);
+static SDW: MimeType = MimeType::new(
+    APPLICATION_VND_STARDIVISION_WRITER,
+    "StarWriter",
+    ".sdw",
+    sdw,
+    &[],
+)
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&ZIP);
 
 // StarMath - StarOffice/StarDivision Math (mathematical formulas)
-static SMF: MimeType = MimeType::new(APPLICATION_VND_STARDIVISION_MATH, ".smf", smf, &[])
-    .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ZIP);
+static SMF: MimeType = MimeType::new(
+    APPLICATION_VND_STARDIVISION_MATH,
+    "StarMath",
+    ".smf",
+    smf,
+    &[],
+)
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&ZIP);
 
 // Sun XML Draw - Legacy Sun Microsystems graphics format
-static SXD: MimeType = MimeType::new(APPLICATION_VND_SUN_XML_DRAW, ".sxd", sxd, &[])
-    .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ZIP);
+static SXD: MimeType = MimeType::new(
+    APPLICATION_VND_SUN_XML_DRAW,
+    "Sun XML Draw",
+    ".sxd",
+    sxd,
+    &[],
+)
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&ZIP);
 
 // Sun XML Impress - Legacy Sun Microsystems presentation format
-static SXI: MimeType = MimeType::new(APPLICATION_VND_SUN_XML_IMPRESS, ".sxi", sxi, &[])
-    .with_kind(MimeKind::PRESENTATION)
-    .with_parent(&ZIP);
+static SXI: MimeType = MimeType::new(
+    APPLICATION_VND_SUN_XML_IMPRESS,
+    "Sun XML Impress",
+    ".sxi",
+    sxi,
+    &[],
+)
+.with_kind(MimeKind::PRESENTATION)
+.with_parent(&ZIP);
 
 // Sun XML Math - Legacy Sun Microsystems mathematical formula format
-static SXM: MimeType = MimeType::new(APPLICATION_VND_SUN_XML_MATH, ".sxm", sxm, &[])
-    .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ZIP);
+static SXM: MimeType = MimeType::new(
+    APPLICATION_VND_SUN_XML_MATH,
+    "Sun XML Math",
+    ".sxm",
+    sxm,
+    &[],
+)
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&ZIP);
 
 // Sun XML Writer - Legacy Sun Microsystems word processor format
-static SXW: MimeType = MimeType::new(APPLICATION_VND_SUN_XML_WRITER, ".sxw", sxw, &[])
-    .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ZIP);
+static SXW: MimeType = MimeType::new(
+    APPLICATION_VND_SUN_XML_WRITER,
+    "Sun XML Writer",
+    ".sxw",
+    sxw,
+    &[],
+)
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&ZIP);
 
 // Sun XML Calc Template - Legacy Sun Microsystems spreadsheet template
-static STC: MimeType = MimeType::new(APPLICATION_VND_SUN_XML_CALC_TEMPLATE, ".stc", stc, &[])
-    .with_kind(MimeKind::SPREADSHEET)
-    .with_parent(&ZIP);
+static STC: MimeType = MimeType::new(
+    APPLICATION_VND_SUN_XML_CALC_TEMPLATE,
+    "Sun XML Calc Template",
+    ".stc",
+    stc,
+    &[],
+)
+.with_kind(MimeKind::SPREADSHEET)
+.with_parent(&ZIP);
 
 // Sun XML Draw Template - Legacy Sun Microsystems graphics template
-static STD: MimeType = MimeType::new(APPLICATION_VND_SUN_XML_DRAW_TEMPLATE, ".std", std, &[])
-    .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ZIP);
+static STD: MimeType = MimeType::new(
+    APPLICATION_VND_SUN_XML_DRAW_TEMPLATE,
+    "Sun XML Draw Template",
+    ".std",
+    std,
+    &[],
+)
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&ZIP);
 
 // Sun XML Impress Template - Legacy Sun Microsystems presentation template
-static STI: MimeType = MimeType::new(APPLICATION_VND_SUN_XML_IMPRESS_TEMPLATE, ".sti", sti, &[])
-    .with_kind(MimeKind::PRESENTATION)
-    .with_parent(&ZIP);
+static STI: MimeType = MimeType::new(
+    APPLICATION_VND_SUN_XML_IMPRESS_TEMPLATE,
+    "Sun XML Impress Template",
+    ".sti",
+    sti,
+    &[],
+)
+.with_kind(MimeKind::PRESENTATION)
+.with_parent(&ZIP);
 
 // Sun XML Writer Template - Legacy Sun Microsystems word processor template
-static STW: MimeType = MimeType::new(APPLICATION_VND_SUN_XML_WRITER_TEMPLATE, ".stw", stw, &[])
-    .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ZIP);
+static STW: MimeType = MimeType::new(
+    APPLICATION_VND_SUN_XML_WRITER_TEMPLATE,
+    "Sun XML Writer Template",
+    ".stw",
+    stw,
+    &[],
+)
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&ZIP);
 
 // Sun XML Writer Global - Legacy Sun Microsystems master document format
-static SGW: MimeType = MimeType::new(APPLICATION_VND_SUN_XML_WRITER_GLOBAL, ".sgw", sgw, &[])
-    .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ZIP);
+static SGW: MimeType = MimeType::new(
+    APPLICATION_VND_SUN_XML_WRITER_GLOBAL,
+    "Sun XML Writer Global",
+    ".sgw",
+    sgw,
+    &[],
+)
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&ZIP);
 
 // WordPerfect Graphics - WordPerfect graphics format
-static WPG: MimeType = MimeType::new(APPLICATION_VND_WORDPERFECT_GRAPHICS, ".wpg", wpg, &[])
-    .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&WPD);
+static WPG: MimeType = MimeType::new(
+    APPLICATION_VND_WORDPERFECT_GRAPHICS,
+    "WordPerfect Graphics",
+    ".wpg",
+    wpg,
+    &[],
+)
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&WPD);
 
 // WordPerfect Presentations - WordPerfect presentation format
-static SHW: MimeType = MimeType::new(APPLICATION_VND_WORDPERFECT, ".shw", shw, &[])
-    .with_kind(MimeKind::PRESENTATION)
-    .with_parent(&WPD);
+static SHW: MimeType = MimeType::new(
+    APPLICATION_VND_WORDPERFECT,
+    "WordPerfect Presentations",
+    ".shw",
+    shw,
+    &[],
+)
+.with_kind(MimeKind::PRESENTATION)
+.with_parent(&WPD);
 
 // WordPerfect Macro - WordPerfect macro format
-static WPM: MimeType = MimeType::new(APPLICATION_VND_WORDPERFECT, ".wpm", wpm, &[])
-    .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&WPD);
+static WPM: MimeType = MimeType::new(
+    APPLICATION_VND_WORDPERFECT,
+    "WordPerfect Macro",
+    ".wpm",
+    wpm,
+    &[],
+)
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&WPD);
 
 // Uniform Office Format Presentation - Chinese office format (ZIP-based)
-static UOP: MimeType = MimeType::new(APPLICATION_VND_UOF_PRESENTATION, ".uop", uop, &[])
-    .with_kind(MimeKind::PRESENTATION)
-    .with_parent(&ZIP);
+static UOP: MimeType = MimeType::new(
+    APPLICATION_VND_UOF_PRESENTATION,
+    "UOF Presentation",
+    ".uop",
+    uop,
+    &[],
+)
+.with_kind(MimeKind::PRESENTATION)
+.with_parent(&ZIP);
 
 // Uniform Office Format Spreadsheet - Chinese office format (ZIP-based)
-static UOS: MimeType = MimeType::new(APPLICATION_VND_UOF_SPREADSHEET, ".uos", uos, &[])
-    .with_kind(MimeKind::SPREADSHEET)
-    .with_parent(&ZIP);
+static UOS: MimeType = MimeType::new(
+    APPLICATION_VND_UOF_SPREADSHEET,
+    "UOF Spreadsheet",
+    ".uos",
+    uos,
+    &[],
+)
+.with_kind(MimeKind::SPREADSHEET)
+.with_parent(&ZIP);
 
 // Uniform Office Format Text - Chinese office format (ZIP-based)
-static UOT: MimeType = MimeType::new(APPLICATION_VND_UOF_TEXT, ".uot", uot, &[])
+static UOT: MimeType = MimeType::new(APPLICATION_VND_UOF_TEXT, "UOF Text", ".uot", uot, &[])
     .with_kind(MimeKind::DOCUMENT)
     .with_parent(&ZIP);
 
 // Initial Graphics Exchange Specification (IGES) - CAD data exchange format
 // IGES files start with spaces followed by 'S' in column 73
-mimetype!(IGES, MODEL_IGES, ".iges", b"                                                                        S", kind: MODEL, ext_aliases: [".igs"]);
+mimetype!(IGES, MODEL_IGES, ".iges", b"                                                                        S", name: "Initial Graphics Exchange Specification", kind: MODEL, ext_aliases: [".igs"]);
 
 // Universal Scene Description ZIP (USDZ) - Pixar's USD format in ZIP container
 // USDZ files are ZIP archives containing USD files, commonly used for AR/VR
-static USDZ: MimeType = MimeType::new(MODEL_VND_USDZ_ZIP, ".usdz", usdz, &[])
-    .with_kind(MimeKind::MODEL)
-    .with_parent(&ZIP);
+static USDZ: MimeType = MimeType::new(
+    MODEL_VND_USDZ_ZIP,
+    "Universal Scene Description ZIP",
+    ".usdz",
+    usdz,
+    &[],
+)
+.with_kind(MimeKind::MODEL)
+.with_parent(&ZIP);
 
 // Sketch - Design tool by Bohemian Coding (ZIP-based)
 // Sketch 43+ uses JSON metadata inside ZIP archive
-static SKETCH: MimeType = MimeType::new(IMAGE_X_SKETCH, ".sketch", sketch, &[])
+static SKETCH: MimeType = MimeType::new(IMAGE_X_SKETCH, "Sketch Design", ".sketch", sketch, &[])
     .with_kind(MimeKind::IMAGE)
     .with_parent(&ZIP);
 
 // SolidWorks Assembly - OLE-based CAD file
-static SLDASM: MimeType = MimeType::new(MODEL_X_SLDASM, ".sldasm", sldasm, &[])
-    .with_kind(MimeKind::MODEL)
-    .with_parent(&OLE);
+static SLDASM: MimeType = MimeType::new(
+    MODEL_X_SLDASM,
+    "SolidWorks Assembly",
+    ".sldasm",
+    sldasm,
+    &[],
+)
+.with_kind(MimeKind::MODEL)
+.with_parent(&OLE);
 
 // SolidWorks Drawing - OLE-based CAD file
-static SLDDRW: MimeType = MimeType::new(MODEL_X_SLDDRW, ".slddrw", slddrw, &[])
-    .with_kind(MimeKind::MODEL)
-    .with_parent(&OLE);
+static SLDDRW: MimeType =
+    MimeType::new(MODEL_X_SLDDRW, "SolidWorks Drawing", ".slddrw", slddrw, &[])
+        .with_kind(MimeKind::MODEL)
+        .with_parent(&OLE);
 
 // SolidWorks Part - OLE-based CAD file
-static SLDPRT: MimeType = MimeType::new(MODEL_X_SLDPRT, ".sldprt", sldprt, &[])
+static SLDPRT: MimeType = MimeType::new(MODEL_X_SLDPRT, "SolidWorks Part", ".sldprt", sldprt, &[])
     .with_kind(MimeKind::MODEL)
     .with_parent(&OLE);
 
 // Autodesk Inventor Assembly - OLE-based CAD file
-static IAM: MimeType = MimeType::new(MODEL_X_IAM, ".iam", iam, &[])
+static IAM: MimeType = MimeType::new(MODEL_X_IAM, "Inventor Assembly", ".iam", iam, &[])
     .with_kind(MimeKind::MODEL)
     .with_parent(&OLE);
 
 // Autodesk Inventor Drawing - OLE-based CAD file
-static IDW: MimeType = MimeType::new(MODEL_X_IDW, ".idw", idw, &[])
+static IDW: MimeType = MimeType::new(MODEL_X_IDW, "Inventor Drawing", ".idw", idw, &[])
     .with_kind(MimeKind::MODEL)
     .with_parent(&OLE);
 
 // Autodesk Inventor Presentation - OLE-based CAD file
-static IPN: MimeType = MimeType::new(MODEL_X_IPN, ".ipn", ipn, &[])
+static IPN: MimeType = MimeType::new(MODEL_X_IPN, "Inventor Presentation", ".ipn", ipn, &[])
     .with_kind(MimeKind::MODEL)
     .with_parent(&OLE);
 
 // Autodesk Inventor Part - OLE-based CAD file
-static IPT: MimeType = MimeType::new(MODEL_X_IPT, ".ipt", ipt, &[])
+static IPT: MimeType = MimeType::new(MODEL_X_IPT, "Inventor Part", ".ipt", ipt, &[])
     .with_kind(MimeKind::MODEL)
     .with_parent(&OLE);
 
 // Inter-Quake Export - Text-based 3D model format
-mimetype!(IQE, MODEL_X_IQE, ".iqe", b"# Inter-Quake Export", kind: MODEL);
+mimetype!(IQE, MODEL_X_IQE, ".iqe", b"# Inter-Quake Export", name: "Inter-Quake Export", kind: MODEL);
 
 // Model 3D Binary - Binary 3D model format
-mimetype!(M3D, MODEL_X_3D_MODEL, ".m3d", b"3DMO", kind: MODEL);
+mimetype!(M3D, MODEL_X_3D_MODEL, ".m3d", b"3DMO", name: "Model 3D Binary", kind: MODEL);
 
 // SpaceClaim Document - OLE-based CAD format
-static SCDOC: MimeType = MimeType::new(MODEL_X_SCDOC, ".scdoc", scdoc, &[])
+static SCDOC: MimeType = MimeType::new(MODEL_X_SCDOC, "SpaceClaim Document", ".scdoc", scdoc, &[])
     .with_kind(MimeKind::MODEL)
     .with_parent(&OLE);
 
 // Model 3D ASCII - Text-based 3D model format
-mimetype!(A3D, TEXT_X_3D_MODEL, ".a3d", b"3DGeometry", kind: MODEL);
+mimetype!(A3D, TEXT_X_3D_MODEL, ".a3d", b"3DGeometry", name: "Model 3D ASCII", kind: MODEL);
 
 // Autodesk 123D - ZIP-based 3D modeling format
-static AUTODESK_123D: MimeType = MimeType::new(MODEL_X_123DX, ".123dx", autodesk_123d, &[])
-    .with_kind(MimeKind::MODEL)
-    .with_parent(&ZIP);
+static AUTODESK_123D: MimeType =
+    MimeType::new(MODEL_X_123DX, "Autodesk 123D", ".123dx", autodesk_123d, &[])
+        .with_kind(MimeKind::MODEL)
+        .with_parent(&ZIP);
 
 // Fusion 360 - ZIP-based CAD format
-static FUSION_360: MimeType = MimeType::new(MODEL_X_F3D, ".f3d", fusion_360, &[])
-    .with_kind(MimeKind::MODEL)
-    .with_parent(&ZIP);
+static FUSION_360: MimeType =
+    MimeType::new(MODEL_X_F3D, "Autodesk Fusion 360", ".f3d", fusion_360, &[])
+        .with_kind(MimeKind::MODEL)
+        .with_parent(&ZIP);
 
 // draw.io - XML-based diagramming format
-static DRAWIO: MimeType = MimeType::new(APPLICATION_VND_JGRAPH_MXFILE, ".drawio", drawio, &[])
-    .with_kind(MimeKind::DOCUMENT);
+static DRAWIO: MimeType = MimeType::new(
+    APPLICATION_VND_JGRAPH_MXFILE,
+    "draw.io",
+    ".drawio",
+    drawio,
+    &[],
+)
+.with_kind(MimeKind::DOCUMENT);
 
 // XML Shareable Playlist Format - XML-based playlist
-static XSPF: MimeType =
-    MimeType::new(APPLICATION_XSPF_XML, ".xspf", xspf, &[]).with_kind(MimeKind::DOCUMENT);
+static XSPF: MimeType = MimeType::new(APPLICATION_XSPF_XML, "Xspf XML", ".xspf", xspf, &[])
+    .with_kind(MimeKind::DOCUMENT);
 
 // XSLT - Extensible Stylesheet Language Transformations
 static XSL: MimeType =
-    MimeType::new(APPLICATION_XSLT_XML, ".xsl", xsl, &[]).with_kind(MimeKind::DOCUMENT);
+    MimeType::new(APPLICATION_XSLT_XML, "Xslt XML", ".xsl", xsl, &[]).with_kind(MimeKind::DOCUMENT);
 
 // Figma - ZIP-based design format
-static FIGMA: MimeType = MimeType::new(IMAGE_X_FIGMA, ".fig", figma, &[])
+static FIGMA: MimeType = MimeType::new(IMAGE_X_FIGMA, "Figma", ".fig", figma, &[])
     .with_kind(MimeKind::IMAGE)
     .with_parent(&ZIP);
 
 // MathML - Mathematical Markup Language
 static MATHML: MimeType =
-    MimeType::new(APPLICATION_MATHML_XML, ".mathml", mathml, &[]).with_kind(MimeKind::DOCUMENT);
+    MimeType::new(APPLICATION_MATHML_XML, "Mathml XML", ".mathml", mathml, &[])
+        .with_kind(MimeKind::DOCUMENT);
 
 // MusicXML - Music notation format
 static MUSICXML: MimeType = MimeType::new(
     APPLICATION_VND_RECORDARE_MUSICXML_XML,
+    "MusicXML",
     ".musicxml",
     musicxml,
     &[],
@@ -1541,33 +2070,40 @@ static MUSICXML: MimeType = MimeType::new(
 .with_kind(MimeKind::DOCUMENT);
 
 // TTML - Timed Text Markup Language (subtitles)
-static TTML: MimeType =
-    MimeType::new(APPLICATION_TTML_XML, ".ttml", ttml, &[]).with_kind(MimeKind::DOCUMENT);
+static TTML: MimeType = MimeType::new(APPLICATION_TTML_XML, "Ttml XML", ".ttml", ttml, &[])
+    .with_kind(MimeKind::DOCUMENT);
 
 // SOAP - Simple Object Access Protocol
-static SOAP: MimeType =
-    MimeType::new(APPLICATION_SOAP_XML, ".soap", soap, &[]).with_kind(MimeKind::DOCUMENT);
+static SOAP: MimeType = MimeType::new(APPLICATION_SOAP_XML, "Soap XML", ".soap", soap, &[])
+    .with_kind(MimeKind::DOCUMENT);
 
 // TMX - Tiled Map XML (game development)
 static TMX: MimeType =
-    MimeType::new(APPLICATION_X_TMX_XML, ".tmx", tmx, &[]).with_kind(MimeKind::DOCUMENT);
+    MimeType::new(APPLICATION_X_TMX_XML, "Tmx XML", ".tmx", tmx, &[]).with_kind(MimeKind::DOCUMENT);
 
 // TSX - Tiled Tileset XML (game development)
 static TSX: MimeType =
-    MimeType::new(APPLICATION_X_TSX_XML, ".tsx", tsx, &[]).with_kind(MimeKind::DOCUMENT);
+    MimeType::new(APPLICATION_X_TSX_XML, "Tsx XML", ".tsx", tsx, &[]).with_kind(MimeKind::DOCUMENT);
 
 // MPD - MPEG-DASH Media Presentation Description
 static MPD: MimeType =
-    MimeType::new(APPLICATION_DASH_XML, ".mpd", mpd, &[]).with_kind(MimeKind::DOCUMENT);
+    MimeType::new(APPLICATION_DASH_XML, "Dash XML", ".mpd", mpd, &[]).with_kind(MimeKind::DOCUMENT);
 
 // MXL - MusicXML ZIP (compressed music notation)
-static MXL: MimeType = MimeType::new(APPLICATION_VND_RECORDARE_MUSICXML, ".mxl", mxl, &[])
-    .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ZIP);
+static MXL: MimeType = MimeType::new(
+    APPLICATION_VND_RECORDARE_MUSICXML,
+    "MusicXML",
+    ".mxl",
+    mxl,
+    &[],
+)
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&ZIP);
 
 // CDDX - Circuit Diagram Document (XML)
 static CDDX: MimeType = MimeType::new(
     APPLICATION_VND_CIRCUITDIAGRAM_DOCUMENT_MAIN_XML,
+    "Circuit Diagram Document",
     ".cddx",
     cddx,
     &[],
@@ -1576,10 +2112,10 @@ static CDDX: MimeType = MimeType::new(
 
 // DWFX - Design Web Format XPS (XML)
 static DWFX: MimeType =
-    MimeType::new(MODEL_VND_DWFX_XPS, ".dwfx", dwfx, &[]).with_kind(MimeKind::DOCUMENT);
+    MimeType::new(MODEL_VND_DWFX_XPS, "Dwfx Xps", ".dwfx", dwfx, &[]).with_kind(MimeKind::DOCUMENT);
 
 // FBZ - FictionBook ZIP (compressed e-book)
-static FBZ: MimeType = MimeType::new(APPLICATION_X_FBZ, ".fbz", fbz, &[])
+static FBZ: MimeType = MimeType::new(APPLICATION_X_FBZ, "FictionBook ZIP", ".fbz", fbz, &[])
     .with_kind(MimeKind::DOCUMENT)
     .with_parent(&ZIP);
 
@@ -1591,6 +2127,7 @@ static FBZ: MimeType = MimeType::new(APPLICATION_X_FBZ, ".fbz", fbz, &[])
 // Child of EXE, matches when it's NOT a PE file
 static MSDOS_EXE: MimeType = MimeType::new(
     APPLICATION_X_DOSEXEC,
+    "MS-DOS Executable",
     ".exe",
     |input| {
         // This will be checked as a child of EXE
@@ -1628,6 +2165,7 @@ static MSDOS_EXE: MimeType = MimeType::new(
 // Parent matches ANY MZ file, child differentiates MS-DOS
 static EXE: MimeType = MimeType::new(
     APPLICATION_VND_MICROSOFT_PORTABLE_EXECUTABLE,
+    "Windows Executable",
     ".exe",
     |input| {
         // Match any file starting with MZ
@@ -1643,6 +2181,7 @@ static EXE: MimeType = MimeType::new(
 
 static ELF: MimeType = MimeType::new(
     APPLICATION_X_ELF,
+    "ELF",
     "",
     |input| input.starts_with(b"\x7fELF"),
     &[&APPIMAGE, &ELF_OBJ, &ELF_EXE, &ELF_LIB, &ELF_DUMP],
@@ -1650,33 +2189,46 @@ static ELF: MimeType = MimeType::new(
 .with_extension_aliases(&[".so"])
 .with_kind(MimeKind::EXECUTABLE);
 
-static ELF_OBJ: MimeType = MimeType::new(APPLICATION_X_OBJECT, "", elf_obj, &[])
+static ELF_OBJ: MimeType = MimeType::new(APPLICATION_X_OBJECT, "ELF Object", "", elf_obj, &[])
     .with_kind(MimeKind::EXECUTABLE)
     .with_parent(&ELF);
 
-static ELF_EXE: MimeType = MimeType::new(APPLICATION_X_EXECUTABLE, ".elf", elf_exe, &[])
+static ELF_EXE: MimeType = MimeType::new(
+    APPLICATION_X_EXECUTABLE,
+    "ELF Executable",
+    ".elf",
+    elf_exe,
+    &[],
+)
+.with_kind(MimeKind::EXECUTABLE)
+.with_parent(&ELF);
+
+static ELF_LIB: MimeType = MimeType::new(
+    APPLICATION_X_SHAREDLIB,
+    "Shared Library",
+    ".so",
+    elf_lib,
+    &[],
+)
+.with_kind(MimeKind::EXECUTABLE)
+.with_parent(&ELF);
+
+static ELF_DUMP: MimeType = MimeType::new(APPLICATION_X_COREDUMP, "Core Dump", "", elf_dump, &[])
     .with_kind(MimeKind::EXECUTABLE)
     .with_parent(&ELF);
 
-static ELF_LIB: MimeType = MimeType::new(APPLICATION_X_SHAREDLIB, ".so", elf_lib, &[])
-    .with_kind(MimeKind::EXECUTABLE)
-    .with_parent(&ELF);
-
-static ELF_DUMP: MimeType = MimeType::new(APPLICATION_X_COREDUMP, "", elf_dump, &[])
-    .with_kind(MimeKind::EXECUTABLE)
-    .with_parent(&ELF);
-
-mimetype!(CLASS, APPLICATION_X_JAVA_APPLET_BINARY, ".class", b"\xca\xfe\xba\xbe", kind: APPLICATION, aliases: [APPLICATION_X_JAVA_APPLET]);
+mimetype!(CLASS, APPLICATION_X_JAVA_APPLET_BINARY, ".class", b"\xca\xfe\xba\xbe", name: "Java Class File", kind: APPLICATION, aliases: [APPLICATION_X_JAVA_APPLET]);
 
 // Apache Arrow - Columnar data format for analytics.
-mimetype!(ARROW, APPLICATION_VND_APACHE_ARROW_FILE, ".arrow", b"ARROW1", kind: DATABASE);
+mimetype!(ARROW, APPLICATION_VND_APACHE_ARROW_FILE, ".arrow", b"ARROW1", name: "Apache Arrow", kind: DATABASE);
 
 // Apache Avro - Data serialization format.
-mimetype!(AVRO, APPLICATION_VND_APACHE_AVRO, ".avro", b"Obj\x01", kind: DATABASE);
+mimetype!(AVRO, APPLICATION_VND_APACHE_AVRO, ".avro", b"Obj\x01", name: "Apache Avro", kind: DATABASE);
 
 // ID3v2 Audio Metadata - Metadata tags for audio files.
 static ID3V2: MimeType = MimeType::new(
     APPLICATION_X_ID3V2,
+    "ID3v2 Tag",
     ".id3",
     |input| {
         input.starts_with(b"ID3\x02")
@@ -1688,27 +2240,27 @@ static ID3V2: MimeType = MimeType::new(
 .with_kind(MimeKind::APPLICATION);
 
 // Amiga Hunk Executable - Legacy Amiga executable format
-mimetype!(AMIGA_HUNK, APPLICATION_X_AMIGA_EXECUTABLE, ".amiga", b"\x00\x00\x03\xF3", kind: EXECUTABLE);
+mimetype!(AMIGA_HUNK, APPLICATION_X_AMIGA_EXECUTABLE, ".amiga", b"\x00\x00\x03\xF3", name: "Amiga Hunk Executable", kind: EXECUTABLE);
 
 // Xbox Executable - Original Xbox executable format
-mimetype!(XBE, APPLICATION_X_XBOX_EXECUTABLE, ".xbe", b"XBEH", kind: EXECUTABLE);
+mimetype!(XBE, APPLICATION_X_XBOX_EXECUTABLE, ".xbe", b"XBEH", name: "Xbox Executable", kind: EXECUTABLE);
 
 // Xbox 360 Executable - Xbox 360 executable formats (XEX1 and XEX2)
-mimetype!(XEX, APPLICATION_X_XBOX360_EXECUTABLE, ".xex", b"XEX2" | b"XEX1", kind: EXECUTABLE);
+mimetype!(XEX, APPLICATION_X_XBOX360_EXECUTABLE, ".xex", b"XEX2" | b"XEX1", name: "Xbox 360 Executable", kind: EXECUTABLE);
 
 // AppImage - Linux application packaging format (Type 2).
 // AppImage files are ELF executables with magic at offset 8.
 // Type 2 AppImages have 0x41 0x49 0x02 ("AI" + version) at offset 8
 // First 4 bytes are ELF magic (7F 45 4C 46)
-mimetype!(APPIMAGE, APPLICATION_X_APPIMAGE, ".appimage", offset: (8, b"\x41\x49\x02", prefix: (0, b"\x7FELF")), kind: EXECUTABLE, parent: &ELF);
+mimetype!(APPIMAGE, APPLICATION_X_APPIMAGE, ".appimage", offset: (8, b"\x41\x49\x02", prefix: (0, b"\x7FELF")), name: "AppImage", kind: EXECUTABLE, parent: &ELF);
 
 // LLVM Bitcode - LLVM compiler intermediate representation.
 // Raw bitcode: starts with 'BC' (0x42 0x43)
 // Wrapped bitcode: starts with 0xDE 0xC0 0x17 0x0B (little-endian 0x0B17C0DE)
-mimetype!(LLVM_BITCODE, APPLICATION_X_LLVM, ".bc", b"BC" | b"\xDE\xC0\x17\x0B", kind: APPLICATION);
+mimetype!(LLVM_BITCODE, APPLICATION_X_LLVM, ".bc", b"BC" | b"\xDE\xC0\x17\x0B", name: "LLVM Bitcode", kind: APPLICATION);
 
 // ICC Color Profile - Color management profiles.
-mimetype!(ICC, APPLICATION_VND_ICCPROFILE, ".icc", offset: (36, b"acsp"), kind: APPLICATION, ext_aliases: [".icm"]);
+mimetype!(ICC, APPLICATION_VND_ICCPROFILE, ".icc", offset: (36, b"acsp"), name: "ICC Color Profile", kind: APPLICATION, ext_aliases: [".icm"]);
 
 // PEM Certificate/Key formats - Cryptographic certificates and keys.
 mimetype!(PEM, APPLICATION_X_PEM_FILE, ".pem",
@@ -1720,14 +2272,16 @@ mimetype!(PEM, APPLICATION_X_PEM_FILE, ".pem",
     b"-----BEGIN ECDSA PRIVATE KEY-----" |
     b"-----BEGIN ENCRYPTED PRIVATE KEY-----" |
     b"-----BEGIN PUBLIC KEY-----",
+    name: "PEM Certificate",
     kind: TEXT, ext_aliases: [".crt", ".key", ".cert"]);
 
 // Age Encryption - Modern, simple file encryption format
-mimetype!(AGE, APPLICATION_X_AGE_ENCRYPTION, ".age", b"age-encryption.org/v1\n", kind: DOCUMENT);
+mimetype!(AGE, APPLICATION_X_AGE_ENCRYPTION, ".age", b"age-encryption.org/v1\n", name: "Age Encryption", kind: DOCUMENT);
 
 // EBML - Extensible Binary Meta Language, base for Matroska/WebM.
 static EBML: MimeType = MimeType::new(
     APPLICATION_X_EBML,
+    "EBML",
     ".ebml",
     |input| {
         // EBML magic number: 0x1A45DFA3
@@ -1741,37 +2295,37 @@ static EBML: MimeType = MimeType::new(
 )
 .with_kind(MimeKind::APPLICATION);
 
-mimetype!(WASM, APPLICATION_WASM, ".wasm", b"\x00asm", kind: EXECUTABLE);
+mimetype!(WASM, APPLICATION_WASM, ".wasm", b"\x00asm", name: "WebAssembly Binary", kind: EXECUTABLE);
 
 // WebAssembly Text Format (WAT) - human-readable text format for WebAssembly
-mimetype!(WAT, TEXT_WASM, ".wat", b"(module", kind: TEXT);
+mimetype!(WAT, TEXT_WASM, ".wat", b"(module", name: "WebAssembly Text", kind: TEXT);
 
 // ============================================================================
 // ANDROID FORMATS
 // ============================================================================
 
 // Dalvik Executable - Android app bytecode
-mimetype!(DEX, APPLICATION_VND_ANDROID_DEX, ".dex", b"dex\n", kind: EXECUTABLE);
+mimetype!(DEX, APPLICATION_VND_ANDROID_DEX, ".dex", b"dex\n", name: "Dalvik Executable", kind: EXECUTABLE);
 
 // Optimized Dalvik Executable
-mimetype!(DEY, APPLICATION_VND_ANDROID_DEY, ".dey", b"dey\n", kind: EXECUTABLE);
+mimetype!(DEY, APPLICATION_VND_ANDROID_DEY, ".dey", b"dey\n", name: "Optimized Dalvik Executable", kind: EXECUTABLE);
 
 // ============================================================================
 // ADDITIONAL COMPRESSION FORMATS
 // ============================================================================
 
 // BZIP3 - Next generation BZIP compression
-mimetype!(BZIP3, APPLICATION_X_BZIP3, ".bz3", b"BZ3v1", kind: ARCHIVE);
+mimetype!(BZIP3, APPLICATION_X_BZIP3, ".bz3", b"BZ3v1", name: "BZIP3 Compressed Archive", kind: ARCHIVE);
 
 // LZMA - Lempel-Ziv-Markov chain Algorithm
-mimetype!(LZMA, APPLICATION_X_LZMA, ".lzma", b"\x5D\x00\x00\x80\x00", kind: ARCHIVE);
+mimetype!(LZMA, APPLICATION_X_LZMA, ".lzma", b"\x5D\x00\x00\x80\x00", name: "LZMA Compressed Archive", kind: ARCHIVE);
 
 // LZOP - LZO compression with header
-mimetype!(LZOP, APPLICATION_X_LZOP, ".lzo", b"\x89LZO\0\r\n\x1A\n", kind: ARCHIVE);
+mimetype!(LZOP, APPLICATION_X_LZOP, ".lzo", b"\x89LZO\0\r\n\x1A\n", name: "LZOP Compressed Archive", kind: ARCHIVE);
 
 // LZFSE - Apple's Lempel-Ziv Finite State Entropy compression
 // "bvx-" - uncompressed block, "bvx1" - compressed v1, "bvx2" - compressed v2, "bvx$" - end of stream
-mimetype!(LZFSE, APPLICATION_X_LZFSE, ".lzfse", b"bvx-" | b"bvx1" | b"bvx2" | b"bvx$", kind: ARCHIVE);
+mimetype!(LZFSE, APPLICATION_X_LZFSE, ".lzfse", b"bvx-" | b"bvx1" | b"bvx2" | b"bvx$", name: "LZFSE Compressed Archive", kind: ARCHIVE);
 
 // ============================================================================
 // GAME ROM FORMATS
@@ -1781,12 +2335,13 @@ mimetype!(LZFSE, APPLICATION_X_LZFSE, ".lzfse", b"bvx-" | b"bvx1" | b"bvx2" | b"
 // Already defined as NES above, but using wrong constant - let's skip duplicate
 
 // GameBoy Advance ROM - Has signature at offset 4
-mimetype!(GBA_ROM, APPLICATION_X_GBA_ROM, ".gba", offset: (4, b"\x24\xFF\xAE\x51\x69\x9A\xA2\x21"), kind: APPLICATION);
+mimetype!(GBA_ROM, APPLICATION_X_GBA_ROM, ".gba", offset: (4, b"\x24\xFF\xAE\x51\x69\x9A\xA2\x21"), name: "Game Boy Advance ROM", kind: APPLICATION);
 
 // GameBoy Color ROM - More specific version of GB_ROM with color flag
 // Defined first due to forward reference in parent
 static GBC_ROM: MimeType = MimeType::new(
     APPLICATION_X_GAMEBOY_COLOR_ROM,
+    "Game Boy Color ROM",
     ".gbc",
     |input| {
         input.len() >= 324
@@ -1801,6 +2356,7 @@ static GBC_ROM: MimeType = MimeType::new(
 // Parent to GameBoy Color ROM which adds a color flag check
 static GB_ROM: MimeType = MimeType::new(
     APPLICATION_X_GAMEBOY_ROM,
+    "Game Boy ROM",
     ".gb",
     |input| input.len() >= 268 && &input[260..268] == b"\xCE\xED\x66\x66\xCC\x0D\x00\x0B",
     &[&GBC_ROM], // GBC_ROM is a child - more specific version with color flag
@@ -1818,7 +2374,7 @@ static GB_ROM: MimeType = MimeType::new(
 //   N64 (little-endian): 0x40 0x12 0x37 0x80  [PREFIX_VEC 0x40] - Doctor V64 format
 //   V64 (byte-swapped):  0x37 0x80 0x40 0x12  [PREFIX_VEC 0x37] - Mr. Backup Z64 format
 // All represent the same ROM data, just in different byte orders.
-mimetype!(N64_ROM, APPLICATION_X_N64_ROM, ".n64", [0x80, 0x37, 0x12, 0x40] | [0x40, 0x12, 0x37, 0x80] | [0x37, 0x80, 0x40, 0x12], kind: APPLICATION, ext_aliases: [".z64", ".v64"]);
+mimetype!(N64_ROM, APPLICATION_X_N64_ROM, ".n64", [0x80, 0x37, 0x12, 0x40] | [0x40, 0x12, 0x37, 0x80] | [0x37, 0x80, 0x40, 0x12], name: "Nintendo 64 ROM", ext_aliases: [".z64", ".v64"], kind: APPLICATION);
 
 // ============================================================================
 // NINTENDO DS ROM
@@ -1826,7 +2382,7 @@ mimetype!(N64_ROM, APPLICATION_X_N64_ROM, ".n64", [0x80, 0x37, 0x12, 0x40] | [0x
 
 // Nintendo DS ROM
 // Magic: 0x2E 0x00 0x00 0xEA at offset 0
-mimetype!(NINTENDO_DS_ROM, APPLICATION_X_NINTENDO_DS_ROM, ".nds", [0x2E, 0x00, 0x00, 0xEA], kind: APPLICATION);
+mimetype!(NINTENDO_DS_ROM, APPLICATION_X_NINTENDO_DS_ROM, ".nds", [0x2E, 0x00, 0x00, 0xEA], name: "Nintendo DS ROM", kind: APPLICATION);
 
 // ============================================================================
 // NINTENDO SWITCH FORMATS
@@ -1834,12 +2390,13 @@ mimetype!(NINTENDO_DS_ROM, APPLICATION_X_NINTENDO_DS_ROM, ".nds", [0x2E, 0x00, 0
 
 // Nintendo Switch Package (NSP) - Uses PFS0 container format
 // Magic: "PFS0" at offset 0
-mimetype!(NINTENDO_SWITCH_NSP, APPLICATION_X_NINTENDO_SWITCH_PACKAGE, ".nsp", b"PFS0", kind: APPLICATION);
+mimetype!(NINTENDO_SWITCH_NSP, APPLICATION_X_NINTENDO_SWITCH_PACKAGE, ".nsp", b"PFS0", name: "Nintendo Switch Package", kind: APPLICATION);
 
 // Nintendo Switch Relocatable Object (NRO)
 // Magic: "NRO0" at offset 0x10
 static NINTENDO_SWITCH_NRO: MimeType = MimeType::new(
     APPLICATION_X_NINTENDO_SWITCH_EXECUTABLE,
+    "Nintendo Switch Relocatable Object",
     ".nro",
     |input| input.len() >= 0x14 && &input[0x10..0x14] == b"NRO0",
     &[],
@@ -1848,7 +2405,7 @@ static NINTENDO_SWITCH_NRO: MimeType = MimeType::new(
 
 // Nintendo Switch Shared Object (NSO)
 // Magic: "NSO0" at offset 0
-mimetype!(NINTENDO_SWITCH_NSO, APPLICATION_X_NINTENDO_SWITCH_SO, ".nso", b"NSO0", kind: APPLICATION);
+mimetype!(NINTENDO_SWITCH_NSO, APPLICATION_X_NINTENDO_SWITCH_SO, ".nso", b"NSO0", name: "Nintendo Switch Shared Object", kind: APPLICATION);
 
 // ============================================================================
 // NEO GEO POCKET ROM FORMATS
@@ -1859,6 +2416,7 @@ mimetype!(NINTENDO_SWITCH_NSO, APPLICATION_X_NINTENDO_SWITCH_SO, ".nso", b"NSO0"
 // Child checks for color system identifier 0x10 at offset 0x23
 static NEO_GEO_POCKET_COLOR_ROM: MimeType = MimeType::new(
     APPLICATION_X_NEO_GEO_POCKET_COLOR_ROM,
+    "Neo Geo Pocket Color ROM",
     ".ngc",
     |input| {
         // Parent already verified COPYRIGHT/LICENSED header and length
@@ -1874,6 +2432,7 @@ static NEO_GEO_POCKET_COLOR_ROM: MimeType = MimeType::new(
 // Color variant (child) refines detection by checking byte at offset 0x23
 static NEO_GEO_POCKET_ROM: MimeType = MimeType::new(
     APPLICATION_X_NEO_GEO_POCKET_ROM,
+    "Neo Geo Pocket ROM",
     ".ngp",
     |input| {
         if input.len() < 0x24 {
@@ -1892,22 +2451,23 @@ static NEO_GEO_POCKET_ROM: MimeType = MimeType::new(
 // ============================================================================
 
 // DER Certificate - X.509 certificate in binary format
-mimetype!(DER_CERT, APPLICATION_X_X509_CA_CERT, ".der", b"\x30\x82", kind: APPLICATION, ext_aliases: [".cer", ".crt"]);
+mimetype!(DER_CERT, APPLICATION_X_X509_CA_CERT, ".der", b"\x30\x82", name: "DER Certificate", kind: APPLICATION, ext_aliases: [".cer", ".crt"]);
 
 // Java Keystore
-mimetype!(JAVA_KEYSTORE, APPLICATION_X_JAVA_KEYSTORE, ".jks", b"\xFE\xED\xFE\xED", kind: APPLICATION);
+mimetype!(JAVA_KEYSTORE, APPLICATION_X_JAVA_KEYSTORE, ".jks", b"\xFE\xED\xFE\xED", name: "Java Keystore", kind: APPLICATION);
 
 // ============================================================================
 // BYTECODE FORMATS
 // ============================================================================
 
 // Lua Bytecode
-mimetype!(LUA_BYTECODE, APPLICATION_X_LUA_BYTECODE, ".luac", b"\x1BLua", kind: APPLICATION);
+mimetype!(LUA_BYTECODE, APPLICATION_X_LUA_BYTECODE, ".luac", b"\x1BLua", name: "Lua Bytecode", kind: APPLICATION);
 
 // Python Pickle (protocols 2-5)
 // Protocols 2-5 start with 0x80 followed by protocol version (0x02-0x05)
 static PYTHON_PICKLE: MimeType = MimeType::new(
     APPLICATION_X_PICKLE,
+    "Python Pickle",
     ".pkl",
     |input| {
         if input.len() < 2 {
@@ -1925,6 +2485,7 @@ static PYTHON_PICKLE: MimeType = MimeType::new(
 // All Python bytecode files have 0x0D 0x0A at bytes 2-3 after the magic number
 static PYTHON_BYTECODE: MimeType = MimeType::new(
     APPLICATION_X_PYTHON_BYTECODE,
+    "Python Bytecode",
     ".pyc",
     |input| {
         if input.len() < 4 {
@@ -1944,6 +2505,7 @@ static PYTHON_BYTECODE: MimeType = MimeType::new(
 // PGP Message - Encrypted or signed message
 static PGP_MESSAGE: MimeType = MimeType::new(
     APPLICATION_PGP,
+    "PGP Message",
     ".pgp",
     |input| input.starts_with(b"-----BEGIN PGP MESSAGE-----"),
     &[],
@@ -1954,6 +2516,7 @@ static PGP_MESSAGE: MimeType = MimeType::new(
 // PGP Signed Message - Clear-signed message
 static PGP_SIGNED_MESSAGE: MimeType = MimeType::new(
     APPLICATION_PGP_SIGNED,
+    "PGP Signed Message",
     ".asc",
     |input| input.starts_with(b"-----BEGIN PGP SIGNED MESSAGE-----"),
     &[],
@@ -1964,6 +2527,7 @@ static PGP_SIGNED_MESSAGE: MimeType = MimeType::new(
 // PGP Public Key Block
 static PGP_PUBLIC_KEY: MimeType = MimeType::new(
     APPLICATION_PGP_KEYS,
+    "PGP Public Key",
     ".asc",
     |input| input.starts_with(b"-----BEGIN PGP PUBLIC KEY BLOCK-----"),
     &[],
@@ -1974,6 +2538,7 @@ static PGP_PUBLIC_KEY: MimeType = MimeType::new(
 // PGP Private Key Block
 static PGP_PRIVATE_KEY: MimeType = MimeType::new(
     APPLICATION_PGP_KEYS,
+    "PGP Public Key",
     ".asc",
     |input| input.starts_with(b"-----BEGIN PGP PRIVATE KEY BLOCK-----"),
     &[],
@@ -1984,6 +2549,7 @@ static PGP_PRIVATE_KEY: MimeType = MimeType::new(
 // PGP Signature - Detached signature
 static PGP_SIGNATURE: MimeType = MimeType::new(
     APPLICATION_PGP_SIGNATURE,
+    "PGP Signature",
     ".sig",
     |input| input.starts_with(b"-----BEGIN PGP SIGNATURE-----"),
     &[],
@@ -1999,6 +2565,7 @@ static PGP_SIGNATURE: MimeType = MimeType::new(
 // AXML files have a specific binary header
 static AXML: MimeType = MimeType::new(
     APPLICATION_VND_ANDROID_AXML,
+    "Android Binary XML",
     ".xml",
     |input| {
         // Android Binary XML magic: 0x00080003 (little-endian)
@@ -2015,6 +2582,7 @@ static AXML: MimeType = MimeType::new(
 // Android Resource Storage Container (ARSC) - Binary resource table
 static ARSC: MimeType = MimeType::new(
     APPLICATION_VND_ANDROID_ARSC,
+    "Android Resources",
     ".arsc",
     |input| {
         // ARSC magic: 0x00080002 (little-endian)
@@ -2033,11 +2601,12 @@ static ARSC: MimeType = MimeType::new(
 // ============================================================================
 
 // Canon Raw (original format) - CIFF-based
-mimetype!(CRW, IMAGE_X_CANON_CRW, ".crw", b"II\x1a\x00\x00\x00HEAPCCDR", kind: IMAGE);
+mimetype!(CRW, IMAGE_X_CANON_CRW, ".crw", b"II\x1a\x00\x00\x00HEAPCCDR", name: "Canon Raw Image", kind: IMAGE);
 
 // Canon Raw 3 - ISO Base Media File Format
 static CR3: MimeType = MimeType::new(
     IMAGE_X_CANON_CR3,
+    "Canon Raw 3",
     ".cr3",
     |input| input.len() >= 12 && &input[4..8] == b"ftyp" && &input[8..12] == b"crx ",
     &[],
@@ -2045,14 +2614,15 @@ static CR3: MimeType = MimeType::new(
 .with_kind(MimeKind::IMAGE);
 
 // Fujifilm RAF - RAW format with distinct signature
-mimetype!(RAF, IMAGE_X_FUJI_RAF, ".raf", b"FUJIFILMCCD-RAW ", kind: IMAGE);
+mimetype!(RAF, IMAGE_X_FUJI_RAF, ".raf", b"FUJIFILMCCD-RAW ", name: "Fujifilm RAF Image", kind: IMAGE);
 
 // Olympus ORF - TIFF-based with custom magic
-mimetype!(ORF, IMAGE_X_OLYMPUS_ORF, ".orf", b"IIRO" | b"IIRS" | b"MMOR", kind: IMAGE);
+mimetype!(ORF, IMAGE_X_OLYMPUS_ORF, ".orf", b"IIRO" | b"IIRS" | b"MMOR", name: "Olympus Raw Image", kind: IMAGE);
 
 // Panasonic RW2 - TIFF-based with IIU signature
 static RW2: MimeType = MimeType::new(
     IMAGE_X_PANASONIC_RW2,
+    "Panasonic RW2 Image",
     ".rw2",
     |input| {
         // Panasonic RW2: 49 49 55 00 with specific Panasonic markers
@@ -2073,17 +2643,18 @@ static RW2: MimeType = MimeType::new(
 // ============================================================================
 
 // FastTracker 2 Extended Module
-mimetype!(XM, AUDIO_X_XM, ".xm", b"Extended Module: ", kind: AUDIO);
+mimetype!(XM, AUDIO_X_XM, ".xm", b"Extended Module: ", name: "FastTracker 2 Extended Module", kind: AUDIO);
 
 // Impulse Tracker Module
-mimetype!(IT, AUDIO_X_IT, ".it", b"IMPM", kind: AUDIO);
+mimetype!(IT, AUDIO_X_IT, ".it", b"IMPM", name: "Impulse Tracker Module", kind: AUDIO);
 
 // Scream Tracker 3 Module - signature at offset 44
-mimetype!(S3M, AUDIO_X_S3M, ".s3m", offset: (44, b"SCRM"), kind: AUDIO);
+mimetype!(S3M, AUDIO_X_S3M, ".s3m", offset: (44, b"SCRM"), name: "Scream Tracker 3 Module", kind: AUDIO, aliases: [AUDIO_S3M]);
 
 // ProTracker Module - complex detection at offset 1080
 static MOD: MimeType = MimeType::new(
     AUDIO_X_MOD,
+    "ProTracker MOD",
     ".mod",
     |input| {
         if input.len() < 1084 {
@@ -2112,20 +2683,20 @@ static MOD: MimeType = MimeType::new(
 .with_kind(MimeKind::AUDIO);
 
 // Shoutcast Playlist - text-based playlist format
-mimetype!(PLS, AUDIO_X_SCPLS, ".pls", b"[playlist]", kind: AUDIO);
+mimetype!(PLS, AUDIO_X_SCPLS, ".pls", b"[playlist]", name: "Shoutcast Playlist", kind: AUDIO);
 
 // Windows Media Playlist - XML-based playlist format for Windows Media Player
-mimetype!(WPL, APPLICATION_VND_MS_WPL, ".wpl", b"<?wpl ", kind: AUDIO);
+mimetype!(WPL, APPLICATION_VND_MS_WPL, ".wpl", b"<?wpl ", name: "Windows Media Playlist", kind: AUDIO);
 
 // ============================================================================
 // APPLE FORMATS
 // ============================================================================
 
 // Apple Disk Image
-mimetype!(DMG, APPLICATION_X_APPLE_DISKIMAGE, ".dmg", b"koly", kind: ARCHIVE);
+mimetype!(DMG, APPLICATION_X_APPLE_DISKIMAGE, ".dmg", b"koly", name: "Apple Disk Image", kind: ARCHIVE);
 
 // macOS Alias File - Finder alias files
-mimetype!(MACOS_ALIAS, APPLICATION_X_APPLE_ALIAS, "", b"book\x00\x00\x00\x00mark\x00\x00\x00\x00", kind: APPLICATION);
+mimetype!(MACOS_ALIAS, APPLICATION_X_APPLE_ALIAS, "", b"book\x00\x00\x00\x00mark\x00\x00\x00\x00", name: "macOS Alias File", kind: APPLICATION);
 
 // ============================================================================
 // SEGA GAME ROM FORMATS
@@ -2139,6 +2710,7 @@ mimetype!(MACOS_ALIAS, APPLICATION_X_APPLE_ALIAS, "", b"book\x00\x00\x00\x00mark
 #[allow(dead_code)]
 static GAME_GEAR_ROM: MimeType = MimeType::new(
     APPLICATION_X_GAMEGEAR_ROM,
+    "Game Gear ROM",
     ".gg",
     |input| {
         // Check for "TMR SEGA" at offsets 0x1ff0, 0x3ff0, or 0x7ff0
@@ -2163,6 +2735,7 @@ static GAME_GEAR_ROM: MimeType = MimeType::new(
 #[allow(dead_code)]
 static SMS_ROM: MimeType = MimeType::new(
     APPLICATION_X_SMS_ROM,
+    "Sega Master System ROM",
     ".sms",
     |input| {
         // Check for "TMR SEGA" at offsets 0x1ff0, 0x3ff0, or 0x7ff0
@@ -2185,6 +2758,7 @@ static SMS_ROM: MimeType = MimeType::new(
 // Sega Genesis/Mega Drive ROM - "SEGA" at offset 0x100
 static GENESIS_ROM: MimeType = MimeType::new(
     APPLICATION_X_GENESIS_ROM,
+    "Genesis ROM",
     ".gen",
     |input| {
         // Check for "SEGA MEGA DRIVE" or "SEGA GENESIS" at offset 0x100
@@ -2207,6 +2781,7 @@ static GENESIS_ROM: MimeType = MimeType::new(
 /// Zoo archive format
 static ZOO: MimeType = MimeType::new(
     APPLICATION_X_ZOO,
+    "Zoo Archive",
     ".zoo",
     |input| {
         // Zoo archives have magic bytes 0xFDC4A7DC at offset 20 (after the text header)
@@ -2227,10 +2802,10 @@ static ZOO: MimeType = MimeType::new(
 
 // ZPAQ archive format
 // ZPAQ archives begin with "zPQ" or "7kSt"
-mimetype!(ZPAQ, APPLICATION_X_ZPAQ, ".zpaq", b"zPQ" | b"7kSt", kind: APPLICATION);
+mimetype!(ZPAQ, APPLICATION_X_ZPAQ, ".zpaq", b"zPQ" | b"7kSt", name: "ZPAQ Archive", kind: APPLICATION);
 
 // Unix compress format
-mimetype!(UNIX_COMPRESS, APPLICATION_X_COMPRESS, ".Z", [0x1F, 0x9D], kind: APPLICATION);
+mimetype!(UNIX_COMPRESS, APPLICATION_X_COMPRESS, ".Z", [0x1F, 0x9D], name: "Unix Compress", kind: APPLICATION);
 
 // ============================================================================
 // RETRO GAMING FORMATS (ADDITIONAL)
@@ -2239,6 +2814,7 @@ mimetype!(UNIX_COMPRESS, APPLICATION_X_COMPRESS, ".Z", [0x1F, 0x9D], kind: APPLI
 /// Atari 7800 ROM format
 static ATARI_7800_ROM: MimeType = MimeType::new(
     APPLICATION_X_ATARI_7800_ROM,
+    "Atari 7800 ROM",
     ".a78",
     |input| {
         // A78 header: byte 0 is version, bytes 1-16 contain "ATARI7800" with padding
@@ -2255,6 +2831,7 @@ static ATARI_7800_ROM: MimeType = MimeType::new(
 /// Commodore 64 Program
 static COMMODORE_64_PROGRAM: MimeType = MimeType::new(
     APPLICATION_X_COMMODORE_64_PROGRAM,
+    "C64 Program",
     ".prg",
     |input| {
         // C64 PRG files have a 2-byte load address at the start
@@ -2286,47 +2863,47 @@ static COMMODORE_64_PROGRAM: MimeType = MimeType::new(
 .with_kind(MimeKind::APPLICATION);
 
 // Commodore 64 Cartridge - C64 cartridge files start with "C64 CARTRIDGE   " (16 bytes)
-mimetype!(COMMODORE_64_CARTRIDGE, APPLICATION_X_COMMODORE_64_CARTRIDGE, ".crt", b"C64 CARTRIDGE   ", kind: APPLICATION);
+mimetype!(COMMODORE_64_CARTRIDGE, APPLICATION_X_COMMODORE_64_CARTRIDGE, ".crt", b"C64 CARTRIDGE   ", name: "Commodore 64 Cartridge", kind: APPLICATION);
 
 // ============================================================================
 // EBOOK FORMATS
 // ============================================================================
 
 // BroadBand eBook (Sony Reader) - LRF files start with "LRF" followed by version bytes
-mimetype!(LRF, APPLICATION_X_LRF, ".lrf", b"L\x00R\x00F\x00\x00\x00", kind: APPLICATION);
+mimetype!(LRF, APPLICATION_X_LRF, ".lrf", b"L\x00R\x00F\x00\x00\x00", name: "BroadBand eBook", kind: APPLICATION);
 
 // ============================================================================
 // OTHER APPLICATION FORMATS
 // ============================================================================
 
 // FigletFont ASCII art font - FigletFont files must start with "flf2a"
-mimetype!(FIGLET_FONT, APPLICATION_X_FIGLET, ".flf", b"flf2a", kind: APPLICATION);
+mimetype!(FIGLET_FONT, APPLICATION_X_FIGLET, ".flf", b"flf2a", name: "FigletFont", kind: APPLICATION, aliases: [APPLICATION_X_FIGLET_FONT]);
 
 // SeqBox archive format - SeqBox files start with "SBx" followed by version
-mimetype!(SEQBOX, APPLICATION_X_SBX, ".sbx", b"SBx", kind: APPLICATION);
+mimetype!(SEQBOX, APPLICATION_X_SBX, ".sbx", b"SBx", name: "SeqBox Container", kind: APPLICATION, aliases: [APPLICATION_X_SEQBOX]);
 
 // Snappy framed format - Snappy framed format starts with the stream identifier "sNaPpY"
 // Full identifier is 0xFF 0x06 0x00 0x00 "sNaPpY"
-mimetype!(SNAPPY_FRAMED, APPLICATION_X_SNAPPY_FRAMED, ".sz", [0xFF, 0x06, 0x00, 0x00, 0x73, 0x4E, 0x61, 0x50, 0x70, 0x59], kind: APPLICATION);
+mimetype!(SNAPPY_FRAMED, APPLICATION_X_SNAPPY_FRAMED, ".sz", [0xFF, 0x06, 0x00, 0x00, 0x73, 0x4E, 0x61, 0x50, 0x70, 0x59], name: "Snappy Framed Compression", kind: APPLICATION);
 
 // Tasty format - Tasty files have magic bytes 0x5A 0x54 at the start ("ZT" in ASCII)
-mimetype!(TASTY, APPLICATION_X_TASTY, ".tasty", [0x5A, 0x54], kind: APPLICATION);
+mimetype!(TASTY, APPLICATION_X_TASTY, ".tasty", [0x5A, 0x54], name: "TASTY Format", kind: APPLICATION);
 
 // ============================================================================
 // ADDITIONAL ARCHIVE FORMATS
 // ============================================================================
 
 // PAK archive format - PAK archives start with "PACK"
-mimetype!(PAK, APPLICATION_X_PAK, ".pak", b"PACK", kind: ARCHIVE);
+mimetype!(PAK, APPLICATION_X_PAK, ".pak", b"PACK", name: "PAK Archive", kind: ARCHIVE);
 
 // Mozilla Archive format (used for Firefox/Thunderbird updates)
-mimetype!(MOZILLA_ARCHIVE, APPLICATION_X_MOZILLA_ARCHIVE, ".mar", b"MAR1", kind: ARCHIVE);
+mimetype!(MOZILLA_ARCHIVE, APPLICATION_X_MOZILLA_ARCHIVE, ".mar", b"MAR1", name: "Mozilla Archive", kind: ARCHIVE);
 
 // RZIP archive format (long-range compression)
-mimetype!(RZIP, APPLICATION_X_RZIP, ".rz", b"RZIP", kind: ARCHIVE);
+mimetype!(RZIP, APPLICATION_X_RZIP, ".rz", b"RZIP", name: "RZIP Archive", kind: ARCHIVE);
 
 // LRZIP archive format (long-range ZIP compression)
-mimetype!(LRZIP, APPLICATION_X_LRZIP, ".lrz", b"LRZI", kind: ARCHIVE);
+mimetype!(LRZIP, APPLICATION_X_LRZIP, ".lrz", b"LRZI", name: "LRZIP Archive", kind: ARCHIVE);
 
 // ============================================================================
 // DATABASE FORMATS
@@ -2335,6 +2912,7 @@ mimetype!(LRZIP, APPLICATION_X_LRZIP, ".lrz", b"LRZI", kind: ARCHIVE);
 /// dBASE database format
 static DBASE: MimeType = MimeType::new(
     APPLICATION_X_DBF,
+    "dBASE",
     ".dbf",
     |input| {
         // dBASE files have version byte in first position
@@ -2356,6 +2934,7 @@ static DBASE: MimeType = MimeType::new(
 /// Adobe Digital Negative (DNG)
 static DNG: MimeType = MimeType::new(
     IMAGE_X_ADOBE_DNG,
+    "Adobe DNG",
     ".dng",
     |input| {
         // DNG is TIFF-based, check for TIFF header and DNG-specific tags
@@ -2380,6 +2959,7 @@ static DNG: MimeType = MimeType::new(
 /// Sony ARW Raw format
 static ARW: MimeType = MimeType::new(
     IMAGE_X_SONY_ARW,
+    "Sony ARW",
     ".arw",
     |input| {
         // ARW is TIFF-based, check for Sony-specific markers
@@ -2401,6 +2981,7 @@ static ARW: MimeType = MimeType::new(
 /// Pentax PEF Raw format
 static PEF: MimeType = MimeType::new(
     IMAGE_X_PENTAX_PEF,
+    "Pentax PEF",
     ".pef",
     |input| {
         // PEF is TIFF-based
@@ -2423,6 +3004,7 @@ static PEF: MimeType = MimeType::new(
 /// Sony SR2 Raw format
 static SR2: MimeType = MimeType::new(
     IMAGE_X_SONY_SR2,
+    "Sony SR2",
     ".sr2",
     |input| {
         // SR2 is TIFF-based, older Sony format
@@ -2444,6 +3026,7 @@ static SR2: MimeType = MimeType::new(
 /// Hasselblad 3FR Raw format
 static HASSELBLAD_3FR: MimeType = MimeType::new(
     IMAGE_X_HASSELBLAD_3FR,
+    "Hasselblad 3FR",
     ".3fr",
     |input| {
         // 3FR is TIFF-based
@@ -2464,13 +3047,13 @@ static HASSELBLAD_3FR: MimeType = MimeType::new(
 .with_parent(&TIFF);
 
 // Minolta MRW Raw format
-mimetype!(MRW, IMAGE_X_MINOLTA_MRW, ".mrw", [0x00, 0x4D, 0x52, 0x4D], kind: IMAGE);
+mimetype!(MRW, IMAGE_X_MINOLTA_MRW, ".mrw", [0x00, 0x4D, 0x52, 0x4D], name: "Minolta Raw Image", kind: IMAGE);
 
 // Kodak KDC Raw format
-mimetype!(KODAK_KDC, IMAGE_X_KODAK_KDC, ".kdc", [0x49, 0x49, 0x42, 0x00], kind: IMAGE);
+mimetype!(KODAK_KDC, IMAGE_X_KODAK_KDC, ".kdc", [0x49, 0x49, 0x42, 0x00], name: "Kodak KDC Raw Image", kind: IMAGE);
 
 // Kodak DCR Raw format
-mimetype!(KODAK_DCR, IMAGE_X_KODAK_DCR, ".dcr", [0x49, 0x49, 0x55, 0x00], kind: IMAGE);
+mimetype!(KODAK_DCR, IMAGE_X_KODAK_DCR, ".dcr", [0x49, 0x49, 0x55, 0x00], name: "Kodak DCR Raw Image", kind: IMAGE);
 
 // ============================================================================
 // CINEMA FORMATS
@@ -2478,33 +3061,33 @@ mimetype!(KODAK_DCR, IMAGE_X_KODAK_DCR, ".dcr", [0x49, 0x49, 0x55, 0x00], kind: 
 
 // Cineon digital cinema format
 // Cineon can be big-endian or little-endian
-mimetype!(CINEON, IMAGE_CINEON, ".cin", [0x80, 0x2A, 0x5F, 0xD7] | [0xD7, 0x5F, 0x2A, 0x80], kind: IMAGE);
+mimetype!(CINEON, IMAGE_CINEON, ".cin", [0x80, 0x2A, 0x5F, 0xD7] | [0xD7, 0x5F, 0x2A, 0x80], name: "Cineon Digital Cinema", kind: IMAGE);
 
 // Digital Picture Exchange (DPX) cinema format
 // DPX can start with "SDPX" (big-endian) or "XPDS" (little-endian)
-mimetype!(DPX, IMAGE_X_DPX, ".dpx", b"SDPX" | b"XPDS", kind: IMAGE);
+mimetype!(DPX, IMAGE_X_DPX, ".dpx", b"SDPX" | b"XPDS", name: "Digital Picture Exchange", kind: IMAGE);
 
 // ============================================================================
 // FONT FORMATS
 // ============================================================================
 
-mimetype!(TTF, FONT_TTF, ".ttf", b"\x00\x01\x00\x00" | b"true" | b"typ1", kind: FONT, aliases: [FONT_SFNT, APPLICATION_X_FONT_TTF, APPLICATION_FONT_SFNT]);
+mimetype!(TTF, FONT_TTF, ".ttf", b"\x00\x01\x00\x00" | b"true" | b"typ1", name: "TrueType Font", kind: FONT, aliases: [FONT_SFNT, APPLICATION_X_FONT_TTF, APPLICATION_FONT_SFNT]);
 
-mimetype!(WOFF, FONT_WOFF, ".woff", b"wOFF", kind: FONT);
+mimetype!(WOFF, FONT_WOFF, ".woff", b"wOFF", name: "Web Open Font Format", kind: FONT);
 
-mimetype!(WOFF2, FONT_WOFF2, ".woff2", b"wOF2", kind: FONT);
+mimetype!(WOFF2, FONT_WOFF2, ".woff2", b"wOF2", name: "Web Open Font Format 2", kind: FONT);
 
-mimetype!(OTF, FONT_OTF, ".otf", b"OTTO", kind: FONT);
+mimetype!(OTF, FONT_OTF, ".otf", b"OTTO", name: "OpenType Font", kind: FONT);
 
-mimetype!(EOT, APPLICATION_VND_MS_FONTOBJECT, ".eot", [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, b'L', b'P'], kind: FONT);
+mimetype!(EOT, APPLICATION_VND_MS_FONTOBJECT, ".eot", [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, b'L', b'P'], name: "Embedded OpenType Font", kind: FONT);
 
-mimetype!(TTC, FONT_COLLECTION, ".ttc", b"ttcf", kind: FONT);
+mimetype!(TTC, FONT_COLLECTION, ".ttc", b"ttcf", name: "TrueType Collection", kind: FONT);
 
 // BMFont Binary - AngelCode bitmap font generator binary format
-mimetype!(BMFONT_BINARY, APPLICATION_X_ANGELCODE_BMFONT, ".fnt", b"BMF\x03", kind: FONT);
+mimetype!(BMFONT_BINARY, APPLICATION_X_ANGELCODE_BMFONT, ".fnt", b"BMF\x03", name: "BMFont Binary", kind: FONT);
 
 // Glyphs - Font editor format (plist-based)
-mimetype!(GLYPHS, FONT_X_GLYPHS, ".glyphs", b"{\n.appVe", kind: FONT);
+mimetype!(GLYPHS, FONT_X_GLYPHS, ".glyphs", b"{\n.appVe", name: "Glyphs Font", kind: FONT);
 
 // ============================================================================
 // WEB & MULTIMEDIA FORMATS
@@ -2517,36 +3100,49 @@ mimetype!(GLYPHS, FONT_X_GLYPHS, ".glyphs", b"{\n.appVe", kind: FONT);
 //   CWS (0x43): ZLIB compressed SWF        [PREFIX_VEC 0x43] - Flash 6+
 //   ZWS (0x5A): LZMA compressed SWF        [PREFIX_VEC 0x5A] - Flash 13+
 // All represent the same SWF format, just with different compression algorithms.
-mimetype!(SWF, APPLICATION_X_SHOCKWAVE_FLASH, ".swf", b"FWS" | b"CWS" | b"ZWS", kind: APPLICATION);
+mimetype!(SWF, APPLICATION_X_SHOCKWAVE_FLASH, ".swf", b"FWS" | b"CWS" | b"ZWS", name: "Adobe Flash", kind: APPLICATION);
 
-static CRX: MimeType = MimeType::new(APPLICATION_X_CHROME_EXTENSION, ".crx", crx, &[])
-    .with_kind(MimeKind::APPLICATION);
+static CRX: MimeType = MimeType::new(
+    APPLICATION_X_CHROME_EXTENSION,
+    "Chrome Extension",
+    ".crx",
+    crx,
+    &[],
+)
+.with_kind(MimeKind::APPLICATION);
 
-mimetype!(P7S, APPLICATION_PKCS7_SIGNATURE, ".p7s", b"-----BEGIN PKCS7-----", kind: APPLICATION);
+mimetype!(P7S, APPLICATION_PKCS7_SIGNATURE, ".p7s", b"-----BEGIN PKCS7-----", name: "PKCS#7 Signature", kind: APPLICATION);
 
 // ============================================================================
 // SPECIALIZED FORMATS
 // ============================================================================
 
-mimetype!(DCM, APPLICATION_DICOM, ".dcm", offset: (128, b"DICM"), kind: IMAGE);
+mimetype!(DCM, APPLICATION_DICOM, ".dcm", offset: (128, b"DICM"), name: "DICOM Medical Image", kind: IMAGE);
 
-static MOBI: MimeType =
-    MimeType::new(APPLICATION_X_MOBIPOCKET_EBOOK, ".mobi", mobi, &[]).with_kind(MimeKind::DOCUMENT);
+static MOBI: MimeType = MimeType::new(
+    APPLICATION_X_MOBIPOCKET_EBOOK,
+    "Mobipocket Ebook",
+    ".mobi",
+    mobi,
+    &[],
+)
+.with_kind(MimeKind::DOCUMENT);
 
-mimetype!(LIT, APPLICATION_X_MS_READER, ".lit", b"ITOLITLS", kind: DOCUMENT);
+mimetype!(LIT, APPLICATION_X_MS_READER, ".lit", b"ITOLITLS", name: "Microsoft Reader eBook", kind: DOCUMENT);
 
-mimetype!(SQLITE3, APPLICATION_VND_SQLITE3, ".sqlite", b"SQLite format 3\x00", kind: DATABASE, aliases: [APPLICATION_X_SQLITE3]);
+mimetype!(SQLITE3, APPLICATION_VND_SQLITE3, ".sqlite", b"SQLite format 3\x00", name: "SQLite Database", kind: DATABASE, aliases: [APPLICATION_X_SQLITE3]);
 
-mimetype!(FASOO, APPLICATION_X_FASOO, "", offset: (512, b"FASOO   "), kind: DOCUMENT, parent: &OLE);
+mimetype!(FASOO, APPLICATION_X_FASOO, "", offset: (512, b"FASOO   "), name: "Fasoo DRM Document", kind: DOCUMENT, parent: &OLE);
 
 // Adobe InDesign Document - Professional desktop publishing software
-mimetype!(INDESIGN, APPLICATION_X_INDESIGN, ".indd", [0x06, 0x06, 0xED, 0xF5, 0xD8, 0x1D, 0x46, 0xE5], kind: DOCUMENT);
+mimetype!(INDESIGN, APPLICATION_X_INDESIGN, ".indd", [0x06, 0x06, 0xED, 0xF5, 0xD8, 0x1D, 0x46, 0xE5], name: "Adobe InDesign Document", kind: DOCUMENT);
 
 // Meta Information Encapsulation - Phil Harvey's metadata container format
-mimetype!(MIE, APPLICATION_X_MIE, ".mie", [0x7E, 0x10, 0xD4, 0x40, 0x5E, 0x78], kind: APPLICATION);
+mimetype!(MIE, APPLICATION_X_MIE, ".mie", [0x7E, 0x10, 0xD4, 0x40, 0x5E, 0x78], name: "Meta Information Encapsulation", kind: APPLICATION);
 
 static PGP_NET_SHARE: MimeType = MimeType::new(
     APPLICATION_X_PGP_NET_SHARE,
+    "PGP NetShare",
     "",
     |input| input.starts_with(b"-----BEGIN PGP"),
     &[],
@@ -2559,6 +3155,7 @@ static PGP_NET_SHARE: MimeType = MimeType::new(
 
 static DOCX: MimeType = MimeType::new(
     APPLICATION_VND_OPENXML_WORDPROCESSINGML_DOCUMENT,
+    "Word 2007+",
     ".docx",
     docx,
     &[],
@@ -2568,6 +3165,7 @@ static DOCX: MimeType = MimeType::new(
 
 static XLSX: MimeType = MimeType::new(
     APPLICATION_VND_OPENXML_SPREADSHEETML_SHEET,
+    "Excel 2007+",
     ".xlsx",
     xlsx,
     &[],
@@ -2577,6 +3175,7 @@ static XLSX: MimeType = MimeType::new(
 
 static PPTX: MimeType = MimeType::new(
     APPLICATION_VND_OPENXML_PRESENTATIONML_PRESENTATION,
+    "PowerPoint 2007+",
     ".pptx",
     pptx,
     &[],
@@ -2586,6 +3185,7 @@ static PPTX: MimeType = MimeType::new(
 
 static VSDX: MimeType = MimeType::new(
     APPLICATION_VND_MS_VISIO_DRAWING_MAIN_XML,
+    "Visio 2007+",
     ".vsdx",
     vsdx,
     &[],
@@ -2593,11 +3193,11 @@ static VSDX: MimeType = MimeType::new(
 .with_kind(MimeKind::DOCUMENT)
 .with_parent(&ZIP);
 
-static EPUB: MimeType = MimeType::new(APPLICATION_EPUB_ZIP, ".epub", epub, &[])
+static EPUB: MimeType = MimeType::new(APPLICATION_EPUB_ZIP, "EPUB", ".epub", epub, &[])
     .with_kind(MimeKind::DOCUMENT)
     .with_parent(&ZIP);
 
-static JAR: MimeType = MimeType::new(APPLICATION_JAVA_ARCHIVE, ".jar", jar, &[])
+static JAR: MimeType = MimeType::new(APPLICATION_JAVA_ARCHIVE, "JAR", ".jar", jar, &[])
     .with_aliases(&[
         APPLICATION_JAR,
         APPLICATION_JAR_ARCHIVE,
@@ -2606,32 +3206,57 @@ static JAR: MimeType = MimeType::new(APPLICATION_JAVA_ARCHIVE, ".jar", jar, &[])
     .with_kind(MimeKind::APPLICATION)
     .with_parent(&ZIP);
 
-static EAR: MimeType = MimeType::new(APPLICATION_X_EAR, ".ear", ear, &[])
+static EAR: MimeType = MimeType::new(APPLICATION_X_EAR, "Enterprise Archive", ".ear", ear, &[])
     .with_kind(MimeKind::ARCHIVE)
     .with_parent(&ZIP);
 
-static WAR: MimeType = MimeType::new(APPLICATION_JAVA_ARCHIVE, ".war", war, &[])
+static WAR: MimeType = MimeType::new(APPLICATION_JAVA_ARCHIVE, "JAR", ".war", war, &[])
     .with_kind(MimeKind::APPLICATION)
     .with_parent(&ZIP);
 
-static VSIX: MimeType = MimeType::new(APPLICATION_VSIX, ".vsix", vsix, &[])
-    .with_kind(MimeKind::APPLICATION)
-    .with_parent(&ZIP);
+static VSIX: MimeType = MimeType::new(
+    APPLICATION_VSIX,
+    "Visual Studio Extension",
+    ".vsix",
+    vsix,
+    &[],
+)
+.with_kind(MimeKind::APPLICATION)
+.with_parent(&ZIP);
 
-static APK: MimeType = MimeType::new(APPLICATION_VND_ANDROID_PACKAGE_ARCHIVE, ".apk", apk, &[])
-    .with_kind(MimeKind::APPLICATION)
-    .with_parent(&ZIP);
+static APK: MimeType = MimeType::new(
+    APPLICATION_VND_ANDROID_PACKAGE_ARCHIVE,
+    "Android Package",
+    ".apk",
+    apk,
+    &[],
+)
+.with_kind(MimeKind::APPLICATION)
+.with_parent(&ZIP);
 
-static AAB: MimeType = MimeType::new(APPLICATION_VND_ANDROID_AAB, ".aab", aab, &[])
-    .with_kind(MimeKind::ARCHIVE)
-    .with_parent(&ZIP);
+static AAB: MimeType = MimeType::new(
+    APPLICATION_VND_ANDROID_AAB,
+    "Android App Bundle",
+    ".aab",
+    aab,
+    &[],
+)
+.with_kind(MimeKind::ARCHIVE)
+.with_parent(&ZIP);
 
-static APPX: MimeType = MimeType::new(APPLICATION_VND_MS_APPX, ".appx", appx, &[])
-    .with_kind(MimeKind::APPLICATION)
-    .with_parent(&ZIP);
+static APPX: MimeType = MimeType::new(
+    APPLICATION_VND_MS_APPX,
+    "Windows App Package",
+    ".appx",
+    appx,
+    &[],
+)
+.with_kind(MimeKind::APPLICATION)
+.with_parent(&ZIP);
 
 static APPXBUNDLE: MimeType = MimeType::new(
     APPLICATION_VND_MS_APPX_BUNDLE,
+    "Windows App Bundle",
     ".appxbundle",
     appxbundle,
     &[],
@@ -2639,16 +3264,23 @@ static APPXBUNDLE: MimeType = MimeType::new(
 .with_kind(MimeKind::APPLICATION)
 .with_parent(&ZIP);
 
-static IPA: MimeType = MimeType::new(APPLICATION_X_IOS_APP, ".ipa", ipa, &[])
+static IPA: MimeType = MimeType::new(APPLICATION_X_IOS_APP, "iOS App", ".ipa", ipa, &[])
     .with_kind(MimeKind::APPLICATION)
     .with_parent(&ZIP);
 
-static XAP: MimeType = MimeType::new(APPLICATION_X_SILVERLIGHT_APP, ".xap", xap, &[])
-    .with_kind(MimeKind::APPLICATION)
-    .with_parent(&ZIP);
+static XAP: MimeType = MimeType::new(
+    APPLICATION_X_SILVERLIGHT_APP,
+    "Silverlight App",
+    ".xap",
+    xap,
+    &[],
+)
+.with_kind(MimeKind::APPLICATION)
+.with_parent(&ZIP);
 
 static AIR: MimeType = MimeType::new(
     APPLICATION_VND_ADOBE_AIR_APPLICATION_INSTALLER_PACKAGE_ZIP,
+    "Adobe AIR Application",
     ".air",
     air,
     &[],
@@ -2656,12 +3288,13 @@ static AIR: MimeType = MimeType::new(
 .with_kind(MimeKind::APPLICATION)
 .with_parent(&ZIP);
 
-static FLA: MimeType = MimeType::new(APPLICATION_VND_ADOBE_FLA, ".fla", fla, &[])
+static FLA: MimeType = MimeType::new(APPLICATION_VND_ADOBE_FLA, "Adobe Flash", ".fla", fla, &[])
     .with_kind(MimeKind::APPLICATION)
     .with_parent(&ZIP);
 
 static IDML: MimeType = MimeType::new(
     APPLICATION_VND_ADOBE_INDESIGN_IDML_PACKAGE,
+    "InDesign Markup Language",
     ".idml",
     idml,
     &[],
@@ -2669,13 +3302,14 @@ static IDML: MimeType = MimeType::new(
 .with_kind(MimeKind::DOCUMENT)
 .with_parent(&ZIP);
 
-static DOC: MimeType = MimeType::new(APPLICATION_MSWORD, ".doc", doc, &[])
+static DOC: MimeType = MimeType::new(APPLICATION_MSWORD, "Word Document", ".doc", doc, &[])
     .with_aliases(&[APPLICATION_VND_MS_WORD])
     .with_kind(MimeKind::DOCUMENT)
     .with_parent(&OLE);
 
 static WPD: MimeType = MimeType::new(
     APPLICATION_VND_WORDPERFECT,
+    "WordPerfect",
     ".wpd",
     wpd,
     &[&WPG, &SHW, &WPM],
@@ -2683,55 +3317,79 @@ static WPD: MimeType = MimeType::new(
 .with_kind(MimeKind::DOCUMENT);
 
 // ClarisWorks - Apple legacy document format
-mimetype!(CLARISWORKS, APPLICATION_X_CLARISWORKS, ".cwk", b"\x02\x00ZWRT", kind: DOCUMENT);
+mimetype!(CLARISWORKS, APPLICATION_X_CLARISWORKS, ".cwk", b"\x02\x00ZWRT", name: "ClarisWorks Document", kind: DOCUMENT);
 
 // Quark Express - Professional publishing software
 // Big-endian: 00 00 49 49 58 50 52 ("IIXPR")
 // Little-endian: 00 00 4D 4D 58 50 52 ("MMXPR")
-mimetype!(QUARK, APPLICATION_VND_QUARK_QUARKXPRESS, ".qxd", b"\x00\x00IIXPR" | b"\x00\x00MMXPR", kind: DOCUMENT);
+mimetype!(QUARK, APPLICATION_VND_QUARK_QUARKXPRESS, ".qxd", b"\x00\x00IIXPR" | b"\x00\x00MMXPR", name: "Quark Express Document", kind: DOCUMENT);
 
-static XLS: MimeType = MimeType::new(APPLICATION_VND_MS_EXCEL, ".xls", xls, &[])
+static XLS: MimeType = MimeType::new(APPLICATION_VND_MS_EXCEL, "Excel 97-2003", ".xls", xls, &[])
     .with_aliases(&[APPLICATION_MSEXCEL])
     .with_kind(MimeKind::SPREADSHEET)
     .with_parent(&OLE);
 
-static PPT: MimeType = MimeType::new(APPLICATION_VND_MS_POWERPOINT, ".ppt", ppt, &[])
-    .with_aliases(&[APPLICATION_MSPOWERPOINT])
-    .with_kind(MimeKind::PRESENTATION)
-    .with_parent(&OLE);
+static PPT: MimeType = MimeType::new(
+    APPLICATION_VND_MS_POWERPOINT,
+    "PowerPoint 97-2003",
+    ".ppt",
+    ppt,
+    &[],
+)
+.with_aliases(&[APPLICATION_MSPOWERPOINT])
+.with_kind(MimeKind::PRESENTATION)
+.with_parent(&OLE);
 
-mimetype!(CHM, APPLICATION_VND_MS_HTMLHELP, ".chm", b"ITSF\x03\x00\x00\x00", kind: DOCUMENT);
+mimetype!(CHM, APPLICATION_VND_MS_HTMLHELP, ".chm", b"ITSF\x03\x00\x00\x00", name: "HTML Help", kind: DOCUMENT);
 
-static ONENOTE: MimeType = MimeType::new(APPLICATION_ONENOTE, ".one", onenote, &[])
+static ONENOTE: MimeType = MimeType::new(APPLICATION_ONENOTE, "OneNote", ".one", onenote, &[])
     .with_kind(MimeKind::DOCUMENT)
     .with_parent(&OLE);
 
-static PUB: MimeType = MimeType::new(APPLICATION_VND_MS_PUBLISHER, ".pub", pub_format, &[])
+static PUB: MimeType = MimeType::new(
+    APPLICATION_VND_MS_PUBLISHER,
+    "Publisher",
+    ".pub",
+    pub_format,
+    &[],
+)
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&OLE);
+
+static MSG: MimeType = MimeType::new(APPLICATION_VND_MS_OUTLOOK, "Outlook MSG", ".msg", msg, &[])
     .with_kind(MimeKind::DOCUMENT)
     .with_parent(&OLE);
 
-static MSG: MimeType = MimeType::new(APPLICATION_VND_MS_OUTLOOK, ".msg", msg, &[])
-    .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&OLE);
+static PST: MimeType = MimeType::new(
+    APPLICATION_VND_MS_OUTLOOK_PST,
+    "Outlook PST",
+    ".pst",
+    pst,
+    &[],
+)
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&OLE);
 
-static PST: MimeType = MimeType::new(APPLICATION_VND_MS_OUTLOOK_PST, ".pst", pst, &[])
-    .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&OLE);
-
-static MPP: MimeType = MimeType::new(APPLICATION_VND_MS_PROJECT, ".mpp", mpp, &[])
-    .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&OLE);
+static MPP: MimeType = MimeType::new(
+    APPLICATION_VND_MS_PROJECT,
+    "Microsoft Project",
+    ".mpp",
+    mpp,
+    &[],
+)
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&OLE);
 
 // Microsoft Visio Drawing - OLE-based diagram/drawing format
-static VSD: MimeType = MimeType::new(APPLICATION_VND_VISIO, ".vsd", vsd, &[])
+static VSD: MimeType = MimeType::new(APPLICATION_VND_VISIO, "Visio", ".vsd", vsd, &[])
     .with_kind(MimeKind::DOCUMENT)
     .with_parent(&OLE);
 
 // Microsoft Works Database - Early version (v1-2) with unique header
-mimetype!(WORKS_DB, APPLICATION_VND_MS_WORKS_DB, ".wdb", [0x20, 0x54, 0x02, 0x00, 0x00, 0x00, 0x05, 0x54, 0x02, 0x00], kind: DOCUMENT);
+mimetype!(WORKS_DB, APPLICATION_VND_MS_WORKS_DB, ".wdb", [0x20, 0x54, 0x02, 0x00, 0x00, 0x00, 0x05, 0x54, 0x02, 0x00], name: "Works Database", kind: DOCUMENT);
 
 // Microsoft Works Spreadsheet - Two signature variants
-mimetype!(WORKS_SPREADSHEET, APPLICATION_VND_MS_WORKS, ".wks", b"\x00\x00\x02\x00\x04\x04\x05\x54\x02\x00" | b"\xFF\x00\x02\x00\x04\x04\x05\x54\x02\x00", kind: DOCUMENT);
+mimetype!(WORKS_SPREADSHEET, APPLICATION_VND_MS_WORKS, ".wks", b"\x00\x00\x02\x00\x04\x04\x05\x54\x02\x00" | b"\xFF\x00\x02\x00\x04\x04\x05\x54\x02\x00", name: "Works Spreadsheet", kind: DOCUMENT);
 
 // Microsoft Write - Legacy word processor (v3.0 and v3.1)
 // NOTE: Appears in TWO PREFIX_VEC buckets (0x31 and 0x32) - this is intentional!
@@ -2739,12 +3397,18 @@ mimetype!(WORKS_SPREADSHEET, APPLICATION_VND_MS_WORKS, ".wks", b"\x00\x00\x02\x0
 //   v3.0: 0x31 0xBE 0x00 0x00 0x00 0xAB
 //   v3.1: 0x32 0xBE 0x00 0x00 0x00 0xAB
 // Both are the same format, just different version markers.
-mimetype!(MICROSOFT_WRITE, APPLICATION_X_MSWRITE, ".wri", b"\x31\xBE\x00\x00\x00\xAB" | b"\x32\xBE\x00\x00\x00\xAB", kind: DOCUMENT);
+mimetype!(MICROSOFT_WRITE, APPLICATION_X_MSWRITE, ".wri", b"\x31\xBE\x00\x00\x00\xAB" | b"\x32\xBE\x00\x00\x00\xAB", name: "Microsoft Write", kind: DOCUMENT);
 
-static MSI: MimeType = MimeType::new(APPLICATION_X_MS_INSTALLER, ".msi", msi, &[])
-    .with_aliases(&[APPLICATION_X_WINDOWS_INSTALLER, APPLICATION_X_MSI])
-    .with_kind(MimeKind::ARCHIVE)
-    .with_parent(&OLE);
+static MSI: MimeType = MimeType::new(
+    APPLICATION_X_MS_INSTALLER,
+    "Windows Installer",
+    ".msi",
+    msi,
+    &[],
+)
+.with_aliases(&[APPLICATION_X_WINDOWS_INSTALLER, APPLICATION_X_MSI])
+.with_kind(MimeKind::ARCHIVE)
+.with_parent(&OLE);
 
 // ============================================================================
 // OPEN DOCUMENT FORMATS
@@ -2752,6 +3416,7 @@ static MSI: MimeType = MimeType::new(APPLICATION_X_MS_INSTALLER, ".msi", msi, &[
 
 static ODT: MimeType = MimeType::new(
     APPLICATION_VND_OASIS_OPENDOCUMENT_TEXT,
+    "OpenDocument Text",
     ".odt",
     odt,
     &[&OTT],
@@ -2762,6 +3427,7 @@ static ODT: MimeType = MimeType::new(
 
 static ODS: MimeType = MimeType::new(
     APPLICATION_VND_OASIS_OPENDOCUMENT_SPREADSHEET,
+    "OpenDocument Spreadsheet",
     ".ods",
     ods,
     &[&OTS],
@@ -2772,6 +3438,7 @@ static ODS: MimeType = MimeType::new(
 
 static ODP: MimeType = MimeType::new(
     APPLICATION_VND_OASIS_OPENDOCUMENT_PRESENTATION,
+    "OpenDocument Presentation",
     ".odp",
     odp,
     &[&OTP],
@@ -2782,6 +3449,7 @@ static ODP: MimeType = MimeType::new(
 
 static ODG: MimeType = MimeType::new(
     APPLICATION_VND_OASIS_OPENDOCUMENT_GRAPHICS,
+    "OpenDocument Graphics",
     ".odg",
     odg,
     &[&OTG],
@@ -2792,6 +3460,7 @@ static ODG: MimeType = MimeType::new(
 
 static ODF: MimeType = MimeType::new(
     APPLICATION_VND_OASIS_OPENDOCUMENT_FORMULA,
+    "OpenDocument Formula",
     ".odf",
     odf_format,
     &[],
@@ -2800,13 +3469,20 @@ static ODF: MimeType = MimeType::new(
 .with_kind(MimeKind::DOCUMENT)
 .with_parent(&ZIP);
 
-static ODC: MimeType = MimeType::new(APPLICATION_VND_OASIS_OPENDOCUMENT_CHART, ".odc", odc, &[])
-    .with_aliases(&["application/x-vnd.oasis.opendocument.chart"])
-    .with_kind(MimeKind::DOCUMENT)
-    .with_parent(&ZIP);
+static ODC: MimeType = MimeType::new(
+    APPLICATION_VND_OASIS_OPENDOCUMENT_CHART,
+    "ODF Chart",
+    ".odc",
+    odc,
+    &[],
+)
+.with_aliases(&["application/x-vnd.oasis.opendocument.chart"])
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&ZIP);
 
 static ODB: MimeType = MimeType::new(
     APPLICATION_VND_OASIS_OPENDOCUMENT_DATABASE,
+    "OpenDocument Database",
     ".odb",
     odb,
     &[],
@@ -2817,6 +3493,7 @@ static ODB: MimeType = MimeType::new(
 
 static ODM: MimeType = MimeType::new(
     APPLICATION_VND_OASIS_OPENDOCUMENT_TEXT_MASTER,
+    "OpenDocument Text Master",
     ".odm",
     odm,
     &[&OTM],
@@ -2825,12 +3502,13 @@ static ODM: MimeType = MimeType::new(
 .with_kind(MimeKind::DOCUMENT)
 .with_parent(&ZIP);
 
-static ORA: MimeType = MimeType::new(IMAGE_OPENRASTER, ".ora", ora, &[])
+static ORA: MimeType = MimeType::new(IMAGE_OPENRASTER, "OpenRaster", ".ora", ora, &[])
     .with_kind(MimeKind::IMAGE)
     .with_parent(&ZIP);
 
 static OTT: MimeType = MimeType::new(
     APPLICATION_VND_OASIS_OPENDOCUMENT_TEXT_TEMPLATE,
+    "OpenDocument Text Template",
     ".ott",
     ott,
     &[],
@@ -2841,6 +3519,7 @@ static OTT: MimeType = MimeType::new(
 
 static OTS: MimeType = MimeType::new(
     APPLICATION_VND_OASIS_OPENDOCUMENT_SPREADSHEET_TEMPLATE,
+    "OpenDocument Spreadsheet Template",
     ".ots",
     ots,
     &[],
@@ -2851,6 +3530,7 @@ static OTS: MimeType = MimeType::new(
 
 static OTP: MimeType = MimeType::new(
     APPLICATION_VND_OASIS_OPENDOCUMENT_PRESENTATION_TEMPLATE,
+    "OpenDocument Presentation Template",
     ".otp",
     otp,
     &[],
@@ -2861,6 +3541,7 @@ static OTP: MimeType = MimeType::new(
 
 static OTG: MimeType = MimeType::new(
     APPLICATION_VND_OASIS_OPENDOCUMENT_GRAPHICS_TEMPLATE,
+    "OpenDocument Graphics Template",
     ".otg",
     otg,
     &[],
@@ -2871,6 +3552,7 @@ static OTG: MimeType = MimeType::new(
 
 static OTM: MimeType = MimeType::new(
     APPLICATION_VND_OASIS_OPENDOCUMENT_TEXT_MASTER_TEMPLATE,
+    "OpenDocument Text Master Template",
     ".otm",
     otm,
     &[],
@@ -2879,11 +3561,17 @@ static OTM: MimeType = MimeType::new(
 .with_kind(MimeKind::DOCUMENT)
 .with_parent(&ODM);
 
-static SXC: MimeType = MimeType::new(APPLICATION_VND_SUN_XML_CALC, ".sxc", sxc, &[])
-    .with_kind(MimeKind::SPREADSHEET)
-    .with_parent(&ZIP);
+static SXC: MimeType = MimeType::new(
+    APPLICATION_VND_SUN_XML_CALC,
+    "StarOffice Calc",
+    ".sxc",
+    sxc,
+    &[],
+)
+.with_kind(MimeKind::SPREADSHEET)
+.with_parent(&ZIP);
 
-static KMZ: MimeType = MimeType::new(APPLICATION_VND_GOOGLE_EARTH_KMZ, ".kmz", kmz, &[])
+static KMZ: MimeType = MimeType::new(APPLICATION_VND_GOOGLE_EARTH_KMZ, "KMZ", ".kmz", kmz, &[])
     .with_kind(MimeKind::DOCUMENT)
     .with_parent(&ZIP);
 
@@ -2891,18 +3579,19 @@ static KMZ: MimeType = MimeType::new(APPLICATION_VND_GOOGLE_EARTH_KMZ, ".kmz", k
 // DATABASE FORMATS
 // ============================================================================
 
-static MDB: MimeType =
-    MimeType::new(APPLICATION_X_MSACCESS, ".mdb", mdb, &[]).with_kind(MimeKind::DATABASE);
+static MDB: MimeType = MimeType::new(APPLICATION_X_MSACCESS, "Msaccess", ".mdb", mdb, &[])
+    .with_kind(MimeKind::DATABASE);
 
-static ACCDB: MimeType =
-    MimeType::new(APPLICATION_X_MSACCESS, ".accdb", accdb, &[]).with_kind(MimeKind::DATABASE);
+static ACCDB: MimeType = MimeType::new(APPLICATION_X_MSACCESS, "Msaccess", ".accdb", accdb, &[])
+    .with_kind(MimeKind::DATABASE);
 
 static DBF: MimeType =
-    MimeType::new(APPLICATION_X_DBF, ".dbf", dbf, &[]).with_kind(MimeKind::DATABASE);
+    MimeType::new(APPLICATION_X_DBF, "Dbf", ".dbf", dbf, &[]).with_kind(MimeKind::DATABASE);
 
 // Lotus 1-2-3 v1 (.wk1)
 static LOTUS_WK1: MimeType = MimeType::new(
     APPLICATION_VND_LOTUS_1_2_3,
+    "Lotus 1-2-3",
     ".wk1",
     |input| {
         if input.len() < 8 {
@@ -2920,6 +3609,7 @@ static LOTUS_WK1: MimeType = MimeType::new(
 // Lotus 1-2-3 v3 (.wk3)
 static LOTUS_WK3: MimeType = MimeType::new(
     APPLICATION_VND_LOTUS_1_2_3,
+    "Lotus 1-2-3",
     ".wk3",
     |input| {
         if input.len() < 8 {
@@ -2937,6 +3627,7 @@ static LOTUS_WK3: MimeType = MimeType::new(
 // Lotus 1-2-3 v4/v5 (.wk4)
 static LOTUS_WK4: MimeType = MimeType::new(
     APPLICATION_VND_LOTUS_1_2_3,
+    "Lotus 1-2-3",
     ".wk4",
     |input| {
         if input.len() < 8 {
@@ -2956,6 +3647,7 @@ static LOTUS_WK4: MimeType = MimeType::new(
 // Children (WK1, WK3, WK4) refine detection to specific versions based on version field
 static LOTUS123: MimeType = MimeType::new(
     APPLICATION_VND_LOTUS_1_2_3,
+    "Lotus 1-2-3",
     ".123",
     lotus123,
     &[&LOTUS_WK1, &LOTUS_WK3, &LOTUS_WK4], // Children for specific versions
@@ -2963,41 +3655,42 @@ static LOTUS123: MimeType = MimeType::new(
 .with_kind(MimeKind::SPREADSHEET.union(MimeKind::DATABASE));
 
 // Lotus Notes Database - Enterprise collaboration database
-mimetype!(LOTUS_NOTES, APPLICATION_VND_LOTUS_NOTES, ".nsf", b"\x1A\x00\x00", kind: DATABASE);
+mimetype!(LOTUS_NOTES, APPLICATION_VND_LOTUS_NOTES, ".nsf", b"\x1A\x00\x00", name: "Lotus Notes Database", kind: DATABASE);
 
-static MRC: MimeType = MimeType::new(APPLICATION_MARC, ".mrc", marc, &[])
+static MRC: MimeType = MimeType::new(APPLICATION_MARC, "MARC", ".mrc", marc, &[])
     .with_kind(MimeKind::TEXT.union(MimeKind::DATABASE));
 
 // ============================================================================
 // PROGRAMMING & TEXT FORMATS
 // ============================================================================
 
-mimetype!(PHP, TEXT_X_PHP, ".php", b"<?php" | b"<?\n" | b"<?\r" | b"<? ", kind: TEXT, parent: &UTF8);
+mimetype!(PHP, TEXT_X_PHP, ".php", b"<?php" | b"<?\n" | b"<?\r" | b"<? ", name: "PHP Source Code", kind: TEXT, parent: &UTF8);
 
-static JAVASCRIPT: MimeType = MimeType::new(TEXT_JAVASCRIPT, ".js", javascript, &[])
+static JAVASCRIPT: MimeType = MimeType::new(TEXT_JAVASCRIPT, "JavaScript", ".js", javascript, &[])
     .with_aliases(&[APPLICATION_JAVASCRIPT])
     .with_parent(&UTF8);
 
-mimetype!(PYTHON, TEXT_X_PYTHON, ".py", b"#!/usr/bin/env python" | b"#!/usr/bin/python" | b"#!python" | b"# -*- coding:", kind: TEXT, aliases: [TEXT_X_SCRIPT_PYTHON, APPLICATION_X_PYTHON], parent: &UTF8);
+mimetype!(PYTHON, TEXT_X_PYTHON, ".py", b"#!/usr/bin/env python" | b"#!/usr/bin/python" | b"#!python" | b"# -*- coding:", name: "Python Source Code", kind: TEXT, aliases: [TEXT_X_SCRIPT_PYTHON, APPLICATION_X_PYTHON], parent: &UTF8);
 
-mimetype!(PERL, TEXT_X_PERL, ".pl", b"#!/usr/bin/env perl" | b"#!/usr/bin/perl" | b"#!perl", kind: TEXT, parent: &UTF8);
+mimetype!(PERL, TEXT_X_PERL, ".pl", b"#!/usr/bin/env perl" | b"#!/usr/bin/perl" | b"#!perl", name: "Perl Source Code", kind: TEXT, parent: &UTF8);
 
-mimetype!(RUBY, TEXT_X_RUBY, ".rb", b"#!/usr/bin/env ruby" | b"#!/usr/bin/ruby" | b"#!ruby", kind: TEXT, aliases: [APPLICATION_X_RUBY], parent: &UTF8);
+mimetype!(RUBY, TEXT_X_RUBY, ".rb", b"#!/usr/bin/env ruby" | b"#!/usr/bin/ruby" | b"#!ruby", name: "Ruby Source Code", kind: TEXT, aliases: [APPLICATION_X_RUBY], parent: &UTF8);
 
-mimetype!(LUA, TEXT_X_LUA, ".lua", b"#!/usr/bin/env lua" | b"#!/usr/bin/lua" | b"#!lua" | b"\x1bLua", kind: TEXT, parent: &UTF8);
+mimetype!(LUA, TEXT_X_LUA, ".lua", b"#!/usr/bin/env lua" | b"#!/usr/bin/lua" | b"#!lua" | b"\x1bLua", name: "Lua Source Code", kind: TEXT, parent: &UTF8);
 
-mimetype!(SHELL, TEXT_X_SHELLSCRIPT, ".sh", b"#!/bin/sh" | b"#!/bin/bash" | b"#!/usr/bin/env bash" | b"#!/bin/zsh", kind: TEXT, aliases: [TEXT_X_SH, APPLICATION_X_SHELLSCRIPT, APPLICATION_X_SH], parent: &UTF8);
+mimetype!(SHELL, TEXT_X_SHELLSCRIPT, ".sh", b"#!/bin/sh" | b"#!/bin/bash" | b"#!/usr/bin/env bash" | b"#!/bin/zsh", name: "Shell Script", kind: TEXT, aliases: [TEXT_X_SH, APPLICATION_X_SHELLSCRIPT, APPLICATION_X_SH], parent: &UTF8);
 
-mimetype!(BATCH, TEXT_X_MSDOS_BATCH, ".bat", b"REM " | b"@ECHO OFF" | b"@echo off" | b"@Echo Off", kind: TEXT, ext_aliases: [".cmd"], parent: &UTF8);
+mimetype!(BATCH, TEXT_X_MSDOS_BATCH, ".bat", b"REM " | b"@ECHO OFF" | b"@echo off" | b"@Echo Off", name: "Batch Script", kind: TEXT, ext_aliases: [".cmd"], parent: &UTF8);
 
-mimetype!(TCL, TEXT_X_TCL, ".tcl", b"#!/usr/bin/env tclsh" | b"#!/usr/bin/tclsh" | b"#!tclsh", kind: TEXT, aliases: [APPLICATION_X_TCL], parent: &UTF8);
+mimetype!(TCL, TEXT_X_TCL, ".tcl", b"#!/usr/bin/env tclsh" | b"#!/usr/bin/tclsh" | b"#!tclsh", name: "Tcl Script", kind: TEXT, aliases: [APPLICATION_X_TCL], parent: &UTF8);
 
-mimetype!(CLOJURE, TEXT_X_CLOJURE, ".clj", b"#!/usr/local/bin/clojure" | b"#!/usr/bin/env clojure" | b"#!/usr/local/bin/clj" | b"#!/usr/bin/env clj" | b"#!clojure", kind: TEXT, parent: &UTF8);
+mimetype!(CLOJURE, TEXT_X_CLOJURE, ".clj", b"#!/usr/local/bin/clojure" | b"#!/usr/bin/env clojure" | b"#!/usr/local/bin/clj" | b"#!/usr/bin/env clj" | b"#!clojure", name: "Clojure Source Code", kind: TEXT, parent: &UTF8);
 
-mimetype!(LATEX, TEXT_X_TEX, ".tex", b"\\documentclass" | b"\\documentstyle", kind: TEXT, parent: &UTF8);
+mimetype!(LATEX, TEXT_X_TEX, ".tex", b"\\documentclass" | b"\\documentstyle", name: "LaTeX Document", kind: TEXT, parent: &UTF8);
 
 static VISUAL_STUDIO_SOLUTION: MimeType = MimeType::new(
     APPLICATION_VND_MS_DEVELOPER,
+    "Visual Studio Solution",
     ".sln",
     visual_studio_solution,
     &[],
@@ -3005,10 +3698,11 @@ static VISUAL_STUDIO_SOLUTION: MimeType = MimeType::new(
 .with_parent(&UTF8);
 
 // JSON Feed - RSS/Atom alternative in JSON format
-mimetype!(JSON_FEED, APPLICATION_FEED_JSON, ".json", b"{\"version", kind: TEXT);
+mimetype!(JSON_FEED, APPLICATION_FEED_JSON, ".json", b"{\"version", name: "JSON Feed", kind: TEXT);
 
 static JSON: MimeType = MimeType::new(
     APPLICATION_JSON,
+    "Application Json",
     ".json",
     json,
     &[&GEOJSON, &NDJSON, &HAR, &GLTF],
@@ -3016,31 +3710,38 @@ static JSON: MimeType = MimeType::new(
 .with_parent(&UTF8);
 
 static GEOJSON: MimeType =
-    MimeType::new(APPLICATION_GEO_JSON, ".geojson", geojson, &[]).with_parent(&JSON);
+    MimeType::new(APPLICATION_GEO_JSON, "Geo JSON", ".geojson", geojson, &[]).with_parent(&JSON);
 
 static NDJSON: MimeType =
-    MimeType::new(APPLICATION_X_NDJSON, ".ndjson", ndjson, &[]).with_parent(&JSON);
+    MimeType::new(APPLICATION_X_NDJSON, "Ndjson", ".ndjson", ndjson, &[]).with_parent(&JSON);
 
-static CSV_FORMAT: MimeType = MimeType::new(TEXT_CSV, ".csv", csv_format, &[]).with_parent(&UTF8);
+static CSV_FORMAT: MimeType =
+    MimeType::new(TEXT_CSV, "CSV", ".csv", csv_format, &[]).with_parent(&UTF8);
 
-static TSV: MimeType =
-    MimeType::new(TEXT_TAB_SEPARATED_VALUES, ".tsv", tsv, &[]).with_parent(&UTF8);
+static TSV: MimeType = MimeType::new(
+    TEXT_TAB_SEPARATED_VALUES,
+    "Tab Separated Values",
+    ".tsv",
+    tsv,
+    &[],
+)
+.with_parent(&UTF8);
 
-mimetype!(RTF, TEXT_RTF, ".rtf", b"{\\rtf", kind: DOCUMENT, aliases: [APPLICATION_RTF], parent: &UTF8);
+mimetype!(RTF, TEXT_RTF, ".rtf", b"{\\rtf", name: "Rich Text Format", kind: DOCUMENT, aliases: [APPLICATION_RTF], parent: &UTF8);
 
-static SRT: MimeType = MimeType::new(APPLICATION_X_SUBRIP, ".srt", srt, &[])
+static SRT: MimeType = MimeType::new(APPLICATION_X_SUBRIP, "SubRip", ".srt", srt, &[])
     .with_aliases(&[APPLICATION_X_SRT, TEXT_X_SRT])
     .with_kind(MimeKind::DOCUMENT)
     .with_parent(&UTF8);
 
-static VTT: MimeType = MimeType::new(TEXT_VTT, ".vtt", vtt, &[]).with_parent(&UTF8);
+static VTT: MimeType = MimeType::new(TEXT_VTT, "WebVTT", ".vtt", vtt, &[]).with_parent(&UTF8);
 
-static VCARD: MimeType = MimeType::new(TEXT_VCARD, ".vcf", vcard, &[]).with_parent(&UTF8);
+static VCARD: MimeType = MimeType::new(TEXT_VCARD, "vCard", ".vcf", vcard, &[]).with_parent(&UTF8);
 
 static ICALENDAR: MimeType =
-    MimeType::new(TEXT_CALENDAR, ".ics", icalendar, &[]).with_parent(&UTF8);
+    MimeType::new(TEXT_CALENDAR, "Calendar", ".ics", icalendar, &[]).with_parent(&UTF8);
 
-static SVG: MimeType = MimeType::new(IMAGE_SVG_XML, ".svg", svg, &[])
+static SVG: MimeType = MimeType::new(IMAGE_SVG_XML, "SVG", ".svg", svg, &[])
     .with_kind(MimeKind::IMAGE)
     .with_parent(&XML);
 
@@ -3048,49 +3749,56 @@ static SVG: MimeType = MimeType::new(IMAGE_SVG_XML, ".svg", svg, &[])
 // XML-BASED FORMATS
 // ============================================================================
 
-static RSS: MimeType = MimeType::new(APPLICATION_RSS_XML, ".rss", rss, &[])
+static RSS: MimeType = MimeType::new(APPLICATION_RSS_XML, "RSS", ".rss", rss, &[])
     .with_aliases(&[TEXT_RSS])
     .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
-static ATOM: MimeType = MimeType::new(APPLICATION_ATOM_XML, ".atom", atom, &[])
+static ATOM: MimeType = MimeType::new(APPLICATION_ATOM_XML, "Atom", ".atom", atom, &[])
     .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
-static X3D: MimeType = MimeType::new(MODEL_X3D_XML, ".x3d", x3d, &[])
+static X3D: MimeType = MimeType::new(MODEL_X3D_XML, "X3D XML", ".x3d", x3d, &[])
     .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
-static KML: MimeType = MimeType::new(APPLICATION_VND_GOOGLE_EARTH_KML_XML, ".kml", kml, &[])
+static KML: MimeType = MimeType::new(
+    APPLICATION_VND_GOOGLE_EARTH_KML_XML,
+    "KML",
+    ".kml",
+    kml,
+    &[],
+)
+.with_kind(MimeKind::TEXT)
+.with_parent(&XML);
+
+static XLIFF: MimeType = MimeType::new(APPLICATION_X_XLIFF_XML, "XLIFF", ".xlf", xliff, &[])
     .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
-static XLIFF: MimeType = MimeType::new(APPLICATION_X_XLIFF_XML, ".xlf", xliff, &[])
-    .with_kind(MimeKind::TEXT)
-    .with_parent(&XML);
-
-static COLLADA: MimeType = MimeType::new(MODEL_VND_COLLADA_XML, ".dae", collada, &[])
+static COLLADA: MimeType = MimeType::new(MODEL_VND_COLLADA_XML, "COLLADA", ".dae", collada, &[])
     .with_kind(MimeKind::MODEL)
     .with_parent(&XML);
 
-static GML: MimeType = MimeType::new(APPLICATION_GML_XML, ".gml", gml, &[])
+static GML: MimeType = MimeType::new(APPLICATION_GML_XML, "GML", ".gml", gml, &[])
     .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
-static GPX: MimeType = MimeType::new(APPLICATION_GPX_XML, ".gpx", gpx, &[])
+static GPX: MimeType = MimeType::new(APPLICATION_GPX_XML, "GPX", ".gpx", gpx, &[])
     .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
-static TCX: MimeType = MimeType::new(APPLICATION_VND_GARMIN_TCX_XML, ".tcx", tcx, &[])
+static TCX: MimeType = MimeType::new(APPLICATION_VND_GARMIN_TCX_XML, "TCX", ".tcx", tcx, &[])
     .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
-static AMF: MimeType = MimeType::new(APPLICATION_X_AMF, ".amf", amf, &[])
+static AMF: MimeType = MimeType::new(APPLICATION_X_AMF, "AMF", ".amf", amf, &[])
     .with_kind(MimeKind::MODEL)
     .with_parent(&XML);
 
 static THREEMF: MimeType = MimeType::new(
     APPLICATION_VND_MS_PACKAGE_3DMANUFACTURING_3DMODEL_XML,
+    "3D Manufacturing Format",
     ".3mf",
     threemf,
     &[],
@@ -3098,23 +3806,24 @@ static THREEMF: MimeType = MimeType::new(
 .with_kind(MimeKind::MODEL)
 .with_parent(&XML);
 
-static XFDF: MimeType = MimeType::new(APPLICATION_VND_ADOBE_XFDF, ".xfdf", xfdf, &[])
+static XFDF: MimeType = MimeType::new(APPLICATION_VND_ADOBE_XFDF, "XFDF", ".xfdf", xfdf, &[])
     .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
-static OWL2: MimeType = MimeType::new(APPLICATION_OWL_XML, ".owl", owl2, &[])
+static OWL2: MimeType = MimeType::new(APPLICATION_OWL_XML, "OWL", ".owl", owl2, &[])
     .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
-static XHTML: MimeType = MimeType::new(APPLICATION_XHTML_XML, ".html", xhtml, &[])
+static XHTML: MimeType = MimeType::new(APPLICATION_XHTML_XML, "XHTML", ".html", xhtml, &[])
     .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
-static FB2: MimeType = MimeType::new(APPLICATION_X_FB2_XML, ".fb2", fb2, &[])
+static FB2: MimeType = MimeType::new(APPLICATION_X_FB2_XML, "Fb2 XML", ".fb2", fb2, &[])
+    .with_aliases(&[APPLICATION_X_FICTIONBOOK_XML])
     .with_kind(MimeKind::DOCUMENT)
     .with_parent(&XML);
 
-static HAR: MimeType = MimeType::new(APPLICATION_JSON_HAR, ".har", har, &[])
+static HAR: MimeType = MimeType::new(APPLICATION_JSON_HAR, "HAR", ".har", har, &[])
     .with_kind(MimeKind::TEXT)
     .with_parent(&JSON);
 
@@ -3122,64 +3831,66 @@ static HAR: MimeType = MimeType::new(APPLICATION_JSON_HAR, ".har", har, &[])
 // 3D & GEOSPATIAL FORMATS
 // ============================================================================
 
-static SHP: MimeType = MimeType::new(APPLICATION_VND_SHP, ".shp", shp, &[]);
+static SHP: MimeType = MimeType::new(APPLICATION_VND_SHP, "Shapefile", ".shp", shp, &[]);
 
 static SHX: MimeType = MimeType::new(
     APPLICATION_VND_SHX,
+    "Shapefile Index",
     ".shx",
     |input| input.starts_with(b"\x00\x00\x27\x0A"),
     &[&SHP],
 );
 
-mimetype!(GLB, MODEL_GLTF_BINARY, ".glb", b"glTF\x02\x00\x00\x00" | b"glTF\x01\x00\x00\x00", kind: MODEL);
+mimetype!(GLB, MODEL_GLTF_BINARY, ".glb", b"glTF\x02\x00\x00\x00" | b"glTF\x01\x00\x00\x00", name: "glTF Binary", kind: MODEL);
 
-static GLTF: MimeType = MimeType::new(MODEL_GLTF_JSON, ".gltf", gltf, &[])
+static GLTF: MimeType = MimeType::new(MODEL_GLTF_JSON, "glTF JSON", ".gltf", gltf, &[])
     .with_kind(MimeKind::MODEL)
     .with_parent(&JSON);
 
 // Universal 3D - PDF 3D embedding format
-mimetype!(U3D, MODEL_U3D, ".u3d", b"U3D\0", kind: MODEL);
+mimetype!(U3D, MODEL_U3D, ".u3d", b"U3D\0", name: "Universal 3D", kind: MODEL);
 
 // ============================================================================
 // GAMING FORMATS
 // ============================================================================
 
-mimetype!(NES, APPLICATION_VND_NINTENDO_SNES_ROM, ".nes", b"NES\x1A", kind: APPLICATION);
+mimetype!(NES, APPLICATION_VND_NINTENDO_SNES_ROM, ".nes", b"NES\x1A", name: "Nintendo NES ROM", kind: APPLICATION);
 
 // ============================================================================
 // MISCELLANEOUS FORMATS
 // ============================================================================
 
 // HDF4 - Hierarchical Data Format version 4
-mimetype!(HDF4, APPLICATION_X_HDF, ".hdf", b"\x0e\x03\x13\x01", kind: DATABASE, ext_aliases: [".hdf4"]);
+mimetype!(HDF4, APPLICATION_X_HDF, ".hdf", b"\x0e\x03\x13\x01", name: "Hierarchical Data Format 4", kind: DATABASE, ext_aliases: [".hdf4"]);
 
 // HDF5 - Hierarchical Data Format version 5
-mimetype!(HDF5, APPLICATION_X_HDF5, ".hdf5", b"\x89HDF\r\n\x1a\n", kind: DATABASE, aliases: [".h5"]);
+mimetype!(HDF5, APPLICATION_X_HDF5, ".hdf5", b"\x89HDF\r\n\x1a\n", name: "Hierarchical Data Format 5", kind: DATABASE, aliases: [".h5"]);
 
 // HDF parent - for backward compatibility, checks both HDF4 and HDF5
-mimetype!(HDF, APPLICATION_X_HDF, ".hdf", b"\x89HDF\r\n\x1a\n" | b"\x0e\x03\x13\x01", kind: DATABASE, children: [&HDF4, &HDF5]);
+mimetype!(HDF, APPLICATION_X_HDF, ".hdf", b"\x89HDF\r\n\x1a\n" | b"\x0e\x03\x13\x01", name: "Hierarchical Data Format", kind: DATABASE, children: [&HDF4, &HDF5]);
 
 // GRIB weather data format (used by meteorology services)
-mimetype!(GRIB, APPLICATION_X_GRIB, ".grib", b"GRIB", kind: APPLICATION);
+mimetype!(GRIB, APPLICATION_X_GRIB, ".grib", b"GRIB", name: "GRIB Weather Data", kind: APPLICATION);
 
-mimetype!(CBOR_FORMAT, APPLICATION_CBOR, ".cbor", b"\xd9\xd9\xf7", kind: APPLICATION);
+mimetype!(CBOR_FORMAT, APPLICATION_CBOR, ".cbor", b"\xd9\xd9\xf7", name: "CBOR Data Format", kind: APPLICATION);
 
-mimetype!(PARQUET, APPLICATION_VND_APACHE_PARQUET, ".parquet", b"PAR1", kind: DATABASE, aliases: [APPLICATION_X_PARQUET]);
+mimetype!(PARQUET, APPLICATION_VND_APACHE_PARQUET, ".parquet", b"PAR1", name: "Apache Parquet", kind: DATABASE, aliases: [APPLICATION_X_PARQUET]);
 
-mimetype!(LNK, APPLICATION_X_MS_SHORTCUT, ".lnk", b"L\x00\x00\x00\x01\x14\x02\x00", kind: APPLICATION);
+mimetype!(LNK, APPLICATION_X_MS_SHORTCUT, ".lnk", b"L\x00\x00\x00\x01\x14\x02\x00", name: "Windows Shortcut", kind: APPLICATION);
 
 // Windows Help format
-mimetype!(HLP, APPLICATION_WINHELP, ".hlp", b"\x3F\x5F\x03\x00", kind: APPLICATION);
+mimetype!(HLP, APPLICATION_WINHELP, ".hlp", b"\x3F\x5F\x03\x00", name: "Windows Help", kind: APPLICATION);
 
 // Windows Event Log
-mimetype!(EVT, APPLICATION_X_MS_EVT, ".evt", b"\x30\x00\x00\x00\x4C\x66\x4C\x65", kind: APPLICATION);
+mimetype!(EVT, APPLICATION_X_MS_EVT, ".evt", b"\x30\x00\x00\x00\x4C\x66\x4C\x65", name: "Windows Event Log", kind: APPLICATION);
 
 // Windows Event Log XML
-mimetype!(EVTX, APPLICATION_X_MS_EVTX, ".evtx", b"ElfFile", kind: APPLICATION);
+mimetype!(EVTX, APPLICATION_X_MS_EVTX, ".evtx", b"ElfFile", name: "Windows Event Log XML", kind: APPLICATION);
 
 // Windows Registry file
 static WINDOWS_REG: MimeType = MimeType::new(
     TEXT_PLAIN,
+    "Windows Registry",
     ".reg",
     |input| {
         if input.len() < 7 {
@@ -3203,16 +3914,17 @@ static WINDOWS_REG: MimeType = MimeType::new(
 .with_kind(MimeKind::TEXT);
 
 // Windows Static Cursor
-mimetype!(CUR, IMAGE_X_WIN_CUR, ".cur", b"\x00\x00\x02\x00", kind: IMAGE);
+mimetype!(CUR, IMAGE_X_WIN_CUR, ".cur", b"\x00\x00\x02\x00", name: "Windows Cursor", kind: IMAGE);
 
-static MACHO: MimeType =
-    MimeType::new(APPLICATION_X_MACH_BINARY, ".macho", macho, &[]).with_kind(MimeKind::EXECUTABLE);
+static MACHO: MimeType = MimeType::new(APPLICATION_X_MACH_BINARY, "Mach-O", ".macho", macho, &[])
+    .with_kind(MimeKind::EXECUTABLE);
 
-mimetype!(TZIF, APPLICATION_TZIF, "", b"TZif", kind: APPLICATION);
+mimetype!(TZIF, APPLICATION_TZIF, "", b"TZif", name: "Time Zone Information Format", kind: APPLICATION);
 
 // Amiga Disk File - Amiga floppy disk image
 static ADF: MimeType = MimeType::new(
     APPLICATION_X_AMIGA_DISK_FORMAT,
+    "Amiga Disk File",
     ".adf",
     |input| {
         // ADF starts with "DOS" followed by a byte 0x00-0x05
@@ -3223,32 +3935,33 @@ static ADF: MimeType = MimeType::new(
 .with_kind(MimeKind::DOCUMENT);
 
 // Common Object File Format - i386 variant
-mimetype!(COFF, APPLICATION_X_COFF, ".o", [0x4C, 0x01], kind: EXECUTABLE);
+mimetype!(COFF, APPLICATION_X_COFF, ".o", [0x4C, 0x01], name: "Common Object File Format", kind: EXECUTABLE);
 
 // Gettext Machine Object - Compiled translation file (little-endian)
-mimetype!(MO, APPLICATION_X_GETTEXT_TRANSLATION, ".mo", [0xDE, 0x12, 0x04, 0x95], kind: DOCUMENT);
+mimetype!(MO, APPLICATION_X_GETTEXT_TRANSLATION, ".mo", [0xDE, 0x12, 0x04, 0x95], name: "Gettext Translation", kind: DOCUMENT);
 
 // ============================================================================
 // NETWORK & DEBUGGING FORMATS
 // ============================================================================
 
 // PCAP - Network packet capture (libpcap format) - big-endian or little-endian
-mimetype!(PCAP, APPLICATION_VND_TCPDUMP_PCAP, ".pcap", [0xA1, 0xB2, 0xC3, 0xD4] | [0xD4, 0xC3, 0xB2, 0xA1], kind: DOCUMENT);
+mimetype!(PCAP, APPLICATION_VND_TCPDUMP_PCAP, ".pcap", [0xA1, 0xB2, 0xC3, 0xD4] | [0xD4, 0xC3, 0xB2, 0xA1], name: "Packet Capture", kind: DOCUMENT);
 
 // PCAPNG - Next generation packet capture
-mimetype!(PCAPNG, APPLICATION_X_PCAPNG, ".pcapng", [0x0A, 0x0D, 0x0D, 0x0A], kind: DOCUMENT);
+mimetype!(PCAPNG, APPLICATION_X_PCAPNG, ".pcapng", [0x0A, 0x0D, 0x0D, 0x0A], name: "Next Generation Packet Capture", kind: DOCUMENT);
 
 // ============================================================================
 // 3D & CAD FORMATS
 // ============================================================================
 
 // Blender - 3D modeling and animation
-mimetype!(BLEND, APPLICATION_X_BLENDER, ".blend", b"BLENDER", kind: DOCUMENT);
+mimetype!(BLEND, APPLICATION_X_BLENDER, ".blend", b"BLENDER", name: "Blender 3D", kind: DOCUMENT);
 
 // 3D Studio Max - Autodesk 3DS mesh format
 // Starts with 0x4D4D but must distinguish from TIFF big-endian (MM\x00*) and Olympus ORF (MMOR)
 static AUTODESK_3DS: MimeType = MimeType::new(
     APPLICATION_X_3DS,
+    "3DS Model",
     ".3ds",
     |input| {
         input.starts_with(b"MM") && !input.starts_with(b"MM\x00*") && !input.starts_with(b"MMOR")
@@ -3259,100 +3972,101 @@ static AUTODESK_3DS: MimeType = MimeType::new(
 
 // 3D Studio Max - Autodesk .max project file format
 // OLE-based binary format with structured storage
-static AUTODESK_MAX: MimeType = MimeType::new(APPLICATION_X_MAX, ".max", autodesk_max, &[])
-    .with_kind(MimeKind::MODEL)
-    .with_parent(&OLE);
+static AUTODESK_MAX: MimeType =
+    MimeType::new(APPLICATION_X_MAX, "3DS Max", ".max", autodesk_max, &[])
+        .with_kind(MimeKind::MODEL)
+        .with_parent(&OLE);
 
 // PLY - Polygon File Format (3D models)
-mimetype!(PLY, APPLICATION_PLY, ".ply", b"ply\n", kind: DOCUMENT);
+mimetype!(PLY, APPLICATION_PLY, ".ply", b"ply\n", name: "Polygon File Format", kind: DOCUMENT);
 
 // FBX - Autodesk Filmbox (3D interchange format)
-mimetype!(FBX, APPLICATION_VND_AUTODESK_FBX, ".fbx", b"Kaydara FBX Binary  \x00", kind: DOCUMENT);
+mimetype!(FBX, APPLICATION_VND_AUTODESK_FBX, ".fbx", b"Kaydara FBX Binary  \x00", name: "Autodesk Filmbox", kind: DOCUMENT);
 
 // FIT - Flexible and Interoperable Data Transfer (Garmin fitness/GPS data format)
-mimetype!(FIT, APPLICATION_X_FIT, ".fit", offset: (8, b".FIT"), kind: DOCUMENT);
+mimetype!(FIT, APPLICATION_X_FIT, ".fit", offset: (8, b".FIT"), name: "Garmin FIT", kind: DOCUMENT);
 
 // STL ASCII - STereoLithography ASCII format (3D printing)
 // STL ASCII files start with "solid " followed by an optional name
-mimetype!(STL_ASCII, MODEL_X_STL_ASCII, ".stl", b"solid ", kind: DOCUMENT, aliases: [MODEL_STL]);
+mimetype!(STL_ASCII, MODEL_X_STL_ASCII, ".stl", b"solid ", name: "STL ASCII", kind: DOCUMENT, aliases: [MODEL_STL]);
 
 // Maya Binary - Autodesk Maya binary scene file
 // Maya binary files start with "FOR4" (32-bit) or "FOR8" (64-bit)
-mimetype!(MAYA_BINARY, APPLICATION_X_MAYA_BINARY, ".mb", b"FOR4" | b"FOR8", kind: DOCUMENT);
+mimetype!(MAYA_BINARY, APPLICATION_X_MAYA_BINARY, ".mb", b"FOR4" | b"FOR8", name: "Autodesk Maya Binary", kind: DOCUMENT);
 
 // Maya ASCII - Autodesk Maya ASCII scene file
 // Maya ASCII files start with "//Maya ASCII" followed by version
-mimetype!(MAYA_ASCII, APPLICATION_X_MAYA_ASCII, ".ma", b"//Maya ASCII", kind: DOCUMENT);
+mimetype!(MAYA_ASCII, APPLICATION_X_MAYA_ASCII, ".ma", b"//Maya ASCII", name: "Autodesk Maya ASCII", kind: DOCUMENT);
 
 // InterQuake Model - 3D model format for games
-mimetype!(IQM, MODEL_X_IQM, ".iqm", b"INTERQUAKEMODEL\0", kind: MODEL);
+mimetype!(IQM, MODEL_X_IQM, ".iqm", b"INTERQUAKEMODEL\0", name: "InterQuake Model", kind: MODEL);
 
 // MagicaVoxel - Voxel model format
-mimetype!(VOX, MODEL_X_VOX, ".vox", b"VOX ", kind: MODEL);
+mimetype!(VOX, MODEL_X_VOX, ".vox", b"VOX ", name: "MagicaVoxel", kind: MODEL);
 
 // Google Draco - 3D geometry compression format
-mimetype!(DRACO, MODEL_X_DRACO, ".drc", b"DRACO", kind: MODEL);
+mimetype!(DRACO, MODEL_X_DRACO, ".drc", b"DRACO", name: "Google Draco", kind: MODEL);
 
 // STEP - ISO 10303-21 3D CAD data exchange format
-mimetype!(STEP, MODEL_STEP, ".stp", b"ISO-10303-21;", kind: MODEL);
+mimetype!(STEP, MODEL_STEP, ".stp", b"ISO-10303-21;", name: "STEP CAD", kind: MODEL);
 
 // VRML - Virtual Reality Modeling Language (supports both v1.0 and v2.0)
-mimetype!(VRML, MODEL_VRML, ".wrl", b"#VRML V", kind: MODEL);
+mimetype!(VRML, MODEL_VRML, ".wrl", b"#VRML V", name: "Virtual Reality Modeling Language", kind: MODEL);
 
 // Cinema4D - Maxon Cinema 4D 3D model format
-mimetype!(CINEMA4D, MODEL_X_C4D, ".c4d", b"QC4DC4D6", kind: MODEL);
+mimetype!(CINEMA4D, MODEL_X_C4D, ".c4d", b"QC4DC4D6", name: "Cinema 4D", kind: MODEL);
 
 // Autodesk Alias - 3D modeling and industrial design format
-mimetype!(AUTODESK_ALIAS, MODEL_X_WIRE, ".wire", b"WIRE", kind: MODEL);
+mimetype!(AUTODESK_ALIAS, MODEL_X_WIRE, ".wire", b"WIRE", name: "Autodesk Alias", kind: MODEL);
 
 // Design Web Format - Autodesk DWF CAD format
-mimetype!(DWF, MODEL_VND_DWF, ".dwf", b"(DWF", kind: MODEL);
+mimetype!(DWF, MODEL_VND_DWF, ".dwf", b"(DWF", name: "Design Web Format", kind: MODEL);
 
 // OpenNURBS - Rhino 3D model format
-mimetype!(OPENNURBS, MODEL_X_3DM, ".3dm", b"3D Geometry File", kind: MODEL);
+mimetype!(OPENNURBS, MODEL_X_3DM, ".3dm", b"3D Geometry File", name: "OpenNURBS", kind: MODEL);
 
 // Universal Scene Description Binary - Pixar USD format
-mimetype!(USD_BINARY, MODEL_X_USD, ".usd", b"PXR-USDC", kind: MODEL);
+mimetype!(USD_BINARY, MODEL_X_USD, ".usd", b"PXR-USDC", name: "Universal Scene Description Binary", kind: MODEL);
 
 // Universal Scene Description ASCII - Pixar USD text format
-mimetype!(USD_ASCII, MODEL_X_USD_ASCII, ".usda", b"#usda", kind: MODEL);
+mimetype!(USD_ASCII, MODEL_X_USD_ASCII, ".usda", b"#usda", name: "Universal Scene Description ASCII", kind: MODEL);
 
 // Model3D Binary - Binary 3D model format
-mimetype!(MODEL3D_BINARY, MODEL_X_3D_BINARY, ".3d", b"MD30", kind: MODEL);
+mimetype!(MODEL3D_BINARY, MODEL_X_3D_BINARY, ".3d", b"MD30", name: "Model3D Binary", kind: MODEL);
 
 // SketchUp - Trimble SketchUp 3D model format
-mimetype!(SKETCHUP, APPLICATION_VND_SKETCHUP_SKP, ".skp", [0xFF, 0xFE, 0xFF, 0x0E, 0x53, 0x00, 0x6B, 0x00], kind: MODEL);
+mimetype!(SKETCHUP, APPLICATION_VND_SKETCHUP_SKP, ".skp", [0xFF, 0xFE, 0xFF, 0x0E, 0x53, 0x00, 0x6B, 0x00], name: "SketchUp", kind: MODEL);
 
 // ============================================================================
 // VIRTUAL MACHINE & DISK IMAGE FORMATS
 // ============================================================================
 
 // QCOW - QEMU Copy-on-Write version 1 disk image
-mimetype!(QCOW, APPLICATION_X_QEMU_DISK, ".qcow", b"QFI", kind: DOCUMENT);
+mimetype!(QCOW, APPLICATION_X_QEMU_DISK, ".qcow", b"QFI", name: "QEMU Copy-on-Write", kind: DOCUMENT);
 
 // QCOW2 - QEMU Copy-on-Write version 2 disk image
-mimetype!(QCOW2, APPLICATION_X_QEMU_DISK, ".qcow2", b"QFI\xFB", kind: DOCUMENT);
+mimetype!(QCOW2, APPLICATION_X_QEMU_DISK, ".qcow2", b"QFI\xFB", name: "QEMU Copy-on-Write 2", kind: DOCUMENT);
 
 // VHD - Microsoft Virtual Hard Disk (legacy format)
 // VHD files have "conectix" magic either at the beginning (dynamic) or at offset from end (fixed)
-mimetype!(VHD, APPLICATION_X_VHD, ".vhd", b"conectix", kind: DOCUMENT);
+mimetype!(VHD, APPLICATION_X_VHD, ".vhd", b"conectix", name: "Microsoft Virtual Hard Disk", kind: DOCUMENT);
 
 // VHDX - Microsoft Virtual Hard Disk v2
-mimetype!(VHDX, APPLICATION_X_VHDX, ".vhdx", b"vhdxfile", kind: DOCUMENT);
+mimetype!(VHDX, APPLICATION_X_VHDX, ".vhdx", b"vhdxfile", name: "Microsoft Virtual Hard Disk v2", kind: DOCUMENT);
 
 // VMDK - VMware Virtual Disk
 // VMDK has multiple possible magic bytes:
 // - "KDMV" - VMware 4 hosted sparse extent
 // - "COWD" - VMware 3 hosted sparse extent
 // - "# Disk DescriptorFile" - descriptor file (text-based)
-mimetype!(VMDK, APPLICATION_X_VMDK, ".vmdk", b"KDMV" | b"COWD" | b"# Disk DescriptorFile", kind: DOCUMENT);
+mimetype!(VMDK, APPLICATION_X_VMDK, ".vmdk", b"KDMV" | b"COWD" | b"# Disk DescriptorFile", name: "VMware Virtual Disk", kind: DOCUMENT);
 
 // VDI - VirtualBox Virtual Disk Image
 // VDI signature is at offset 0x40 (64 bytes): 0x7F 0x10 0xDA 0xBE
-mimetype!(VDI, APPLICATION_X_VIRTUALBOX_VDI, ".vdi", offset: (64, b"\x7F\x10\xDA\xBE"), kind: DOCUMENT);
+mimetype!(VDI, APPLICATION_X_VIRTUALBOX_VDI, ".vdi", offset: (64, b"\x7F\x10\xDA\xBE"), name: "VirtualBox Virtual Disk Image", kind: DOCUMENT);
 
 // WIM - Windows Imaging Format
-mimetype!(WIM, APPLICATION_X_MS_WIM, ".wim", b"MSWIM\x00\x00\x00", kind: DOCUMENT);
+mimetype!(WIM, APPLICATION_X_MS_WIM, ".wim", b"MSWIM\x00\x00\x00", name: "Windows Imaging Format", kind: DOCUMENT);
 
 // ============================================================================
 // FILESYSTEM FORMATS
@@ -3360,7 +4074,7 @@ mimetype!(WIM, APPLICATION_X_MS_WIM, ".wim", b"MSWIM\x00\x00\x00", kind: DOCUMEN
 
 // Squashfs - Compressed read-only filesystem used in embedded systems and live CDs.
 // Squashfs can be big-endian 'sqsh' or little-endian 'hsqs'
-mimetype!(SQUASHFS, APPLICATION_X_SQUASHFS, ".squashfs", b"sqsh" | b"hsqs", kind: DOCUMENT);
+mimetype!(SQUASHFS, APPLICATION_X_SQUASHFS, ".squashfs", b"sqsh" | b"hsqs", name: "Squashfs", kind: DOCUMENT);
 
 // ============================================================================
 // XML FORMAT DETECTION FUNCTIONS
@@ -5228,6 +5942,61 @@ fn rtf_utf16_le(input: &[u8]) -> bool {
     detect_utf16_format(input, false, detect_rtf_content)
 }
 
+/// HTML detection for UTF-8 with BOM
+fn html_utf8_bom(input: &[u8]) -> bool {
+    detect_utf8_bom_format(input, detect_html_content)
+}
+
+/// XML detection for UTF-8 with BOM
+fn xml_utf8_bom(input: &[u8]) -> bool {
+    detect_utf8_bom_format(input, detect_xml_content)
+}
+
+/// SVG detection for UTF-8 with BOM
+fn svg_utf8_bom(input: &[u8]) -> bool {
+    detect_utf8_bom_format(input, detect_svg_content)
+}
+
+/// JSON detection for UTF-8 with BOM
+fn json_utf8_bom(input: &[u8]) -> bool {
+    detect_utf8_bom_format(input, detect_json_content)
+}
+
+/// CSV detection for UTF-8 with BOM
+fn csv_utf8_bom(input: &[u8]) -> bool {
+    detect_utf8_bom_format(input, detect_csv_content)
+}
+
+/// TSV detection for UTF-8 with BOM
+fn tsv_utf8_bom(input: &[u8]) -> bool {
+    detect_utf8_bom_format(input, detect_tsv_content)
+}
+
+/// SRT subtitle detection for UTF-8 with BOM
+fn srt_utf8_bom(input: &[u8]) -> bool {
+    detect_utf8_bom_format(input, detect_srt_content)
+}
+
+/// VTT subtitle detection for UTF-8 with BOM
+fn vtt_utf8_bom(input: &[u8]) -> bool {
+    detect_utf8_bom_format(input, detect_vtt_content)
+}
+
+/// vCard detection for UTF-8 with BOM
+fn vcard_utf8_bom(input: &[u8]) -> bool {
+    detect_utf8_bom_format(input, detect_vcard_content)
+}
+
+/// iCalendar detection for UTF-8 with BOM
+fn icalendar_utf8_bom(input: &[u8]) -> bool {
+    detect_utf8_bom_format(input, detect_icalendar_content)
+}
+
+/// RTF detection for UTF-8 with BOM
+fn rtf_utf8_bom(input: &[u8]) -> bool {
+    detect_utf8_bom_format(input, detect_rtf_content)
+}
+
 // ============================================================================
 // SHARED CONTENT DETECTION FUNCTIONS (ENCODING-AGNOSTIC)
 // ============================================================================
@@ -5286,7 +6055,7 @@ fn detect_svg_content(text: &str) -> bool {
 /// Shared JSON content detection that works with any encoding after normalization
 fn detect_json_content(text: &str) -> bool {
     let trimmed = text.trim_start();
-    (trimmed.starts_with('{') || trimmed.starts_with('[')) && is_valid_json_text(trimmed)
+    (trimmed.starts_with('{') || trimmed.starts_with('[')) && is_valid_json(trimmed.as_bytes())
 }
 
 /// Shared CSV content detection that works with any encoding after normalization
@@ -5351,39 +6120,6 @@ fn detect_icalendar_content(text: &str) -> bool {
 /// Shared RTF content detection that works with any encoding after normalization
 fn detect_rtf_content(text: &str) -> bool {
     text.starts_with("{\\rtf")
-}
-
-/// Helper function for JSON validation on text
-fn is_valid_json_text(text: &str) -> bool {
-    // Very basic JSON validation - just check for balanced braces/brackets
-    let mut brace_count = 0;
-    let mut bracket_count = 0;
-    let mut in_string = false;
-    let mut escape_next = false;
-
-    for c in text.chars().take(512) {
-        if escape_next {
-            escape_next = false;
-            continue;
-        }
-
-        match c {
-            '\\' if in_string => escape_next = true,
-            '"' => in_string = !in_string,
-            '{' if !in_string => brace_count += 1,
-            '}' if !in_string => brace_count -= 1,
-            '[' if !in_string => bracket_count += 1,
-            ']' if !in_string => bracket_count -= 1,
-            _ => {}
-        }
-
-        if brace_count < 0 || bracket_count < 0 {
-            return false;
-        }
-    }
-
-    // Must be balanced and have at least one brace or bracket
-    brace_count == 0 && bracket_count == 0 && (text.contains('{') || text.contains('['))
 }
 
 /// Convert UTF-16 bytes to UTF-8 string for content detection
@@ -5636,11 +6372,15 @@ fn has_js_keywords(input: &[u8]) -> bool {
 
 /// Simple JSON validation
 fn is_valid_json(input: &[u8]) -> bool {
-    // Very basic JSON validation - just check for balanced braces/brackets
+    // JSON validation optimized for partial content (first 512 bytes)
+    // For large files, we can't expect balanced brackets, so we look for JSON patterns
     let mut brace_count = 0;
     let mut bracket_count = 0;
     let mut in_string = false;
     let mut escape_next = false;
+    let mut has_colon = false;
+    let mut has_comma = false;
+    let mut has_opening = false;
 
     for &byte in input.iter().take(512) {
         // Limit check to first 512 bytes
@@ -5652,20 +6392,32 @@ fn is_valid_json(input: &[u8]) -> bool {
         match byte {
             b'\\' if in_string => escape_next = true,
             b'"' => in_string = !in_string,
-            b'{' if !in_string => brace_count += 1,
+            b'{' if !in_string => {
+                brace_count += 1;
+                has_opening = true;
+            }
             b'}' if !in_string => brace_count -= 1,
-            b'[' if !in_string => bracket_count += 1,
+            b'[' if !in_string => {
+                bracket_count += 1;
+                has_opening = true;
+            }
             b']' if !in_string => bracket_count -= 1,
+            b':' if !in_string => has_colon = true,
+            b',' if !in_string => has_comma = true,
             _ => {}
         }
 
+        // Brackets should never go negative (more closes than opens)
         if brace_count < 0 || bracket_count < 0 {
             return false;
         }
     }
 
-    // Must be balanced and have at least one brace or bracket
-    brace_count == 0 && bracket_count == 0 && (input.contains(&b'{') || input.contains(&b'['))
+    // Must have opening bracket/brace and look like JSON
+    // For objects: expect colons (key:value pairs)
+    // For arrays or objects: might have commas
+    // Don't require perfect balance since we only check first 512 bytes
+    has_opening && (has_colon || has_comma || (brace_count == 0 && bracket_count == 0))
 }
 
 // ============================================================================
@@ -5728,6 +6480,24 @@ where
 {
     if let Some(text) = utf16_to_text(input, big_endian) {
         return detect_content(&text);
+    }
+    false
+}
+
+/// Generic UTF-8 BOM format detection helper
+/// Consolidates the pattern used by all UTF-8 BOM detection functions
+#[inline]
+fn detect_utf8_bom_format<F>(input: &[u8], detect_content: F) -> bool
+where
+    F: Fn(&str) -> bool,
+{
+    // UTF-8 BOM is 0xEF 0xBB 0xBF (3 bytes)
+    // Input should already start with BOM since this is only called for UTF8_BOM children
+    if input.len() >= 3 && input.starts_with(b"\xEF\xBB\xBF") {
+        // Skip the BOM (3 bytes) and convert to str
+        if let Ok(text) = std::str::from_utf8(&input[3..]) {
+            return detect_content(text);
+        }
     }
     false
 }

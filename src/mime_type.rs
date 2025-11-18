@@ -2,6 +2,7 @@ use crate::{register_extension, register_mime, MimeKind};
 
 pub struct MimeType {
     mime: &'static str,
+    name: &'static str,
     aliases: &'static [&'static str],
     extension: &'static str,
     extension_aliases: &'static [&'static str],
@@ -16,12 +17,14 @@ pub struct MimeType {
 impl MimeType {
     pub const fn new(
         mime: &'static str,
+        name: &'static str,
         extension: &'static str,
         matcher: fn(&[u8]) -> bool,
         children: &'static [&'static MimeType],
     ) -> Self {
         Self {
             mime,
+            name,
             aliases: &[],
             extension,
             extension_aliases: &[],
@@ -94,6 +97,10 @@ impl MimeType {
 
     pub fn mime(&self) -> &'static str {
         self.mime
+    }
+
+    pub fn name(&self) -> &'static str {
+        self.name
     }
 
     pub fn extension(&self) -> &'static str {

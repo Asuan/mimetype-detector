@@ -1,13 +1,13 @@
 //! # mimetype-detector
 //!
 //! A comprehensive Rust library for detecting MIME types and file extensions based on magic numbers.
-//! This library provides fast, accurate, and thread-safe MIME type detection for 450+ file formats
+//! This library provides fast, accurate, and thread-safe MIME type detection for ~450 file formats
 //! across all major categories.
 //!
 //! ## Features
 //!
 //! - **Fast and precise** MIME type detection using magic number analysis
-//! - **450+ supported formats** including images, audio, video, documents, archives, and more
+//! - **527 supported formats** including images, audio, video, documents, archives, and more
 //! - **Thread-safe** operations with lazy initialization
 //! - **Zero unsafe code** - built with RwLock and LazyLock for safety
 //! - **Memory efficient** - reads only first 3KB of files
@@ -22,7 +22,9 @@
 //! let data = b"\x89PNG\r\n\x1a\n";
 //! let mime_type = detect(data);
 //! println!("MIME type: {}", mime_type); // image/png
+//! println!("Name: {}", mime_type.name()); // Portable Network Graphics
 //! println!("Extension: {}", mime_type.extension()); // .png
+//! assert!(!mime_type.name().is_empty());
 //! println!("Kind: {}", mime_type.kind()); // IMAGE
 //!
 //! // Detect from file

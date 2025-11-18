@@ -1725,6 +1725,8 @@ pub const APPLICATION_X_LRF: &str = "application/x-lrf";
 
 /// FictionBook e-book format (XML-based)
 pub const APPLICATION_X_FB2_XML: &str = "application/x-fb2+xml";
+/// FictionBook legacy MIME type
+pub const APPLICATION_X_FICTIONBOOK_XML: &str = "application/x-fictionbook+xml";
 
 // ============================================================================
 // FONT FORMATS
@@ -1732,6 +1734,8 @@ pub const APPLICATION_X_FB2_XML: &str = "application/x-fb2+xml";
 
 /// FigletFont ASCII art font
 pub const APPLICATION_X_FIGLET: &str = "application/x-figlet";
+/// FigletFont legacy MIME type
+pub const APPLICATION_X_FIGLET_FONT: &str = "application/x-figlet-font";
 
 // ============================================================================
 // OTHER FORMATS
@@ -1739,6 +1743,8 @@ pub const APPLICATION_X_FIGLET: &str = "application/x-figlet";
 
 /// SeqBox archive format
 pub const APPLICATION_X_SBX: &str = "application/x-sbx";
+/// SeqBox legacy MIME type
+pub const APPLICATION_X_SEQBOX: &str = "application/x-seqbox";
 
 /// Snappy framed format
 pub const APPLICATION_X_SNAPPY_FRAMED: &str = "application/x-snappy-framed";

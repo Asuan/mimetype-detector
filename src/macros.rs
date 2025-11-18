@@ -53,10 +53,10 @@ macro_rules! build_prefix_vec {
 /// - Offset with prefix: `offset(8, b"WEBP", prefix: b"RIFF")`
 macro_rules! mimetype {
     // Build function that actually creates the MimeType with all parameters
-    (@build $static_name:ident, $mime:expr, $ext:expr, $matcher:expr, $children:expr,
+    (@build $static_name:ident, $mime:expr, $name:expr, $ext:expr, $matcher:expr, $children:expr,
      $kind:expr, $aliases:expr, $ext_aliases:expr, $parent:expr) => {
         static $static_name: $crate::MimeType = {
-            let mut mime = $crate::MimeType::new($mime, $ext, $matcher, $children);
+            let mut mime = $crate::MimeType::new($mime, $name, $ext, $matcher, $children);
             if let Some(k) = $kind {
                 mime = mime.with_kind(k);
             }
@@ -75,7 +75,7 @@ macro_rules! mimetype {
 
     // Simple literal prefix
     ($static_name:ident, $mime:expr, $ext:expr, $prefix:literal) => {
-        mimetype!(@build $static_name, $mime, $ext,
+        mimetype!(@build $static_name, $mime, "", $ext,
             |input| input.starts_with($prefix),
             &[],
             None, None, None, None
@@ -83,15 +83,16 @@ macro_rules! mimetype {
     };
 
     // Single literal prefix (unified pattern with optional parameters)
-    // Note: Parameters must be in this order: kind, aliases, ext_aliases, children, parent
+    // Note: Parameters must be in this order: name, kind, aliases, ext_aliases, children, parent
     ($static_name:ident, $mime:expr, $ext:expr, $prefix:literal,
+     $(name: $name:expr,)?
      kind: $kind:ident
      $(, aliases: [$($alias:expr),* $(,)?])?
      $(, ext_aliases: [$($ext_alias:expr),* $(,)?])?
      $(, children: [$($child:expr),* $(,)?])?
      $(, parent: $parent:expr)?
     ) => {
-        mimetype!(@build $static_name, $mime, $ext,
+        mimetype!(@build $static_name, $mime, mimetype!(@opt_str $($name)?), $ext,
             |input| input.starts_with($prefix),
             &[$($($child),*)?],
             Some($crate::MimeKind::$kind),
@@ -101,9 +102,9 @@ macro_rules! mimetype {
         );
     };
 
-    // Array pattern
-    ($static_name:ident, $mime:expr, $ext:expr, [$($byte:expr),+ $(,)?], kind: $kind:ident) => {
-        mimetype!(@build $static_name, $mime, $ext,
+    // Array pattern with optional name
+    ($static_name:ident, $mime:expr, $ext:expr, [$($byte:expr),+ $(,)?], $(name: $name:expr,)? kind: $kind:ident) => {
+        mimetype!(@build $static_name, $mime, mimetype!(@opt_str $($name)?), $ext,
             |input| {
                 const PREFIX: &[u8] = &[$($byte),+];
                 input.starts_with(PREFIX)
@@ -113,9 +114,21 @@ macro_rules! mimetype {
         );
     };
 
-    // Multiple byte array alternatives
-    ($static_name:ident, $mime:expr, $ext:expr, [$($first_byte:expr),+ $(,)?] $(| [$($rest_byte:expr),+ $(,)?])+, kind: $kind:ident) => {
-        mimetype!(@build $static_name, $mime, $ext,
+    // Multiple byte array alternatives with name and extension aliases
+    ($static_name:ident, $mime:expr, $ext:expr, [$($first_byte:expr),+ $(,)?] $(| [$($rest_byte:expr),+ $(,)?])+, name: $name:expr, ext_aliases: [$($ext_alias:literal),* $(,)?], kind: $kind:ident) => {
+        mimetype!(@build $static_name, $mime, $name, $ext,
+            |input| {
+                const FIRST: &[u8] = &[$($first_byte),+];
+                input.starts_with(FIRST) $(|| input.starts_with(&[$($rest_byte),+]))+
+            },
+            &[],
+            Some($crate::MimeKind::$kind), None, Some(&[$($ext_alias),*]), None
+        );
+    };
+
+    // Multiple byte array alternatives with optional name
+    ($static_name:ident, $mime:expr, $ext:expr, [$($first_byte:expr),+ $(,)?] $(| [$($rest_byte:expr),+ $(,)?])+, $(name: $name:expr,)? kind: $kind:ident) => {
+        mimetype!(@build $static_name, $mime, mimetype!(@opt_str $($name)?), $ext,
             |input| {
                 const FIRST: &[u8] = &[$($first_byte),+];
                 input.starts_with(FIRST) $(|| input.starts_with(&[$($rest_byte),+]))+
@@ -127,7 +140,7 @@ macro_rules! mimetype {
 
     // Multiple byte array alternatives with extension aliases
     ($static_name:ident, $mime:expr, $ext:expr, [$($first_byte:expr),+ $(,)?] $(| [$($rest_byte:expr),+ $(,)?])+, kind: $kind:ident, ext_aliases: [$($ext_alias:literal),* $(,)?]) => {
-        mimetype!(@build $static_name, $mime, $ext,
+        mimetype!(@build $static_name, $mime, "", $ext,
             |input| {
                 const FIRST: &[u8] = &[$($first_byte),+];
                 input.starts_with(FIRST) $(|| input.starts_with(&[$($rest_byte),+]))+
@@ -138,15 +151,16 @@ macro_rules! mimetype {
     };
 
     // Multiple literal prefixes (unified pattern with optional parameters)
-    // Note: Parameters must be in this order: kind, aliases, ext_aliases, children, parent
+    // Note: Parameters must be in this order: name, kind, aliases, ext_aliases, children, parent
     ($static_name:ident, $mime:expr, $ext:expr, $first:literal $(| $rest:literal)+,
+     $(name: $name:expr,)?
      kind: $kind:ident
      $(, aliases: [$($alias:expr),* $(,)?])?
      $(, ext_aliases: [$($ext_alias:expr),* $(,)?])?
      $(, children: [$($child:expr),* $(,)?])?
      $(, parent: $parent:expr)?
     ) => {
-        mimetype!(@build $static_name, $mime, $ext,
+        mimetype!(@build $static_name, $mime, mimetype!(@opt_str $($name)?), $ext,
             |input| input.starts_with($first) $(|| input.starts_with($rest))+,
             &[$($($child),*)?],
             Some($crate::MimeKind::$kind),
@@ -164,16 +178,21 @@ macro_rules! mimetype {
     (@opt_expr $item:expr) => { Some($item) };
     (@opt_expr) => { None };
 
+    // Helper for optional string parameters
+    (@opt_str $item:expr) => { $item };
+    (@opt_str) => { "" };
+
     // Simple offset patterns (unified with optional parameters)
-    // Note: Parameters must be in this order: kind, aliases, ext_aliases, children, parent
+    // Note: Parameters must be in this order: name, kind, aliases, ext_aliases, children, parent
     ($static_name:ident, $mime:expr, $ext:expr, offset: ($offset:expr, $bytes:expr),
+     $(name: $name:expr,)?
      kind: $kind:ident
      $(, aliases: [$($alias:expr),* $(,)?])?
      $(, ext_aliases: [$($ext_alias:expr),* $(,)?])?
      $(, children: [$($child:expr),* $(,)?])?
      $(, parent: $parent:expr)?
     ) => {
-        mimetype!(@build $static_name, $mime, $ext,
+        mimetype!(@build $static_name, $mime, mimetype!(@opt_str $($name)?), $ext,
             |input| {
                 let offset = $offset;
                 let bytes: &[u8] = $bytes;
@@ -188,15 +207,16 @@ macro_rules! mimetype {
     };
 
     // Offset with prefix patterns (unified with optional parameters)
-    // Note: Parameters must be in this order: kind, aliases, ext_aliases, children, parent
+    // Note: Parameters must be in this order: name, kind, aliases, ext_aliases, children, parent
     ($static_name:ident, $mime:expr, $ext:expr, offset: ($offset:expr, $bytes:expr, prefix: ($prefix_offset:expr, $prefix_bytes:expr)),
+     $(name: $name:expr,)?
      kind: $kind:ident
      $(, aliases: [$($alias:expr),* $(,)?])?
      $(, ext_aliases: [$($ext_alias:expr),* $(,)?])?
      $(, children: [$($child:expr),* $(,)?])?
      $(, parent: $parent:expr)?
     ) => {
-        mimetype!(@build $static_name, $mime, $ext,
+        mimetype!(@build $static_name, $mime, mimetype!(@opt_str $($name)?), $ext,
             |input| {
                 let prefix_offset = $prefix_offset;
                 let prefix_bytes: &[u8] = $prefix_bytes;
@@ -331,6 +351,7 @@ mod tests {
 
     static TEST_PDF_SEP: crate::MimeType = crate::MimeType::new(
         APPLICATION_PDF,
+        "PDF",
         ".pdf",
         |input| input.starts_with(b"%PDF-"),
         &[],
@@ -449,8 +470,13 @@ mod tests {
 
     // Test children parameter
     // Create a test child type
-    static TEST_CHILD: crate::MimeType =
-        crate::MimeType::new("application/x-test-child", ".child", |_| false, &[]);
+    static TEST_CHILD: crate::MimeType = crate::MimeType::new(
+        "application/x-test-child",
+        "Test Child",
+        ".child",
+        |_| false,
+        &[],
+    );
 
     mimetype!(
         TEST_PNG_CHILDREN,
@@ -471,7 +497,8 @@ mod tests {
 
     // Test unified mimetype! macro with parent parameter
     // Create a test parent type
-    static TEST_PARENT: crate::MimeType = crate::MimeType::new("text/plain", ".txt", |_| true, &[]);
+    static TEST_PARENT: crate::MimeType =
+        crate::MimeType::new("text/plain", "Plain Text", ".txt", |_| true, &[]);
 
     mimetype!(
         TEST_WARC_PARENT,
