@@ -167,6 +167,14 @@ impl MimeType {
         }
         result
     }
+
+    pub fn aliases(&self) -> &'static [&'static str] {
+        self.aliases
+    }
+
+    pub fn extension_aliases(&self) -> &'static [&'static str] {
+        self.extension_aliases
+    }
 }
 
 impl std::fmt::Display for MimeType {

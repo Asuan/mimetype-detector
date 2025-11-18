@@ -1275,7 +1275,7 @@ static MP3: MimeType = MimeType::new(AUDIO_MPEG, "MPEG Audio Layer III", ".mp3",
 static MP2: MimeType =
     MimeType::new(AUDIO_MP2, "MPEG Audio Layer II", ".mp2", mp2, &[]).with_kind(MimeKind::AUDIO);
 
-mimetype!(FLAC, AUDIO_FLAC, ".flac", b"fLaC", name: "Free Lossless Audio Codec", kind: AUDIO);
+mimetype!(FLAC, AUDIO_FLAC, ".flac", b"fLaC", name: "Free Lossless Audio Codec", kind: AUDIO, aliases: [AUDIO_X_FLAC]);
 
 mimetype!(WAV, AUDIO_WAV, ".wav", offset: (8, b"WAVE", prefix: (0, b"RIFF")), name: "Waveform Audio File", kind: AUDIO, aliases: [AUDIO_X_WAV, AUDIO_VND_WAVE, AUDIO_WAVE]);
 
@@ -1286,9 +1286,10 @@ mimetype!(AIFF, AUDIO_AIFF, ".aiff", offset: (8, b"AIFF", prefix: (0, b"FORM")),
 
 mimetype!(MIDI, AUDIO_MIDI, ".midi", b"MThd", name: "Musical Instrument Digital Interface", kind: AUDIO, aliases: [AUDIO_MID], ext_aliases: [".mid"]);
 
-mimetype!(OGG, APPLICATION_OGG, ".ogg", b"OggS", name: "Ogg Container Format", kind: AUDIO, aliases: [APPLICATION_X_OGG], ext_aliases: [".oga", ".opus", ".ogv", ".ogm", ".ogx", ".spx"], children: [&OGG_AUDIO, &OGG_MEDIA, &OGG_VIDEO, &OGG_MULTIPLEXED, &SPX]);
+mimetype!(OGG, APPLICATION_OGG, ".ogg", b"OggS", name: "Ogg Container Format", kind: AUDIO, aliases: [APPLICATION_X_OGG], children: [&OGG_AUDIO, &OGG_MEDIA, &OGG_VIDEO, &OGG_MULTIPLEXED, &SPX]);
 
 static OGG_AUDIO: MimeType = MimeType::new(AUDIO_OGG, "Ogg Audio", ".oga", ogg_audio, &[])
+    .with_extension_aliases(&[".opus"])
     .with_kind(MimeKind::AUDIO)
     .with_parent(&OGG);
 
@@ -1614,7 +1615,8 @@ static SPX: MimeType = MimeType::new(
 mimetype!(CSR, APPLICATION_X_PEM_FILE, ".csr",
     b"-----BEGIN CERTIFICATE REQUEST-----" | b"-----BEGIN NEW CERTIFICATE REQUEST-----",
     name: "Certificate Signing Request",
-    kind: APPLICATION);
+    kind: APPLICATION,
+    ext_aliases: [".pem"]);
 
 // ActiveMime - Microsoft Office embedded OLE object
 // ActiveMime signature: "ActiveMime" at offset 0x32
@@ -3864,7 +3866,7 @@ mimetype!(NES, APPLICATION_VND_NINTENDO_SNES_ROM, ".nes", b"NES\x1A", name: "Nin
 mimetype!(HDF4, APPLICATION_X_HDF, ".hdf", b"\x0e\x03\x13\x01", name: "Hierarchical Data Format 4", kind: DATABASE, ext_aliases: [".hdf4"]);
 
 // HDF5 - Hierarchical Data Format version 5
-mimetype!(HDF5, APPLICATION_X_HDF5, ".hdf5", b"\x89HDF\r\n\x1a\n", name: "Hierarchical Data Format 5", kind: DATABASE, aliases: [".h5"]);
+mimetype!(HDF5, APPLICATION_X_HDF5, ".hdf5", b"\x89HDF\r\n\x1a\n", name: "Hierarchical Data Format 5", kind: DATABASE, ext_aliases: [".h5"]);
 
 // HDF parent - for backward compatibility, checks both HDF4 and HDF5
 mimetype!(HDF, APPLICATION_X_HDF, ".hdf", b"\x89HDF\r\n\x1a\n" | b"\x0e\x03\x13\x01", name: "Hierarchical Data Format", kind: DATABASE, children: [&HDF4, &HDF5]);

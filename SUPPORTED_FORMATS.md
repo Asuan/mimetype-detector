@@ -11,7 +11,7 @@ This document provides a comprehensive listing of all 527 file formats supported
 | 3GPP2 | 3GPP2 Multimedia | `video/3gpp2` | `.3g2` | `video/3g2`, `audio/3gpp2` | 3GPP2 Multimedia |
 | 3MF | 3D Manufacturing Format | `application/vnd.ms-package.3dmanufacturing-3dmodel+xml` | `.3mf` | | 3D Manufacturing |
 | 7-Zip | 7-Zip Archive | `application/x-7z-compressed` | `.7z` | | |
-| 8SVX Audio | Amiga 8SVX Audio | `audio/x-8svx` | `.8svx` | `.8sv` | Amiga IFF audio format |
+| 8SVX Audio | Amiga 8SVX Audio | `audio/x-8svx` | `.8svx`, `.8sv` | | Amiga IFF audio format |
 | AAC | Advanced Audio Coding | `audio/aac` | `.aac` | | Advanced Audio Coding |
 | AAF | Binary Data | `application/octet-stream` | `.aaf` | | Advanced Authoring Format |
 | AbiWord | AbiWord Document | `application/x-abiword` | `.abw` | | Gzip-compressed XML document |
@@ -22,7 +22,7 @@ This document provides a comprehensive listing of all 527 file formats supported
 | Adobe DNG | Adobe DNG | `image/x-adobe-dng` | `.dng` | | Digital Negative (TIFF-based) |
 | Adobe Flash | Adobe Flash | `application/x-shockwave-flash` | `.swf` | | |
 | Age Encryption | Age Encryption | `application/x-age-encryption` | `.age` | | Modern file encryption format |
-| AIFF | Audio Interchange File Format | `audio/aiff` | `.aiff` | | `.aif` |
+| AIFF | Audio Interchange File Format | `audio/aiff` | `.aiff`, `.aif` | | |
 | Amiga Disk File | Amiga Disk File | `application/x-amiga-disk-format` | `.adf` | | Amiga floppy disk image (DOS0-DOS5) |
 | Amiga Hunk Executable | Amiga Hunk Executable | `application/x-amiga-executable` | `.amiga` | | Amiga legacy executable format |
 | AMF | AMF | `application/x-amf` | `.amf` | | Additive Manufacturing |
@@ -35,7 +35,7 @@ This document provides a comprehensive listing of all 527 file formats supported
 | APNG | Animated Portable Network Graphics | `image/vnd.mozilla.apng` | `.apng` | | Animated PNG |
 | AppImage | AppImage | `application/x-appimage` | `.appimage` | | Linux application packaging format |
 | Apple Icon | Apple Icon Image | `image/x-icns` | `.icns` | | |
-| AR | Unix Archive | `application/x-archive` | `.a` | `application/x-unix-archive` | `.deb` |
+| AR | Unix Archive | `application/x-archive` | `.a`, `.deb` | `application/x-unix-archive` | |
 | ARJ | ARJ Archive | `application/arj` | `.arj` | `application/x-arj` | Legacy DOS compression |
 | ASF/WMV | Microsoft Digital Video Recording | `video/x-ms-asf` | `.asf` | `video/asf`, `video/x-ms-wmv` | Advanced Systems Format |
 | ASTC | Adaptive Scalable Texture Compression | `image/x-astc` | `.astc` | | ARM Texture Compression |
@@ -59,7 +59,7 @@ This document provides a comprehensive listing of all 527 file formats supported
 | BitTorrent | BitTorrent Metadata | `application/x-bittorrent` | `.torrent` | | Torrent metadata |
 | Blender | Blender 3D | `application/x-blender` | `.blend` | | 3D modeling |
 | BMFont Binary | BMFont Binary | `application/x-angelcode-bmfont` | `.fnt` | | AngelCode bitmap font generator binary format |
-| BMP | Bitmap Image File | `image/bmp` | `.bmp` | `image/x-bmp`, `image/x-ms-bmp` | `.dib` |
+| BMP | Bitmap Image File | `image/bmp` | `.bmp`, `.dib` | `image/x-bmp`, `image/x-ms-bmp` | |
 | BPG | Better Portable Graphics | `image/bpg` | `.bpg` | | Better Portable Graphics |
 | BroadBand eBook | BroadBand eBook | `application/x-lrf` | `.lrf` | | Sony Reader format |
 | BZIP | Bzip Archive | `application/x-bzip` | `.bz` | | Legacy BZIP compression (BZ0) |
@@ -100,7 +100,7 @@ This document provides a comprehensive listing of all 527 file formats supported
 | DVR-MS | Microsoft Digital Video Recording | `video/x-ms-asf` | `.dvr-ms` | | Microsoft Digital Video Recording (ASF-based) |
 | DWFX | Dwfx Xps | `model/vnd.dwfx+xps` | `.dwfx` | | Design Web Format XPS (Autodesk CAD exchange format) |
 | EBML | EBML | `application/x-ebml` | `.ebml` | | Extensible Binary Meta Language |
-| ELF | ELF | `application/x-elf` | | `.so` | Executable and Linkable Format |
+| ELF | ELF | `application/x-elf` | `.so` | | Executable and Linkable Format |
 | ELF Core Dump | Core Dump | `application/x-coredump` | | | |
 | ELF Executable | ELF Executable | `application/x-executable` | `.elf` | | |
 | ELF Object | ELF Object | `application/x-object` | | | |
@@ -126,7 +126,7 @@ This document provides a comprehensive listing of all 527 file formats supported
 | FigletFont | FigletFont | `application/x-figlet` | `.flf` | `application/x-figlet-font` | ASCII art fonts |
 | FIT | Garmin FIT | `application/x-fit` | `.fit` | | Flexible and Interoperable Data Transfer (Garmin fitness/GPS) |
 | FITS | Flexible Image Transport System | `application/fits` | `.fits` | `image/fits` | Flexible Image Transport System |
-| FLAC | Free Lossless Audio Codec | `audio/flac` | `.flac` | | Free Lossless Audio Codec |
+| FLAC | Free Lossless Audio Codec | `audio/flac` | `.flac` | `audio/x-flac` | Free Lossless Audio Codec |
 | Flash MP4 Audio | Flash MP4 Audiobook | `audio/mp4` | `.f4a` | | |
 | Flash MP4 Audiobook | Flash MP4 Audiobook | `audio/mp4` | `.f4b` | | |
 | Flash MP4 Protected Video | Video Mp4 | `video/mp4` | `.f4p` | | |
@@ -154,27 +154,27 @@ This document provides a comprehensive listing of all 527 file formats supported
 | Google Draco | Google Draco | `model/x-draco` | `.drc` | | 3D geometry compression |
 | GPX | GPX | `application/gpx+xml` | `.gpx` | | GPS Exchange |
 | GRIB | GRIB Weather Data | `application/x-grib` | `.grib` | | Weather data format (meteorology) |
-| GZIP | GNU Zip | `application/gzip` | `.gz` | `application/x-gzip`, `application/x-gunzip`, `application/gzipped`, `application/gzip-compressed`, `application/x-gzip-compressed`, `gzip/document` | `.tgz`, `.taz` |
+| GZIP | GNU Zip | `application/gzip` | `.gz`, `.tgz`, `.taz` | `application/x-gzip`, `application/x-gunzip`, `application/gzipped`, `application/gzip-compressed`, `application/x-gzip-compressed`, `gzip/document` | |
 | HAR | Application Json | `application/json` | `.har` | | HTTP Archive |
 | Hasselblad 3FR | Hasselblad 3FR | `image/x-hasselblad-3fr` | `.3fr` | | Hasselblad RAW format (TIFF-based) |
-| HDF4 | Hierarchical Data Format | `application/x-hdf` | `.hdf` | `.hdf4` | Hierarchical Data Format version 4 |
-| HDF5 | Hierarchical Data Format 5 | `application/x-hdf5` | `.hdf5` | `.h5` | Hierarchical Data Format version 5 |
+| HDF4 | Hierarchical Data Format | `application/x-hdf` | `.hdf`, `.hdf4` | | Hierarchical Data Format version 4 |
+| HDF5 | Hierarchical Data Format 5 | `application/x-hdf5` | `.hdf5`, `.h5` | | Hierarchical Data Format version 5 |
 | HEIC | High Efficiency Image Container | `image/heic` | `.heic` | | High Efficiency Image Container |
-| HEIC Sequence | High Efficiency Image Container Sequence | `image/heic-sequence` | `.heic` | `.heics` | |
+| HEIC Sequence | High Efficiency Image Container Sequence | `image/heic-sequence` | `.heic`, `.heics` | | |
 | HEIF | High Efficiency Image Format | `image/heif` | `.heif` | | High Efficiency Image Format |
-| HEIF Sequence | High Efficiency Image Format Sequence | `image/heif-sequence` | `.heif` | `.heifs` | |
-| HTML | HyperText Markup Language | `text/html; charset=utf-8` | `.html` | `.htm` | Case-insensitive tag detection |
+| HEIF Sequence | High Efficiency Image Format Sequence | `image/heif-sequence` | `.heif`, `.heifs` | | |
+| HTML | HyperText Markup Language | `text/html; charset=utf-8` | `.html`, `.htm` | | Case-insensitive tag detection |
 | HTML (UTF-16) | HyperText Markup Language (UTF-16 LE) | `text/html; charset=utf-16` | `.html` | | UTF-16 BE/LE variants |
 | HTML Help | HTML Help | `application/vnd.ms-htmlhelp` | `.chm` | | |
 | iCalendar | Calendar | `text/calendar` | `.ics` | | Calendar format |
 | iCalendar (UTF-16) | iCalendar (UTF-16) | `text/calendar; charset=utf-16` | `.ics` | | UTF-16 BE/LE variants |
 | ICC Profile | ICC Color Profile | `application/vnd.iccprofile` | `.icc` | | Color profile |
 | ID3v2 | ID3v2 Tag | `application/x-id3v2` | | | MP3 metadata |
-| IGES | Initial Graphics Exchange Specification | `model/iges` | `.iges` | `.igs` | Initial Graphics Exchange Specification - CAD data exchange |
+| IGES | Initial Graphics Exchange Specification | `model/iges` | `.iges`, `.igs` | | Initial Graphics Exchange Specification - CAD data exchange |
 | Illustrator | Adobe Illustrator | `application/vnd.adobe.illustrator` | `.ai` | | Adobe Illustrator Artwork (PDF-based) |
 | InDesign | Adobe InDesign Document | `application/x-indesign` | `.indd` | | Adobe InDesign Document |
 | InDesign Markup Language | InDesign Markup Language | `application/vnd.adobe.indesign-idml-package` | `.idml` | | ZIP-based InDesign format |
-| Initial Graphics Exchange Specification | Initial Graphics Exchange Specification | `model/iges` | `.iges` | `.igs` | CAD data exchange format - detects via 72 spaces + 'S' in column 73 |
+| Initial Graphics Exchange Specification | Initial Graphics Exchange Specification | `model/iges` | `.iges`, `.igs` | | CAD data exchange format - detects via 72 spaces + 'S' in column 73 |
 | InstallShield Cabinet | InstallShield Cabinet Archive | `application/x-installshield` | `.cab` | | |
 | Inter-Quake Export | Inter-Quake Export | `model/x-iqe` | `.iqe` | | Text-based 3D model format for games |
 | InterQuake Model | InterQuake Model | `model/x-iqm` | `.iqm` | | 3D model format for games |
@@ -185,9 +185,9 @@ This document provides a comprehensive listing of all 527 file formats supported
 | Java Keystore | Java Keystore | `application/x-java-keystore` | `.jks` | | Java keystore |
 | JavaScript | JavaScript | `text/javascript` | `.js` | `application/javascript` | |
 | JNG | JPEG Network Graphics | `image/x-jng` | `.jng` | | JPEG Network Graphics (JPEG with PNG-style chunks) |
-| JPEG | Joint Photographic Experts Group | `image/jpeg` | `.jpg` | | `.jpeg`, `.jpe`, `.jif`, `.jfif`, `.jfi` |
+| JPEG | Joint Photographic Experts Group | `image/jpeg` | `.jpg`, `.jpeg`, `.jpe`, `.jif`, `.jfif`, `.jfi` | | |
 | JPEG 2000 | JPEG 2000 Image | `image/jp2` | `.jp2` | | |
-| JPEG 2000 Codestream | JPEG 2000 Codestream | `image/x-jp2-codestream` | `.j2c` | | `.jpc`, `.j2k` - Raw codestream without container |
+| JPEG 2000 Codestream | JPEG 2000 Codestream | `image/x-jp2-codestream` | `.j2c`, `.jpc`, `.j2k` | | Raw codestream without container |
 | JPEG 2000 Extended | JPEG 2000 Extended | `image/jpx` | `.jpx` | | |
 | JPEG 2000 Multi-part | JPEG 2000 Part 6 | `image/jpm` | `.jpm` | `video/jpm` | |
 | JPEG-LS | JPEG-LS Lossless Image | `image/jls` | `.jls` | | Lossless/near-lossless JPEG (ISO-14495-1) |
@@ -210,7 +210,7 @@ This document provides a comprehensive listing of all 527 file formats supported
 | Lotus 1-2-3 v1 | Lotus 1-2-3 | `application/vnd.lotus-1-2-3` | `.wk1` | | Legacy spreadsheet (version 1) |
 | Lotus 1-2-3 v2/v9 | Lotus 1-2-3 | `application/vnd.lotus-1-2-3` | `.123` | | Legacy spreadsheet |
 | Lotus 1-2-3 v3 | Lotus 1-2-3 | `application/vnd.lotus-1-2-3` | `.wk3` | | Legacy spreadsheet (version 3) |
-| Lotus 1-2-3 v4/v5 | Lotus 1-2-3 | `application/vnd.lotus-1-2-3` | `.wk4` | `.wk5` | Legacy spreadsheet (versions 4/5) |
+| Lotus 1-2-3 v4/v5 | Lotus 1-2-3 | `application/vnd.lotus-1-2-3` | `.wk4`, `.wk5` | | Legacy spreadsheet (versions 4/5) |
 | Lotus Notes | Lotus Notes Database | `application/vnd.lotus-notes` | `.nsf` | | Enterprise collaboration database |
 | LRZIP | LRZIP Archive | `application/x-lrzip` | `.lrz` | | Long-range ZIP compression |
 | Lua | Lua Source Code | `text/x-lua` | `.lua` | | |
@@ -220,7 +220,7 @@ This document provides a comprehensive listing of all 527 file formats supported
 | LZIP | Lzip Compressed Archive | `application/lzip` | `.lz` | `application/x-lzip` | |
 | LZMA | LZMA Compressed Archive | `application/x-lzma` | `.lzma` | | LZMA compressed |
 | LZOP | LZOP Compressed Archive | `application/x-lzop` | `.lzo` | | LZOP compressed |
-| M3U | M3U Playlist | `audio/x-mpegurl` | `.m3u` | `audio/mpegurl` | `.m3u8` |
+| M3U | M3U Playlist | `audio/x-mpegurl` | `.m3u`, `.m3u8` | `audio/mpegurl` | |
 | M4A | MPEG-4 Audio | `audio/x-m4a` | `.m4a` | | |
 | M4V | iTunes Video | `video/x-m4v` | `.m4v` | | iTunes Video |
 | macOS Alias | macOS Alias File | `application/x-apple-alias` | | | macOS Finder alias file |
@@ -228,12 +228,12 @@ This document provides a comprehensive listing of all 527 file formats supported
 | MagicaVoxel | MagicaVoxel | `model/x-vox` | `.vox` | | Voxel model format |
 | MARC | MARC | `application/marc` | `.mrc` | | Library records |
 | MathML | Mathml XML | `application/mathml+xml` | `.mathml` | | Mathematical Markup Language |
-| Matroska | Matroska | `video/x-matroska` | `.mkv` | | `.mk3d`, `.mka`, `.mks` |
+| Matroska | Matroska | `video/x-matroska` | `.mkv`, `.mk3d`, `.mka`, `.mks` | | |
 | Maya ASCII | Autodesk Maya ASCII | `application/x-maya-ascii` | `.ma` | | Autodesk Maya ASCII scene |
 | Maya Binary | Autodesk Maya Binary | `application/x-maya-binary` | `.mb` | | Autodesk Maya binary scene |
 | Microsoft Installer | Windows Installer | `application/x-ms-installer` | `.msi` | | |
 | Microsoft Reader | Microsoft Reader eBook | `application/x-ms-reader` | `.lit` | | eBook format |
-| MIDI | Musical Instrument Digital Interface | `audio/midi` | `.midi` | `audio/mid` | `.mid` |
+| MIDI | Musical Instrument Digital Interface | `audio/midi` | `.midi`, `.mid` | `audio/mid` | |
 | MIE | Meta Information Encapsulation | `application/x-mie` | `.mie` | | Meta Information Encapsulation |
 | MIFF | Magick Image File Format | `image/x-miff` | `.miff` | | ImageMagick native format |
 | Minolta MRW | Minolta Raw Image | `image/x-minolta-mrw` | `.mrw` | | Minolta RAW format |
@@ -256,7 +256,7 @@ This document provides a comprehensive listing of all 527 file formats supported
 | MPEG-4 Audio | Flash MP4 Audiobook | `audio/mp4` | `.mp4` | `audio/x-m4a`, `audio/x-mp4a` | |
 | MS Access (ACCDB) | Msaccess | `application/x-msaccess` | `.accdb` | | |
 | MS Access (MDB) | Msaccess | `application/x-msaccess` | `.mdb` | | |
-| MS-DOS Batch | Batch Script | `text/x-msdos-batch` | `.bat` | `.cmd` | Windows batch scripts |
+| MS-DOS Batch | Batch Script | `text/x-msdos-batch` | `.bat`, `.cmd` | | Windows batch scripts |
 | MS Works WPS | Microsoft Works Word Processor | `application/vnd.ms-works` | `.wps` | | Microsoft Works Word Processor (OLE-based, extension-based detection) |
 | MS Works XLR | Microsoft Works Word Processor | `application/vnd.ms-works` | `.xlr` | | Microsoft Works 6 Spreadsheet |
 | MTV | MTV Video | `video/x-mtv` | `.mtv` | | MTV video format (RIFF-based) |
@@ -276,7 +276,7 @@ This document provides a comprehensive listing of all 527 file formats supported
 | ODS | OpenDocument Spreadsheet | `application/vnd.oasis.opendocument.spreadsheet` | `.ods` | `application/x-vnd.oasis.opendocument.spreadsheet` | OpenDocument Spreadsheet |
 | ODT | OpenDocument Text | `application/vnd.oasis.opendocument.text` | `.odt` | `application/x-vnd.oasis.opendocument.text` | OpenDocument Text |
 | OGG | Ogg Container Format | `application/ogg` | `.ogg` | | Container format |
-| OGG Audio | Ogg Audio | `audio/ogg` | `.oga` | | `.opus` |
+| OGG Audio | Ogg Audio | `audio/ogg` | `.oga`, `.opus` | | |
 | OGG Media | Ogg Media | `video/ogg` | `.ogm` | | Ogg Media (video with subtitles) |
 | OGG Multiplexed | Ogg Container Format | `application/ogg` | `.ogx` | | Ogg Multiplexed (audio+video+text) |
 | OGG Video | Ogg Media | `video/ogg` | `.ogv` | | |
@@ -303,7 +303,7 @@ This document provides a comprehensive listing of all 527 file formats supported
 | PCX | PC Paintbrush | `image/x-pcx` | `.pcx` | | Picture Exchange / PC Paintbrush |
 | PDF | Portable Document Format | `application/pdf` | `.pdf` | `application/x-pdf` | Adobe Portable Document Format |
 | PEM Certificate | PEM Certificate | `application/x-pem-file` | `.pem` | | PEM format certificate |
-| PEM CSR | PEM Certificate | `application/x-pem-file` | `.csr` | `.pem` | Certificate Signing Request |
+| PEM CSR | PEM Certificate | `application/x-pem-file` | `.csr`, `.pem` | | Certificate Signing Request |
 | PEM Private Key | PEM Certificate | `application/x-pem-file` | `.pem` | | PEM format private key |
 | PEM Public Key | PEM Certificate | `application/x-pem-file` | `.pem` | | PEM format public key |
 | Pentax PEF | Pentax PEF | `image/x-pentax-pef` | `.pef` | | Pentax RAW format (TIFF-based) |
@@ -333,7 +333,7 @@ This document provides a comprehensive listing of all 527 file formats supported
 | Publisher | Publisher | `application/vnd.ms-publisher` | `.pub` | | |
 | Python | Python Source Code | `text/x-python` | `.py` | `text/x-script.python`, `application/x-python` | |
 | Python Bytecode | Python Bytecode | `application/x-python-bytecode` | `.pyc` | | Compiled Python modules |
-| Python Pickle | Python Pickle | `application/x-pickle` | `.pkl` | `.pickle` | Serialization format (protocols 2-5) |
+| Python Pickle | Python Pickle | `application/x-pickle` | `.pkl`, `.pickle` | | Serialization format (protocols 2-5) |
 | QCOW | QEMU Copy-on-Write 2 | `application/x-qemu-disk` | `.qcow` | | QEMU Copy-on-Write v1 disk image |
 | QCOW2 | QEMU Copy-on-Write 2 | `application/x-qemu-disk` | `.qcow2` | | QEMU Copy-on-Write v2 disk image |
 | QOI (Quite OK Image) | Quite OK Image Format | `image/x-qoi` | `.qoi` | | Quite OK Image format |
@@ -396,7 +396,7 @@ This document provides a comprehensive listing of all 527 file formats supported
 | Sun XML Writer | Sun XML Writer | `application/vnd.sun.xml.writer` | `.sxw` | | Legacy Sun Microsystems word processor format (ZIP-based, detects via mimetype file) |
 | Sun XML Writer Global | Sun XML Writer Global | `application/vnd.sun.xml.writer.global` | `.sgw` | | Legacy Sun Microsystems master document format (ZIP-based, detects via mimetype file) |
 | Sun XML Writer Template | Sun XML Writer Template | `application/vnd.sun.xml.writer.template` | `.stw` | | Legacy Sun Microsystems word processor template (ZIP-based, detects via mimetype file) |
-| Sun/NeXT Audio | Sun/NeXT Audio | `audio/basic` | `.au` | | `.snd` |
+| Sun/NeXT Audio | Sun/NeXT Audio | `audio/basic` | `.au`, `.snd` | | |
 | SVG | SVG | `image/svg+xml` | `.svg` | | Scalable Vector Graphics |
 | SVG (UTF-16) | Scalable Vector Graphics (UTF-16 LE) | `image/svg+xml; charset=utf-16` | `.svg` | | UTF-16 BE/LE variants |
 | SXC | StarOffice Calc | `application/vnd.sun.xml.calc` | `.sxc` | | OpenOffice Calc |
@@ -404,7 +404,7 @@ This document provides a comprehensive listing of all 527 file formats supported
 | TASTY | Binary Data | `application/octet-stream` | `.tasty` | | TASTY format |
 | Tcl | Tcl Script | `text/x-tcl` | `.tcl` | `application/x-tcl` | |
 | TCX | TCX | `application/vnd.garmin.tcx+xml` | `.tcx` | | Training Center XML |
-| TIFF | Tagged Image File Format | `image/tiff` | `.tiff` | | `.tif` |
+| TIFF | Tagged Image File Format | `image/tiff` | `.tiff`, `.tif` | | |
 | TMX | Tmx XML | `application/x-tmx+xml` | `.tmx` | | Tiled Map XML (game development) |
 | True Audio | True Audio | `audio/x-tta` | `.tta` | | Lossless codec |
 | Truevision TGA | Truevision Targa | `image/x-tga` | `.tga` | | Targa format |
@@ -461,7 +461,7 @@ This document provides a comprehensive listing of all 527 file formats supported
 | Windows Media Audio | Windows Media Audio | `audio/x-ms-wma` | `.wma` | | ASF-based audio format |
 | Windows Media Video | Windows Media Video | `video/x-ms-wmv` | `.wmv` | | ASF-based video format |
 | Windows Metafile | Windows Metafile | `image/wmf` | `.wmf` | | Windows vector format |
-| Windows PE | Windows Executable | `application/vnd.microsoft.portable-executable` | `.exe` | `.dll`, `.sys`, `.scr` | Portable Executable |
+| Windows PE | Windows Executable | `application/vnd.microsoft.portable-executable` | `.exe`, `.dll`, `.sys`, `.scr` | | Portable Executable |
 | Windows Registry | Windows Registry | `text/plain` | `.reg` | | ASCII or UTF-16 format |
 | Windows Shortcut | Windows Shortcut | `application/x-ms-shortcut` | `.lnk` | | |
 | WOFF | Web Open Font Format | `font/woff` | `.woff` | | Web Open Font Format |

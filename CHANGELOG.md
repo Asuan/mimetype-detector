@@ -10,6 +10,12 @@ Used prefixes:
 
 ## Unreleased
 
+## 0.3.1 - 2025-11-19
+
+* Added LTO (Link-Time Optimization) in release builds
+* Updated: aliases and extension aliases for some MIME types
+* Added method  `aliases()`  and `extension_aliases()` to get MIME type and extension aliases
+
 ## 0.3.0 - 2025-11-18
 
 * Added: name parameter (human-readable name)

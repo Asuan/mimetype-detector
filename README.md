@@ -15,7 +15,7 @@ Fast MIME type detection for ~450 file formats with zero dependencies.
 
 ```toml
 [dependencies]
-mimetype-detector = "0.3.0"
+mimetype-detector = "0.3.1"
 ```
 
 ## Usage
@@ -62,6 +62,11 @@ if mime.kind().is_image() {
 let jar = detect(b"PK\x03\x04...META-INF/MANIFEST.MF");
 println!("Kind: {}", jar.kind()); // "ARCHIVE | APPLICATION"
 println!("Name: {}", jar.name()); // "JAR"
+
+let pdf = detect_file("document.pdf")?;
+println!("MIME type: {}", pdf.mime()); // "application/pdf"
+println!("MIME aliases: {:?}", pdf.aliases()); // &["application/x-pdf"]
+println!("Extension aliases: {:?}", pdf.extension_aliases()); // &[".ai"]
 ```
 
 ## Supported Formats (527)
@@ -124,7 +129,9 @@ detect_reader<R: Read>(reader: R) -> io::Result<&'static MimeType>
 // MimeType methods
 mime() -> &'static str                      // Get MIME type
 name() -> &'static str                      // Get verbose human-readable name
-extension() -> &'static str                 // Get extension
+extension() -> &'static str                 // Get primary extension
+aliases() -> &'static [&'static str]        // Get MIME type aliases (zero-cost)
+extension_aliases() -> &'static [&'static str] // Get alternative file extensions (zero-cost)
 is(expected: &str) -> bool                  // Check type
 parent() -> Option<&'static MimeType>       // Get parent type
 kind() -> MimeKind                          // Get type category bitmask

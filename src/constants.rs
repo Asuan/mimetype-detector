@@ -449,6 +449,7 @@ pub const AUDIO_MP2: &str = "audio/mpeg";
 
 /// Free Lossless Audio Codec
 pub const AUDIO_FLAC: &str = "audio/flac";
+pub const AUDIO_X_FLAC: &str = "audio/x-flac";
 
 /// Waveform Audio File Format
 pub const AUDIO_WAV: &str = "audio/wav";
