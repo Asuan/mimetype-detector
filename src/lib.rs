@@ -180,7 +180,10 @@ pub fn detect_reader<R: Read>(reader: R) -> io::Result<&'static MimeType> {
 /// # Returns
 ///
 /// A `Result` containing the detected MIME type or an I/O error
-pub fn detect_reader_with_limit<R: Read>(mut reader: R, limit: usize) -> io::Result<&'static MimeType> {
+pub fn detect_reader_with_limit<R: Read>(
+    mut reader: R,
+    limit: usize,
+) -> io::Result<&'static MimeType> {
     let mut buffer = vec![0u8; limit];
     let n = reader.read(&mut buffer)?;
     Ok(detect_with_limit(&buffer[..n], limit))
@@ -213,7 +216,10 @@ pub fn detect_file<P: AsRef<Path>>(path: P) -> io::Result<&'static MimeType> {
 /// # Returns
 ///
 /// A `Result` containing the detected MIME type or an I/O error
-pub fn detect_file_with_limit<P: AsRef<Path>>(path: P, limit: usize) -> io::Result<&'static MimeType> {
+pub fn detect_file_with_limit<P: AsRef<Path>>(
+    path: P,
+    limit: usize,
+) -> io::Result<&'static MimeType> {
     let file = File::open(path)?;
     detect_reader_with_limit(file, limit)
 }
