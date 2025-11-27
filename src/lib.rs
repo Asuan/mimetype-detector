@@ -103,6 +103,13 @@ fn ensure_init() {
     });
 }
 
+/// Default maximum number of bytes to read for MIME type detection.
+///
+/// This limit is used by `detect()`, `detect_reader()`, and `detect_file()`.
+/// For custom read limits, use the `*_with_limit()` variants:
+/// - `detect_with_limit(data, limit)`
+/// - `detect_reader_with_limit(reader, limit)`
+/// - `detect_file_with_limit(path, limit)`
 const READ_LIMIT: usize = 3072;
 
 /// Detects the MIME type of the given byte data.
@@ -118,9 +125,26 @@ const READ_LIMIT: usize = 3072;
 ///
 /// A reference to the detected MIME type
 pub fn detect(data: &[u8]) -> &'static MimeType {
+    detect_with_limit(data, READ_LIMIT)
+}
+
+/// Detects the MIME type of the given byte data with a custom read limit.
+///
+/// This function examines the first `limit` bytes of the provided data
+/// to determine its MIME type using magic number detection.
+///
+/// # Arguments
+///
+/// * `data` - A byte slice containing the data to analyze
+/// * `limit` - Maximum number of bytes to read from the data
+///
+/// # Returns
+///
+/// A reference to the detected MIME type
+pub fn detect_with_limit(data: &[u8], limit: usize) -> &'static MimeType {
     ensure_init();
-    let input = if data.len() > READ_LIMIT {
-        &data[..READ_LIMIT]
+    let input = if data.len() > limit {
+        &data[..limit]
     } else {
         data
     };
@@ -139,10 +163,27 @@ pub fn detect(data: &[u8]) -> &'static MimeType {
 /// # Returns
 ///
 /// A `Result` containing the detected MIME type or an I/O error
-pub fn detect_reader<R: Read>(mut reader: R) -> io::Result<&'static MimeType> {
-    let mut buffer: [u8; READ_LIMIT] = [0x0; READ_LIMIT];
+pub fn detect_reader<R: Read>(reader: R) -> io::Result<&'static MimeType> {
+    detect_reader_with_limit(reader, READ_LIMIT)
+}
+
+/// Detects the MIME type by reading from a `Read` implementor with a custom read limit.
+///
+/// Reads up to `limit` bytes from the reader and analyzes them
+/// to determine the MIME type.
+///
+/// # Arguments
+///
+/// * `reader` - Any type implementing the `Read` trait
+/// * `limit` - Maximum number of bytes to read from the reader
+///
+/// # Returns
+///
+/// A `Result` containing the detected MIME type or an I/O error
+pub fn detect_reader_with_limit<R: Read>(mut reader: R, limit: usize) -> io::Result<&'static MimeType> {
+    let mut buffer = vec![0u8; limit];
     let n = reader.read(&mut buffer)?;
-    Ok(detect(&buffer[..n]))
+    Ok(detect_with_limit(&buffer[..n], limit))
 }
 
 /// Detects the MIME type of a file at the given path.
@@ -157,8 +198,24 @@ pub fn detect_reader<R: Read>(mut reader: R) -> io::Result<&'static MimeType> {
 ///
 /// A `Result` containing the detected MIME type or an I/O error
 pub fn detect_file<P: AsRef<Path>>(path: P) -> io::Result<&'static MimeType> {
+    detect_file_with_limit(path, READ_LIMIT)
+}
+
+/// Detects the MIME type of a file at the given path with a custom read limit.
+///
+/// Opens the file and reads up to `limit` bytes to determine the MIME type.
+///
+/// # Arguments
+///
+/// * `path` - The file system path to the file to analyze (accepts &str, String, Path, PathBuf, etc.)
+/// * `limit` - Maximum number of bytes to read from the file
+///
+/// # Returns
+///
+/// A `Result` containing the detected MIME type or an I/O error
+pub fn detect_file_with_limit<P: AsRef<Path>>(path: P, limit: usize) -> io::Result<&'static MimeType> {
     let file = File::open(path)?;
-    detect_reader(file)
+    detect_reader_with_limit(file, limit)
 }
 
 /// Checks if a MIME type equals any of the provided types.

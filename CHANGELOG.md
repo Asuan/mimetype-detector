@@ -10,6 +10,11 @@ Used prefixes:
 
 ## Unreleased
 
+## 0.3.2 - 2025-11-27
+
+* Updated: fixed panic in ZIP iterator when position exceeds data length
+* Added: `detect_with_limit()`, `detect_reader_with_limit()`, and `detect_file_with_limit()` methods to allow custom read limits for MIME type detection
+
 ## 0.3.1 - 2025-11-19
 
 * Added LTO (Link-Time Optimization) in release builds

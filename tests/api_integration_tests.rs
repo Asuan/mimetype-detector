@@ -4,7 +4,8 @@
 //! including edge cases, error handling, and various usage patterns.
 
 use mimetype_detector::{
-    constants::*, detect, detect_file, detect_reader, equals_any, register_extension, register_mime,
+    constants::*, detect, detect_file, detect_file_with_limit, detect_reader,
+    detect_reader_with_limit, detect_with_limit, equals_any, register_extension, register_mime,
 };
 use std::io::Cursor;
 
@@ -926,4 +927,40 @@ fn test_utf8_bom_priority_rtf_over_json() {
     let mime = detect(json_data);
     assert_eq!(mime.mime(), APPLICATION_JSON);
     assert_eq!(mime.name(), "JavaScript Object Notation (UTF-8 BOM)");
+}
+
+// ============================================================================
+// WITH_LIMIT METHOD TESTS
+// ============================================================================
+
+#[test]
+fn test_detect_with_limit() {
+    let data = b"\x89PNG\r\n\x1a\n";
+    let mime = detect_with_limit(data, 8);
+    assert_eq!(mime.mime(), IMAGE_PNG);
+}
+
+#[test]
+fn test_detect_reader_with_limit() {
+    let data = b"%PDF-1.4";
+    let cursor = Cursor::new(data);
+    let mime = detect_reader_with_limit(cursor, 8).expect("Should detect from reader");
+    assert_eq!(mime.mime(), APPLICATION_PDF);
+}
+
+#[test]
+fn test_detect_file_with_limit() {
+    use std::fs;
+    use std::io::Write;
+
+    let temp_path = "test_temp_with_limit.png";
+    let mut file = fs::File::create(temp_path).expect("Failed to create temp file");
+    file.write_all(b"\x89PNG\r\n\x1a\n\x00\x00\x00\x0dIHDR")
+        .expect("Failed to write");
+    drop(file);
+
+    let mime = detect_file_with_limit(temp_path, 16).expect("Should detect file");
+    assert_eq!(mime.mime(), IMAGE_PNG);
+
+    fs::remove_file(temp_path).ok();
 }

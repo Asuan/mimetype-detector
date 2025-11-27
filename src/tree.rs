@@ -6273,6 +6273,10 @@ impl<'a> ZipIterator<'a> {
         // Look for ZIP local file header signature "PK\x03\x04"
         let pk_signature = b"PK\x03\x04";
 
+        if self.pos + 4 >= self.data.len() {
+            return None;
+        }
+
         if let Some(pk_pos) = self.data[self.pos..]
             .windows(4)
             .position(|w| w == pk_signature)
