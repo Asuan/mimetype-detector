@@ -97,7 +97,7 @@ println!("Extension aliases: {:?}", pdf.extension_aliases()); // &[".ai"]
 ### Development & System
 
 - **Programming**: JavaScript, Python, PHP, Ruby, Perl, Lua, Shell, Batch, LaTeX
-- **Data**: JSON, XML, CSV, TSV, YAML, TOML
+- **Data**: JSON, XML, CSV, TSV, PSV, SSV, YAML, TOML
 - **Executables**: ELF, PE/EXE/DLL, Mach-O, WASM, Java Class/JAR, Android APK/AAB
 - **Fonts**: TTF, OTF, WOFF, WOFF2, EOT
 

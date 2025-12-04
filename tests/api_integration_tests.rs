@@ -861,6 +861,30 @@ fn test_utf8_bom_tsv() {
 }
 
 #[test]
+fn test_utf8_bom_psv() {
+    let data =
+        b"\xEF\xBB\xBFname|age|city\nJohn|30|NYC\nJane|25|LA\nBob|35|Chicago\nAlice|28|Boston";
+    let mime = detect(data);
+
+    assert_eq!(mime.mime(), TEXT_PIPE_SEPARATED_VALUES);
+    assert_eq!(mime.extension(), ".psv");
+    assert!(mime.kind().is_text());
+    assert_eq!(mime.name(), "Pipe-Separated Values (UTF-8 BOM)");
+}
+
+#[test]
+fn test_utf8_bom_ssv() {
+    let data =
+        b"\xEF\xBB\xBFname;age;city\nJohn;30;NYC\nJane;25;LA\nBob;35;Chicago\nAlice;28;Boston";
+    let mime = detect(data);
+
+    assert_eq!(mime.mime(), TEXT_SEMICOLON_SEPARATED_VALUES);
+    assert_eq!(mime.extension(), ".ssv");
+    assert!(mime.kind().is_text());
+    assert_eq!(mime.name(), "Semicolon-Separated Values (UTF-8 BOM)");
+}
+
+#[test]
 fn test_utf8_bom_srt() {
     let data = b"\xEF\xBB\xBF1\n00:00:01,000 --> 00:00:02,500\nFirst subtitle line\n\n2\n00:00:03,000 --> 00:00:05,000\nSecond subtitle line";
     let mime = detect(data);

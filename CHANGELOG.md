@@ -10,6 +10,18 @@ Used prefixes:
 
 ## Unreleased
 
+## 0.3.3 - 2025-12-04
+
+* Added: PSV (Pipe-Separated Values) format support with MIME type `text/pipe-separated-values` (.psv extension)
+* Added: SSV (Semicolon-Separated Values) format support with MIME type `text/semicolon-separated-values` (.ssv extension)
+* Added: UTF-8 BOM and UTF-16 BE/LE variants for PSV and SSV formats
+* Updated: PST (Personal Storage Table) detection now uses proper magic number detection ("!BDN" signatures)
+* Added: OLE Compound File v4 format support - enables detection of modern MSI files (Windows 10/11, Office 2016+) when using `detect_with_limit(data, 8192)`
+* Added: MSP (Windows Installer Patch) format detection with MIME types `application/x-ms-patch` and `application/x-msp`
+* Added: Sega Game ROM formats to root tree (Game Gear, Master System) detect via `detect_with_limit(data, 32768)`
+* Updated CSV/TSV detecting:
+* Updated: ISOBMFF format detection functions (HEIC, HEIF, AVIF, 3GPP, etc.)
+
 ## 0.3.2 - 2025-11-27
 
 * Updated: fixed panic in ZIP iterator when position exceeds data length

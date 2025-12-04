@@ -1,6 +1,6 @@
 # Supported File Formats
 
-This document provides a comprehensive listing of all 527 file formats supported by the mimetype-detector library.
+This document provides a comprehensive listing of all 531 file formats supported by the mimetype-detector library.
 
 ## All Supported Formats (Alphabetical)
 
@@ -82,6 +82,10 @@ This document provides a comprehensive listing of all 527 file formats supported
 | Creative Voice | Creative Voice Audio | `audio/x-voc` | `.voc` | | DOS/Sound Blaster audio |
 | CSV | CSV | `text/csv` | `.csv` | | |
 | CSV (UTF-16) | Comma-Separated Values (UTF-16 BE) | `text/csv; charset=utf-16` | `.csv` | | UTF-16 BE/LE variants |
+| PSV | Pipe Separated Values | `text/pipe-separated-values` | `.psv` | | |
+| PSV (UTF-16) | Pipe-Separated Values (UTF-16 BE) | `text/pipe-separated-values; charset=utf-16` | `.psv` | | UTF-16 BE/LE variants |
+| SSV | Semicolon Separated Values | `text/semicolon-separated-values` | `.ssv` | | |
+| SSV (UTF-16) | Semicolon-Separated Values (UTF-16 BE) | `text/semicolon-separated-values; charset=utf-16` | `.ssv` | | UTF-16 BE/LE variants |
 | Dalvik Executable | Dalvik Executable | `application/vnd.android.dex` | `.dex` | | Android bytecode |
 | dBase | Dbf | `application/x-dbf` | `.dbf` | | |
 | Debian Package | Debian Package | `application/vnd.debian.binary-package` | `.deb` | | |
@@ -232,6 +236,7 @@ This document provides a comprehensive listing of all 527 file formats supported
 | Maya ASCII | Autodesk Maya ASCII | `application/x-maya-ascii` | `.ma` | | Autodesk Maya ASCII scene |
 | Maya Binary | Autodesk Maya Binary | `application/x-maya-binary` | `.mb` | | Autodesk Maya binary scene |
 | Microsoft Installer | Windows Installer | `application/x-ms-installer` | `.msi` | | |
+| Microsoft Installer Patch | Windows Installer Patch | `application/x-ms-patch` | `.msp` | | Windows Installer patch file |
 | Microsoft Reader | Microsoft Reader eBook | `application/x-ms-reader` | `.lit` | | eBook format |
 | MIDI | Musical Instrument Digital Interface | `audio/midi` | `.midi`, `.mid` | `audio/mid` | |
 | MIE | Meta Information Encapsulation | `application/x-mie` | `.mie` | | Meta Information Encapsulation |
@@ -295,7 +300,7 @@ This document provides a comprehensive listing of all 527 file formats supported
 | OTS | OpenDocument Spreadsheet Template | `application/vnd.oasis.opendocument.spreadsheet-template` | `.ots` | `application/x-vnd.oasis.opendocument.spreadsheet-template` | Spreadsheet Template |
 | OTT | OpenDocument Text Template | `application/vnd.oasis.opendocument.text-template` | `.ott` | `application/x-vnd.oasis.opendocument.text-template` | Text Template |
 | Outlook Message | Outlook PST | `application/vnd.ms-outlook` | `.msg` | | |
-| Outlook Personal Storage Table | Outlook PST | `application/vnd.ms-outlook` | `.pst` | | Personal email archive (OLE-based) |
+| Outlook Personal Storage Table | Outlook PST | `application/vnd.ms-outlook` | `.pst` | | Personal email archive with B-tree structure |
 | OWL | OWL | `application/owl+xml` | `.owl` | | OWL Ontology |
 | PAK | PAK Archive | `application/x-pak` | `.pak` | | PAK Archive (games) |
 | PCAP | Packet Capture | `application/vnd.tcpdump.pcap` | `.pcap` | | Packet Capture (libpcap) |

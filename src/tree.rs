@@ -49,7 +49,7 @@ build_prefix_vec! {
         0x1a => [&LOTUS_NOTES, &WEBM, &MKV] as __PV_1A,  // Lotus Notes, Matroska containers
         0x1b => [&LUA_BYTECODE] as __PV_1B,  // Lua bytecode
         0x1f => [&GZIP, &UNIX_COMPRESS] as __PV_1F,  // GZIP (0x1F 0x8B), Unix compress (0x1F 0x9D)
-        0x21 => [&AR] as __PV_21,
+        0x21 => [&PST, &AR] as __PV_21,  // PST ('!BDN'), AR ('!<arch>')
         0x23 => [&USD_ASCII, &IQE, &AMR, &HDR, &M3U, &VMDK, &VRML] as __PV_23,  // USD ASCII ('#usda'), IQE, AMR, HDR, M3U, VMDK, VRML
         0x25 => [&PS, &FDF, &PDF] as __PV_25,
         0x28 => [&WAT, &DWF] as __PV_28,  // WebAssembly Text '(module', Design Web Format '(DWF'
@@ -226,8 +226,10 @@ pub static ROOT: MimeType = MimeType::new(
         // Audio module formats (simple ones in PREFIX_VEC)
         &S3M, // Scream Tracker 3 Module - offset 44 check
         &MOD, // ProTracker Module - offset 1080 check
-        // Sega game ROM formats
-        &GENESIS_ROM, // Sega Genesis/Mega Drive ROM - offset 0x100
+        // Sega game ROM formats (require larger READ_LIMIT for detection)
+        &GENESIS_ROM,   // Sega Genesis/Mega Drive ROM - offset 0x100
+        &GAME_GEAR_ROM, // Sega Game Gear ROM - offset 0x1ff0/0x3ff0/0x7ff0 (requires 32KB+)
+        &SMS_ROM,       // Sega Master System ROM - offset 0x1ff0/0x3ff0/0x7ff0 (requires 32KB+)
         // Retro gaming formats (simple ones in PREFIX_VEC)
         &ATARI_7800_ROM,       // Atari 7800 ROM - offset 1 check
         &COMMODORE_64_PROGRAM, // Commodore 64 PRG - load address check
@@ -279,6 +281,8 @@ mimetype!(UTF8_BOM, TEXT_UTF8_BOM, ".txt", b"\xEF\xBB\xBF", name: "UTF-8 with BO
     &JSON_UTF8_BOM,
     &CSV_UTF8_BOM,
     &TSV_UTF8_BOM,
+    &PSV_UTF8_BOM,
+    &SSV_UTF8_BOM,
     &SRT_UTF8_BOM,
     &VTT_UTF8_BOM,
     &VCARD_UTF8_BOM,
@@ -293,6 +297,8 @@ mimetype!(UTF16_BE, TEXT_UTF16_BE, ".txt", b"\xFE\xFF", name: "UTF-16 Big Endian
     &JSON_UTF16_BE,
     &CSV_UTF16_BE,
     &TSV_UTF16_BE,
+    &PSV_UTF16_BE,
+    &SSV_UTF16_BE,
     &SRT_UTF16_BE,
     &VTT_UTF16_BE,
     &VCARD_UTF16_BE,
@@ -307,6 +313,8 @@ mimetype!(UTF16_LE, TEXT_UTF16_LE, ".txt", b"\xFF\xFE", name: "UTF-16 Little End
     &JSON_UTF16_LE,
     &CSV_UTF16_LE,
     &TSV_UTF16_LE,
+    &PSV_UTF16_LE,
+    &SSV_UTF16_LE,
     &SRT_UTF16_LE,
     &VTT_UTF16_LE,
     &VCARD_UTF16_LE,
@@ -338,6 +346,8 @@ static UTF8: MimeType = MimeType::new(
         &JSON,
         &CSV_FORMAT,
         &TSV,
+        &PSV,
+        &SSV,
         &SRT,
         &VTT,
         &VCARD,
@@ -381,6 +391,8 @@ static UTF8: MimeType = MimeType::new(
     ".tcl",
     ".csv",
     ".tsv",
+    ".psv",
+    ".ssv",
     ".vcf",
     ".vcard",
     ".ics",
@@ -436,13 +448,13 @@ static OLE: MimeType = MimeType::new(
         &PPT, // PowerPoint 97-2003
         // Very common: Windows system & email
         &MSI, // Windows Installer
+        &MSP, // Windows Installer Patch
         &MSG, // Outlook messages
         // Common: Other Office applications
         &VSD,     // Visio drawings
         &MPP,     // Project files
         &PUB,     // Publisher
         &ONENOTE, // OneNote
-        &PST,     // Outlook data file
         // Less common: Legacy & specialized
         &WORKS_WPS, // Microsoft Works
         // CAD formats (SolidWorks)
@@ -463,8 +475,8 @@ static OLE: MimeType = MimeType::new(
     ],
 )
 .with_extension_aliases(&[
-    ".xls", ".pub", ".ppt", ".doc", ".chm", ".one", ".pst", ".mpp", ".vsd", ".wps", ".sldasm",
-    ".slddrw", ".sldprt", ".iam", ".idw", ".ipn", ".ipt", ".scdoc", ".max",
+    ".xls", ".pub", ".ppt", ".doc", ".chm", ".one", ".mpp", ".vsd", ".wps", ".sldasm", ".slddrw",
+    ".sldprt", ".iam", ".idw", ".ipn", ".ipt", ".scdoc", ".max",
 ])
 .with_kind(MimeKind::DOCUMENT);
 
@@ -809,6 +821,46 @@ static TSV_UTF16_LE: MimeType = MimeType::new(
 )
 .with_parent(&UTF16_LE);
 
+/// PSV format for UTF-16 Big Endian
+static PSV_UTF16_BE: MimeType = MimeType::new(
+    TEXT_PIPE_SEPARATED_VALUES_UTF16,
+    "Pipe-Separated Values (UTF-16 BE)",
+    ".psv",
+    psv_utf16_be,
+    &[],
+)
+.with_parent(&UTF16_BE);
+
+/// PSV format for UTF-16 Little Endian
+static PSV_UTF16_LE: MimeType = MimeType::new(
+    TEXT_PIPE_SEPARATED_VALUES_UTF16,
+    "Pipe-Separated Values (UTF-16 LE)",
+    ".psv",
+    psv_utf16_le,
+    &[],
+)
+.with_parent(&UTF16_LE);
+
+/// SSV format for UTF-16 Big Endian
+static SSV_UTF16_BE: MimeType = MimeType::new(
+    TEXT_SEMICOLON_SEPARATED_VALUES_UTF16,
+    "Semicolon-Separated Values (UTF-16 BE)",
+    ".ssv",
+    ssv_utf16_be,
+    &[],
+)
+.with_parent(&UTF16_BE);
+
+/// SSV format for UTF-16 Little Endian
+static SSV_UTF16_LE: MimeType = MimeType::new(
+    TEXT_SEMICOLON_SEPARATED_VALUES_UTF16,
+    "Semicolon-Separated Values (UTF-16 LE)",
+    ".ssv",
+    ssv_utf16_le,
+    &[],
+)
+.with_parent(&UTF16_LE);
+
 /// SRT subtitle format for UTF-16 Big Endian
 static SRT_UTF16_BE: MimeType = MimeType::new(
     APPLICATION_X_SUBRIP_UTF16,
@@ -970,6 +1022,26 @@ static TSV_UTF8_BOM: MimeType = MimeType::new(
 )
 .with_parent(&UTF8_BOM);
 
+/// PSV format for UTF-8 with BOM
+static PSV_UTF8_BOM: MimeType = MimeType::new(
+    TEXT_PIPE_SEPARATED_VALUES,
+    "Pipe-Separated Values (UTF-8 BOM)",
+    ".psv",
+    psv_utf8_bom,
+    &[],
+)
+.with_parent(&UTF8_BOM);
+
+/// SSV format for UTF-8 with BOM
+static SSV_UTF8_BOM: MimeType = MimeType::new(
+    TEXT_SEMICOLON_SEPARATED_VALUES,
+    "Semicolon-Separated Values (UTF-8 BOM)",
+    ".ssv",
+    ssv_utf8_bom,
+    &[],
+)
+.with_parent(&UTF8_BOM);
+
 /// SRT subtitle format for UTF-8 with BOM
 static SRT_UTF8_BOM: MimeType = MimeType::new(
     APPLICATION_X_SUBRIP,
@@ -1113,17 +1185,6 @@ static HEIC: MimeType = MimeType::new(
 .with_kind(MimeKind::IMAGE)
 .with_parent(&HEIF);
 
-static HEIC_SEQ: MimeType = MimeType::new(
-    IMAGE_HEIC_SEQUENCE,
-    "High Efficiency Image Container Sequence",
-    ".heic",
-    heic_sequence,
-    &[],
-)
-.with_extension_aliases(&[".heics"])
-.with_kind(MimeKind::IMAGE)
-.with_parent(&HEIF);
-
 static HEIF: MimeType = MimeType::new(
     IMAGE_HEIF,
     "High Efficiency Image Format",
@@ -1133,15 +1194,9 @@ static HEIF: MimeType = MimeType::new(
 )
 .with_kind(MimeKind::IMAGE);
 
-static HEIF_SEQ: MimeType = MimeType::new(
-    IMAGE_HEIF_SEQUENCE,
-    "High Efficiency Image Format Sequence",
-    ".heif",
-    heif_sequence,
-    &[],
-)
-.with_extension_aliases(&[".heifs"])
-.with_kind(MimeKind::IMAGE);
+mimetype!(HEIF_SEQ, IMAGE_HEIF_SEQUENCE, ".heif", offset: (4, b"ftypmsf1"), name: "High Efficiency Image Format Sequence", kind: IMAGE, ext_aliases: [".heifs"]);
+
+mimetype!(HEIC_SEQ, IMAGE_HEIC_SEQUENCE, ".heic", offset: (4, b"ftyphevc"), name: "High Efficiency Image Container Sequence", kind: IMAGE, ext_aliases: [".heics"], parent: &HEIF);
 
 mimetype!(BPG, IMAGE_BPG, ".bpg", b"BPG\xFB", name: "Better Portable Graphics", kind: IMAGE);
 
@@ -1212,24 +1267,10 @@ mimetype!(CDR, APPLICATION_VND_COREL_DRAW, ".cdr", offset: (8, b"CDR", prefix: (
 // IFF/ILBM - Amiga graphics format (FORM container)
 mimetype!(ILBM, IMAGE_X_ILBM, ".lbm", offset: (8, b"ILBM", prefix: (0, b"FORM")), name: "Interchange File Format", kind: IMAGE, aliases: [IMAGE_X_IFF], ext_aliases: [".iff", ".ilbm"]);
 
-static AVIF_FORMAT: MimeType = MimeType::new(
-    IMAGE_AVIF,
-    "AV1 Image File Format",
-    ".avif",
-    avif_format,
-    &[&AVIF_SEQUENCE],
-)
-.with_kind(MimeKind::IMAGE);
-
 // AVIF Sequence - Animated AVIF images
-static AVIF_SEQUENCE: MimeType = MimeType::new(
-    IMAGE_AVIF_SEQUENCE,
-    "AV1 Image File Format Sequence",
-    ".avifs",
-    avif_sequence,
-    &[],
-)
-.with_kind(MimeKind::IMAGE);
+mimetype!(AVIF_SEQUENCE, IMAGE_AVIF_SEQUENCE, ".avifs", offset: (4, b"ftypavis"), name: "AV1 Image File Format Sequence", kind: IMAGE);
+
+mimetype!(AVIF_FORMAT, IMAGE_AVIF, ".avif", offset: (4, b"ftypavif"), name: "AV1 Image File Format", kind: IMAGE, children: [&AVIF_SEQUENCE]);
 
 // Quite OK Image Format - A fast, lossless image format.
 mimetype!(QOI, IMAGE_X_QOI, ".qoi", b"qoif", name: "Quite OK Image Format", kind: IMAGE);
@@ -1562,14 +1603,7 @@ static THREE_GPP2: MimeType =
 
 static MJ2: MimeType = MimeType::new(VIDEO_MJ2, "Motion JPEG 2000", ".mj2", mj2, &[]);
 
-static DVB: MimeType = MimeType::new(
-    VIDEO_VND_DVB_FILE,
-    "Digital Video Broadcasting",
-    ".dvb",
-    dvb,
-    &[],
-)
-.with_kind(MimeKind::VIDEO);
+mimetype!(DVB, VIDEO_VND_DVB_FILE, ".dvb", offset: (4, b"ftypdvb1"), name: "Digital Video Broadcasting", kind: VIDEO);
 
 // Autodesk FLIC Animation - Game development animation format
 mimetype!(FLI, VIDEO_FLI, ".fli", [0x11, 0xAF], name: "Autodesk FLIC Animation", kind: VIDEO);
@@ -2606,14 +2640,7 @@ static ARSC: MimeType = MimeType::new(
 mimetype!(CRW, IMAGE_X_CANON_CRW, ".crw", b"II\x1a\x00\x00\x00HEAPCCDR", name: "Canon Raw Image", kind: IMAGE);
 
 // Canon Raw 3 - ISO Base Media File Format
-static CR3: MimeType = MimeType::new(
-    IMAGE_X_CANON_CR3,
-    "Canon Raw 3",
-    ".cr3",
-    |input| input.len() >= 12 && &input[4..8] == b"ftyp" && &input[8..12] == b"crx ",
-    &[],
-)
-.with_kind(MimeKind::IMAGE);
+mimetype!(CR3, IMAGE_X_CANON_CR3, ".cr3", offset: (4, b"ftypcrx "), name: "Canon Raw 3", kind: IMAGE);
 
 // Fujifilm RAF - RAW format with distinct signature
 mimetype!(RAF, IMAGE_X_FUJI_RAF, ".raf", b"FUJIFILMCCD-RAW ", name: "Fujifilm RAF Image", kind: IMAGE);
@@ -2705,11 +2732,9 @@ mimetype!(MACOS_ALIAS, APPLICATION_X_APPLE_ALIAS, "", b"book\x00\x00\x00\x00mark
 // ============================================================================
 
 // Sega Game Gear ROM - "TMR SEGA" at specific offsets
-// ⚠️ NON-FUNCTIONAL: Requires reading beyond current READ_LIMIT (3072 bytes)
+// ⚠️ NOTE: Requires reading beyond default READ_LIMIT (3072 bytes)
 // Signature appears at offsets 0x1ff0 (8KB), 0x3ff0 (16KB), or 0x7ff0 (32KB)
-// Detector is preserved for future use if READ_LIMIT
-// is increased. Will always return false with current configuration.
-#[allow(dead_code)]
+// Use detect_with_limit(data, 32768) for proper detection.
 static GAME_GEAR_ROM: MimeType = MimeType::new(
     APPLICATION_X_GAMEGEAR_ROM,
     "Game Gear ROM",
@@ -2733,8 +2758,8 @@ static GAME_GEAR_ROM: MimeType = MimeType::new(
 .with_kind(MimeKind::APPLICATION);
 
 // Sega Master System ROM - "TMR SEGA" at specific offsets (same as Game Gear)
-// ⚠️ NON-FUNCTIONAL: Requires reading beyond current READ_LIMIT (3072 bytes)
-#[allow(dead_code)]
+// ⚠️ NOTE: Requires reading beyond default READ_LIMIT (3072 bytes)
+// Use detect_with_limit(data, 32768) for proper detection.
 static SMS_ROM: MimeType = MimeType::new(
     APPLICATION_X_SMS_ROM,
     "Sega Master System ROM",
@@ -3369,8 +3394,7 @@ static PST: MimeType = MimeType::new(
     pst,
     &[],
 )
-.with_kind(MimeKind::DOCUMENT)
-.with_parent(&OLE);
+.with_kind(MimeKind::DOCUMENT);
 
 static MPP: MimeType = MimeType::new(
     APPLICATION_VND_MS_PROJECT,
@@ -3409,7 +3433,18 @@ static MSI: MimeType = MimeType::new(
     &[],
 )
 .with_aliases(&[APPLICATION_X_WINDOWS_INSTALLER, APPLICATION_X_MSI])
-.with_kind(MimeKind::ARCHIVE)
+.with_kind(MimeKind::ARCHIVE.union(MimeKind::EXECUTABLE))
+.with_parent(&OLE);
+
+static MSP: MimeType = MimeType::new(
+    APPLICATION_X_MS_PATCH,
+    "Windows Installer Patch",
+    ".msp",
+    msp,
+    &[],
+)
+.with_aliases(&[APPLICATION_X_MSP])
+.with_kind(MimeKind::ARCHIVE.union(MimeKind::EXECUTABLE))
 .with_parent(&OLE);
 
 // ============================================================================
@@ -3725,6 +3760,24 @@ static TSV: MimeType = MimeType::new(
     "Tab Separated Values",
     ".tsv",
     tsv,
+    &[],
+)
+.with_parent(&UTF8);
+
+static PSV: MimeType = MimeType::new(
+    TEXT_PIPE_SEPARATED_VALUES,
+    "Pipe Separated Values",
+    ".psv",
+    psv,
+    &[],
+)
+.with_parent(&UTF8);
+
+static SSV: MimeType = MimeType::new(
+    TEXT_SEMICOLON_SEPARATED_VALUES,
+    "Semicolon Separated Values",
+    ".ssv",
+    ssv,
     &[],
 )
 .with_parent(&UTF8);
@@ -4365,31 +4418,12 @@ fn mobi(input: &[u8]) -> bool {
 }
 
 fn heic(input: &[u8]) -> bool {
-    if input.len() < 12 {
-        return false;
-    }
-    &input[4..8] == b"ftyp" && (&input[8..12] == b"heic" || &input[8..12] == b"heix")
-}
-
-fn heic_sequence(input: &[u8]) -> bool {
-    if input.len() < 12 {
-        return false;
-    }
-    &input[4..8] == b"ftyp" && &input[8..12] == b"hevc"
+    input.len() >= 12 && &input[4..12] == b"ftypheic"
+        || input.len() >= 12 && &input[4..12] == b"ftypheix"
 }
 
 fn heif(input: &[u8]) -> bool {
-    if input.len() < 12 {
-        return false;
-    }
-    &input[4..8] == b"ftyp" && (&input[8..12] == b"mif1" || &input[8..12] == b"msf1")
-}
-
-fn heif_sequence(input: &[u8]) -> bool {
-    if input.len() < 12 {
-        return false;
-    }
-    &input[4..8] == b"ftyp" && &input[8..12] == b"msf1"
+    input.len() >= 12 && &input[4..12] == b"ftypmif1"
 }
 
 fn cpio(input: &[u8]) -> bool {
@@ -4921,11 +4955,11 @@ fn msg(input: &[u8]) -> bool {
     get_ole_clsid(input).is_some_and(|actual| actual == OUTLOOK_MSG_CLSID)
 }
 
-fn pst(_input: &[u8]) -> bool {
-    // PST files typically have extension check as primary discriminator
-    // They use OLE structure but don't have reliable CLSID
-    // Return false to use parent OLE detection + extension matching
-    false
+fn pst(input: &[u8]) -> bool {
+    // PST (Personal Storage Table) file format detection
+    // Magic bytes: "!BDN" at offset 0-3, optional "SM" at offset 8-9
+    // Version at offset 10: 0x17 (Unicode), 0x0E or 0x0F (ANSI)
+    input.len() > 12 && &input[0..4] == b"!BDN"
 }
 
 fn mpp(input: &[u8]) -> bool {
@@ -4960,6 +4994,14 @@ fn msi(input: &[u8]) -> bool {
         0x46,
     ];
     get_ole_clsid(input).is_some_and(|actual| actual == MSI_CLSID)
+}
+
+fn msp(input: &[u8]) -> bool {
+    const MSP_CLSID: &[u8; 16] = &[
+        0x86, 0x10, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x46,
+    ];
+    get_ole_clsid(input).is_some_and(|actual| actual == MSP_CLSID)
 }
 
 // ============================================================================
@@ -5614,14 +5656,31 @@ fn ndjson(input: &[u8]) -> bool {
     line_count > 1 && valid_lines == line_count
 }
 
+/// Generic function to detect delimited text formats (CSV, TSV, etc.)
+#[inline]
+fn detect_delimited_format(input: &[u8], separator: u8) -> bool {
+    // Split on both \n and \r to handle all line ending styles (Unix, Windows, old Mac)
+    let lines = input
+        .split(|&b| b == b'\n' || b == b'\r')
+        .filter(|line| !line.trim_ascii().is_empty()) // Skip empty/whitespace lines
+        .take(15);
+    detect_csv_generic(lines, |line| count_csv_separators_quoted(line, separator))
+}
+
 fn csv_format(input: &[u8]) -> bool {
-    let lines = input.split(|&b| b == b'\n').take(5);
-    detect_csv_generic(lines, |line| count_occurrences(line, b','))
+    detect_delimited_format(input, b',')
 }
 
 fn tsv(input: &[u8]) -> bool {
-    let lines = input.split(|&b| b == b'\n').take(5);
-    detect_csv_generic(lines, |line| count_occurrences(line, b'\t'))
+    detect_delimited_format(input, b'\t')
+}
+
+fn psv(input: &[u8]) -> bool {
+    detect_delimited_format(input, b'|')
+}
+
+fn ssv(input: &[u8]) -> bool {
+    detect_delimited_format(input, b';')
 }
 
 fn srt(input: &[u8]) -> bool {
@@ -5720,80 +5779,38 @@ fn gltf(input: &[u8]) -> bool {
 // ============================================================================
 
 fn three_gpp(input: &[u8]) -> bool {
-    if input.len() < 12 {
-        return false;
-    }
-    if &input[4..8] != b"ftyp" {
-        return false;
-    }
-
-    let brand = &input[8..12];
-    matches!(
-        brand,
-        b"3gp4" | b"3gp5" | b"3gp6" | b"3gp7" | b"3gp8" | b"3gp9" | b"3gpa" | b"3gpp"
-    )
+    input.len() >= 12
+        && matches!(
+            &input[4..12],
+            b"ftyp3gp4"
+                | b"ftyp3gp5"
+                | b"ftyp3gp6"
+                | b"ftyp3gp7"
+                | b"ftyp3gp8"
+                | b"ftyp3gp9"
+                | b"ftyp3gpa"
+                | b"ftyp3gpp"
+        )
 }
 
 fn three_gpp2(input: &[u8]) -> bool {
-    if input.len() < 12 {
-        return false;
-    }
-    if &input[4..8] != b"ftyp" {
-        return false;
-    }
-
-    let brand = &input[8..12];
-    matches!(
-        brand,
-        b"3g24" | b"3g25" | b"3g26" | b"3g27" | b"3g28" | b"3g29" | b"3g2a" | b"3g2b" | b"3g2c"
-    )
+    input.len() >= 12
+        && matches!(
+            &input[4..12],
+            b"ftyp3g24"
+                | b"ftyp3g25"
+                | b"ftyp3g26"
+                | b"ftyp3g27"
+                | b"ftyp3g28"
+                | b"ftyp3g29"
+                | b"ftyp3g2a"
+                | b"ftyp3g2b"
+                | b"ftyp3g2c"
+        )
 }
 
 fn mj2(input: &[u8]) -> bool {
-    if input.len() < 12 {
-        return false;
-    }
-    if &input[4..8] != b"ftyp" {
-        return false;
-    }
-
-    let brand = &input[8..12];
-    matches!(brand, b"mj2s" | b"mjp2")
-}
-
-fn dvb(input: &[u8]) -> bool {
-    if input.len() < 12 {
-        return false;
-    }
-    if &input[4..8] != b"ftyp" {
-        return false;
-    }
-
-    &input[8..12] == b"dvb1"
-}
-
-fn avif_format(input: &[u8]) -> bool {
-    if input.len() < 12 {
-        return false;
-    }
-    if &input[4..8] != b"ftyp" {
-        return false;
-    }
-
-    let brand = &input[8..12];
-    brand == b"avif"
-}
-
-fn avif_sequence(input: &[u8]) -> bool {
-    if input.len() < 12 {
-        return false;
-    }
-    if &input[4..8] != b"ftyp" {
-        return false;
-    }
-
-    let brand = &input[8..12];
-    brand == b"avis"
+    input.len() >= 12 && matches!(&input[4..12], b"ftypmj2s" | b"ftypmjp2")
 }
 
 // ============================================================================
@@ -5894,6 +5911,26 @@ fn tsv_utf16_le(input: &[u8]) -> bool {
     detect_utf16_format(input, false, detect_tsv_content)
 }
 
+/// PSV detection for UTF-16 Big Endian
+fn psv_utf16_be(input: &[u8]) -> bool {
+    detect_utf16_format(input, true, detect_psv_content)
+}
+
+/// PSV detection for UTF-16 Little Endian
+fn psv_utf16_le(input: &[u8]) -> bool {
+    detect_utf16_format(input, false, detect_psv_content)
+}
+
+/// SSV detection for UTF-16 Big Endian
+fn ssv_utf16_be(input: &[u8]) -> bool {
+    detect_utf16_format(input, true, detect_ssv_content)
+}
+
+/// SSV detection for UTF-16 Little Endian
+fn ssv_utf16_le(input: &[u8]) -> bool {
+    detect_utf16_format(input, false, detect_ssv_content)
+}
+
 /// SRT subtitle detection for UTF-16 Big Endian
 fn srt_utf16_be(input: &[u8]) -> bool {
     detect_utf16_format(input, true, detect_srt_content)
@@ -5972,6 +6009,16 @@ fn csv_utf8_bom(input: &[u8]) -> bool {
 /// TSV detection for UTF-8 with BOM
 fn tsv_utf8_bom(input: &[u8]) -> bool {
     detect_utf8_bom_format(input, detect_tsv_content)
+}
+
+/// PSV detection for UTF-8 with BOM
+fn psv_utf8_bom(input: &[u8]) -> bool {
+    detect_utf8_bom_format(input, detect_psv_content)
+}
+
+/// SSV detection for UTF-8 with BOM
+fn ssv_utf8_bom(input: &[u8]) -> bool {
+    detect_utf8_bom_format(input, detect_ssv_content)
 }
 
 /// SRT subtitle detection for UTF-8 with BOM
@@ -6060,16 +6107,36 @@ fn detect_json_content(text: &str) -> bool {
     (trimmed.starts_with('{') || trimmed.starts_with('[')) && is_valid_json(trimmed.as_bytes())
 }
 
+/// Generic function to detect delimited text in decoded text (for UTF-16 and UTF-8 BOM)
+#[inline]
+fn detect_delimited_content(text: &str, separator: u8) -> bool {
+    let lines = text
+        .lines()
+        .filter(|line| !line.trim().is_empty()) // Skip empty lines
+        .take(15); // Increased sample size
+    detect_csv_generic(lines, |line| {
+        count_csv_separators_quoted(line.as_bytes(), separator)
+    })
+}
+
 /// Shared CSV content detection that works with any encoding after normalization
 fn detect_csv_content(text: &str) -> bool {
-    let lines = text.lines().take(5);
-    detect_csv_generic(lines, |line| count_occurrences(line.as_bytes(), b','))
+    detect_delimited_content(text, b',')
 }
 
 /// Shared TSV content detection that works with any encoding after normalization
 fn detect_tsv_content(text: &str) -> bool {
-    let lines = text.lines().take(5);
-    detect_csv_generic(lines, |line| count_occurrences(line.as_bytes(), b'\t'))
+    detect_delimited_content(text, b'\t')
+}
+
+/// Shared PSV content detection that works with any encoding after normalization
+fn detect_psv_content(text: &str) -> bool {
+    detect_delimited_content(text, b'|')
+}
+
+/// Shared SSV content detection that works with any encoding after normalization
+fn detect_ssv_content(text: &str) -> bool {
+    detect_delimited_content(text, b';')
 }
 
 /// Shared SRT content detection that works with any encoding after normalization
@@ -6149,14 +6216,35 @@ fn utf16_to_string(input: &[u8], big_endian: bool) -> Option<String> {
 // HELPER FUNCTIONS
 // ============================================================================
 
-/// Generic function for counting occurrences of a byte in byte sequences
-/// Works with any type that can be referenced as [u8]
+/// Count separators in a line while respecting quoted fields (RFC 4180)
+/// This function skips separators that appear inside quoted fields
 #[inline]
-fn count_occurrences<S: AsRef<[u8]>>(input: S, target: u8) -> usize {
-    input
-        .as_ref()
-        .iter()
-        .fold(0, |acc, &b| acc + (b == target) as usize)
+fn count_csv_separators_quoted(line: &[u8], separator: u8) -> usize {
+    let mut count = 0;
+    let mut in_quotes = false;
+    let mut i = 0;
+
+    while i < line.len() {
+        let byte = line[i];
+
+        match byte {
+            b'"' => {
+                // Handle doubled quotes ("") as escaped quotes
+                if in_quotes && i + 1 < line.len() && line[i + 1] == b'"' {
+                    i += 1; // Skip the next quote
+                } else {
+                    in_quotes = !in_quotes;
+                }
+            }
+            _ if byte == separator && !in_quotes => {
+                count += 1;
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+
+    count
 }
 
 /// Case-insensitive starts_with that works for both str and [u8] types
@@ -6176,30 +6264,49 @@ where
 /// T: Iterator over lines (either &[u8] or &str)
 /// F: Function to count separator in a line
 #[inline]
-fn detect_csv_generic<T, F>(mut lines: T, count_separator: F) -> bool
+fn detect_csv_generic<T, F>(lines: T, count_separator: F) -> bool
 where
     T: Iterator,
     F: Fn(T::Item) -> usize,
 {
-    let first_line = match lines.next() {
-        Some(line) => line,
-        None => return false,
-    };
+    // Use stack-allocated array to avoid heap allocation (max 15 lines sampled)
+    const MAX_LINES: usize = 15;
+    let mut separator_counts: [usize; MAX_LINES] = [0; MAX_LINES];
+    let mut line_count = 0;
+    let mut total_separators = 0;
 
-    let first_separators = count_separator(first_line);
-    if first_separators == 0 {
+    for line in lines {
+        if line_count >= MAX_LINES {
+            break;
+        }
+        let count = count_separator(line);
+        separator_counts[line_count] = count;
+        total_separators += count;
+        line_count += 1;
+    }
+
+    if line_count < 2 {
         return false;
     }
 
-    let mut line_count = 1;
-    for line in lines {
-        line_count += 1;
-        if count_separator(line) != first_separators {
-            return false;
-        }
+    let average = total_separators as f32 / line_count as f32;
+
+    // Require at least 1 separator on average for CSV/TSV detection
+    if average < 1.0 {
+        return false;
     }
 
-    line_count >= 2
+    let expected_count = average.round() as usize;
+
+    let matching_lines = separator_counts[..line_count]
+        .iter()
+        .filter(|&&count| count == expected_count || count.abs_diff(expected_count) == 1)
+        .count();
+
+    let match_ratio = matching_lines as f32 / line_count as f32;
+
+    // Allow 80% of lines to match expected count (handles ragged CSV)
+    match_ratio >= 0.8
 }
 
 /// Check if ZIP archive contains any files matching the given entries

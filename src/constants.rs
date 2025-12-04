@@ -897,6 +897,12 @@ pub const APPLICATION_X_WINDOWS_INSTALLER: &str = "application/x-windows-install
 /// Microsoft Installer alias
 pub const APPLICATION_X_MSI: &str = "application/x-msi";
 
+/// Microsoft Installer Patch
+pub const APPLICATION_X_MS_PATCH: &str = "application/x-ms-patch";
+
+/// Microsoft Installer Patch alias
+pub const APPLICATION_X_MSP: &str = "application/x-msp";
+
 /// Windows App Package
 pub const APPLICATION_VND_MS_APPX: &str = "application/vnd.ms-appx";
 
@@ -1072,6 +1078,19 @@ pub const TEXT_TAB_SEPARATED_VALUES: &str = "text/tab-separated-values";
 /// Tab Separated Values with UTF-16 encoding
 pub const TEXT_TAB_SEPARATED_VALUES_UTF16: &str = "text/tab-separated-values; charset=utf-16";
 
+/// Pipe Separated Values
+pub const TEXT_PIPE_SEPARATED_VALUES: &str = "text/pipe-separated-values";
+
+/// Pipe Separated Values with UTF-16 encoding
+pub const TEXT_PIPE_SEPARATED_VALUES_UTF16: &str = "text/pipe-separated-values; charset=utf-16";
+
+/// Semicolon Separated Values
+pub const TEXT_SEMICOLON_SEPARATED_VALUES: &str = "text/semicolon-separated-values";
+
+/// Semicolon Separated Values with UTF-16 encoding
+pub const TEXT_SEMICOLON_SEPARATED_VALUES_UTF16: &str =
+    "text/semicolon-separated-values; charset=utf-16";
+
 /// Rich Text Format
 pub const TEXT_RTF: &str = "text/rtf";
 
@@ -1136,6 +1155,12 @@ pub const TEXT_CSV_BASE: &str = "text/csv";
 
 /// Base TSV MIME type without charset
 pub const TEXT_TAB_SEPARATED_VALUES_BASE: &str = "text/tab-separated-values";
+
+/// Base PSV MIME type without charset
+pub const TEXT_PIPE_SEPARATED_VALUES_BASE: &str = "text/pipe-separated-values";
+
+/// Base SSV MIME type without charset
+pub const TEXT_SEMICOLON_SEPARATED_VALUES_BASE: &str = "text/semicolon-separated-values";
 
 /// Base SRT MIME type without charset
 pub const APPLICATION_X_SUBRIP_BASE: &str = "application/x-subrip";

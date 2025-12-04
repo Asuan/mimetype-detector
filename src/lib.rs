@@ -110,6 +110,17 @@ fn ensure_init() {
 /// - `detect_with_limit(data, limit)`
 /// - `detect_reader_with_limit(reader, limit)`
 /// - `detect_file_with_limit(path, limit)`
+///
+/// # Default Read Limit
+///
+/// The default limit is set to 3072 bytes for performance and memory efficiency.
+///
+/// ⚠️ **Warning**: Some formats may not be detected correctly with this limit:
+/// - **OLE Compound File v4** (modern MSI/MSP files): Requires ~4176 bytes for CLSID extraction.
+///   With 3072 bytes, these files will be detected as generic `application/x-ole-storage`
+///   instead of specific formats like `application/x-ms-installer`.
+/// - **Sega Game ROM formats** (Game Gear, Master System): Signatures at 8KB-32KB offsets.
+/// - **Large header formats**: Any format with signatures beyond 3KB.
 const READ_LIMIT: usize = 3072;
 
 /// Detects the MIME type of the given byte data.
