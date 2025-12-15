@@ -1,5 +1,9 @@
 # mimetype-detector
 
+[![CI](https://github.com/Asuan/mimetype-detector/actions/workflows/ci.yml/badge.svg)](https://github.com/Asuan/mimetype-detector/actions/workflows/ci.yml)
+[![Crates.io](https://img.shields.io/crates/v/mimetype-detector.svg)](https://crates.io/crates/mimetype-detector)
+[![Documentation](https://docs.rs/mimetype-detector/badge.svg)](https://docs.rs/mimetype-detector)
+
 Fast MIME type detection for ~450 file formats with zero dependencies.
 
 ## Features
@@ -11,11 +15,15 @@ Fast MIME type detection for ~450 file formats with zero dependencies.
 - **Type-safe constants** - Compile-time MIME type validation
 - **Professional formats** - Adobe Creative Suite, Microsoft Office, CAD (SolidWorks, Inventor, 3DS Max), and design tools (Sketch, Figma)
 
+## Try Online
+
+**[🌐 Online Detector](https://filetype-detector.online)** - Test file detection directly in your browser
+
 ## Installation
 
 ```toml
 [dependencies]
-mimetype-detector = "0.3.2"
+mimetype-detector = "0.3.4"
 ```
 
 ## Usage

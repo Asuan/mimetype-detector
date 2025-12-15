@@ -1005,15 +1005,43 @@ pub const APPLICATION_VND_SQLITE3: &str = "application/vnd.sqlite3";
 pub const APPLICATION_X_SQLITE3: &str = "application/x-sqlite3";
 
 // ============================================================================
-// PROGRAMMING & TEXT FORMATS
+// PROGRAMMING LANGUAGES
 // ============================================================================
 
-/// PHP Script
-pub const TEXT_X_PHP: &str = "text/x-php";
+/// C Source Code
+pub const TEXT_X_C: &str = "text/x-c";
+
+/// C Source Code (alias)
+pub const TEXT_X_CSRC: &str = "text/x-csrc";
+
+/// C++ Source Code
+pub const TEXT_X_CPP: &str = "text/x-c++";
+
+/// C++ Source Code (aliases)
+pub const TEXT_X_CXX: &str = "text/x-cxx";
+pub const TEXT_X_CPPSRC: &str = "text/x-cppsrc";
+
+/// C# Source Code
+pub const TEXT_X_CSHARP: &str = "text/x-csharp";
+
+/// Go Source Code
+pub const TEXT_X_GO: &str = "text/x-go";
+
+/// Rust Source Code
+pub const TEXT_X_RUST: &str = "text/x-rust";
+
+/// Java Source Code
+pub const TEXT_X_JAVA: &str = "text/x-java";
 
 /// JavaScript
 pub const TEXT_JAVASCRIPT: &str = "text/javascript";
 pub const APPLICATION_JAVASCRIPT: &str = "application/javascript";
+
+/// TypeScript Source Code
+pub const TEXT_X_TYPESCRIPT: &str = "text/x-typescript";
+
+/// TypeScript Source Code (alias)
+pub const APPLICATION_X_TYPESCRIPT: &str = "application/x-typescript";
 
 /// Python Script
 pub const TEXT_X_PYTHON: &str = "text/x-python";
@@ -1022,17 +1050,29 @@ pub const TEXT_X_PYTHON: &str = "text/x-python";
 pub const TEXT_X_SCRIPT_PYTHON: &str = "text/x-script.python";
 pub const APPLICATION_X_PYTHON: &str = "application/x-python";
 
-/// Perl Script
-pub const TEXT_X_PERL: &str = "text/x-perl";
-
 /// Ruby Script
 pub const TEXT_X_RUBY: &str = "text/x-ruby";
 
 /// Ruby Script (alias)
 pub const APPLICATION_X_RUBY: &str = "application/x-ruby";
 
+/// PHP Script
+pub const TEXT_X_PHP: &str = "text/x-php";
+
+/// Perl Script
+pub const TEXT_X_PERL: &str = "text/x-perl";
+
 /// Lua Script
 pub const TEXT_X_LUA: &str = "text/x-lua";
+
+/// Clojure Script
+pub const TEXT_X_CLOJURE: &str = "text/x-clojure";
+
+/// Tcl Script
+pub const TEXT_X_TCL: &str = "text/x-tcl";
+
+/// Tcl Script (alias)
+pub const APPLICATION_X_TCL: &str = "application/x-tcl";
 
 /// Shell Script
 pub const TEXT_X_SHELLSCRIPT: &str = "text/x-shellscript";
@@ -1042,17 +1082,15 @@ pub const TEXT_X_SH: &str = "text/x-sh";
 pub const APPLICATION_X_SHELLSCRIPT: &str = "application/x-shellscript";
 pub const APPLICATION_X_SH: &str = "application/x-sh";
 
-/// Tcl Script
-pub const TEXT_X_TCL: &str = "text/x-tcl";
-
-/// Tcl Script (alias)
-pub const APPLICATION_X_TCL: &str = "application/x-tcl";
-
-/// Clojure Script
-pub const TEXT_X_CLOJURE: &str = "text/x-clojure";
+/// Visual Basic Source Code
+pub const TEXT_X_VB: &str = "text/x-vb";
 
 /// LaTeX Document
 pub const TEXT_X_TEX: &str = "text/x-tex";
+
+// ============================================================================
+// DATA & DOCUMENT FORMATS
+// ============================================================================
 
 /// JSON Data
 pub const APPLICATION_JSON: &str = "application/json";

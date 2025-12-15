@@ -335,10 +335,17 @@ static UTF8: MimeType = MimeType::new(
         &LATEX,
         &CLOJURE,
         &PHP,
+        &TYPESCRIPT, // TypeScript must come before JavaScript (TS is more specific)
         &JAVASCRIPT,
+        &GO_LANG, // Go must come before Java (both use "package")
+        &PERL,    // Perl must come before Java (both use "package")
+        &CSHARP,  // C# must come before Java (both use "public class/interface")
+        &VB,      // Visual Basic .NET language
+        &JAVA,
+        &C_LANG, // C++ is a child of C (detects C++ features in .c/.h files)
+        &RUST_LANG,
+        &RUBY, // Ruby must come before Python (both use class/def, but Ruby has "end")
         &PYTHON,
-        &PERL,
-        &RUBY,
         &LUA,
         &SHELL,
         &BATCH,
@@ -381,9 +388,23 @@ static UTF8: MimeType = MimeType::new(
     "3mf",
     ".php",
     ".js",
+    ".ts",
+    ".tsx",
+    ".java",
+    ".c",
+    ".h",
+    ".cpp",
+    ".cc",
+    ".cxx",
+    ".hpp",
+    ".hxx",
+    ".h++",
+    ".go",
+    ".rs",
     ".lua",
     ".pl",
     ".py",
+    ".rb",
     ".json",
     ".geojson",
     ".ndjson",
@@ -680,15 +701,13 @@ static EMAIL: MimeType = MimeType::new(
     ".eml",
     |input| {
         // Email messages typically start with "From " or "From: " or other RFC822 headers
-        if input.len() < 5 {
-            return false;
-        }
-        input.starts_with(b"From ")
-            || input.starts_with(b"From:")
-            || input.starts_with(b"Date:")
-            || input.starts_with(b"Subject:")
-            || input.starts_with(b"To:")
-            || input.starts_with(b"Received:")
+        input.len() >= 5
+            && (input.starts_with(b"From ")
+                || input.starts_with(b"From:")
+                || input.starts_with(b"Date:")
+                || input.starts_with(b"Subject:")
+                || input.starts_with(b"To:")
+                || input.starts_with(b"Received:"))
     },
     &[],
 )
@@ -1139,11 +1158,7 @@ static NEF: MimeType = MimeType::new(
     |input| {
         // Don't check TIFF header here - parent already checked it
         // Look for Nikon signature in the file
-        if input.len() >= 256 {
-            input[0..256].windows(5).any(|w| w == b"NIKON")
-        } else {
-            false
-        }
+        input.len() >= 256 && input[0..256].windows(5).any(|w| w == b"NIKON")
     },
     &[],
 )
@@ -2176,12 +2191,7 @@ static MSDOS_EXE: MimeType = MimeType::new(
         }
 
         // Get PE header offset from DOS header (at offset 0x3C)
-        let pe_offset = u32::from_le_bytes([
-            input.get(0x3C).copied().unwrap_or(0),
-            input.get(0x3D).copied().unwrap_or(0),
-            input.get(0x3E).copied().unwrap_or(0),
-            input.get(0x3F).copied().unwrap_or(0),
-        ]) as usize;
+        let pe_offset = u32::from_le_bytes(input[0x3C..0x40].try_into().unwrap()) as usize;
 
         // If we can read the PE signature location
         if pe_offset + 4 <= input.len() && pe_offset < 0x10000 {
@@ -2471,12 +2481,9 @@ static NEO_GEO_POCKET_ROM: MimeType = MimeType::new(
     "Neo Geo Pocket ROM",
     ".ngp",
     |input| {
-        if input.len() < 0x24 {
-            return false;
-        }
         // Check for copyright/licensed header (common to both variants)
         // If Color child doesn't match (0x10 at offset 0x23), this parent represents monochrome (0x00)
-        input.starts_with(b" COPYRIGHT") || input.starts_with(b" LICENSED")
+        input.len() > 0x24 && input.starts_with(b" COPYRIGHT") || input.starts_with(b" LICENSED")
     },
     &[&NEO_GEO_POCKET_COLOR_ROM], // Color variant as child
 )
@@ -2506,11 +2513,8 @@ static PYTHON_PICKLE: MimeType = MimeType::new(
     "Python Pickle",
     ".pkl",
     |input| {
-        if input.len() < 2 {
-            return false;
-        }
         // Check for PROTO opcode (0x80) followed by protocol version (2-5)
-        input[0] == 0x80 && matches!(input[1], 0x02..=0x05)
+        input.len() >= 2 && input[0] == 0x80 && matches!(input[1], 0x02..=0x05)
     },
     &[],
 )
@@ -2524,11 +2528,8 @@ static PYTHON_BYTECODE: MimeType = MimeType::new(
     "Python Bytecode",
     ".pyc",
     |input| {
-        if input.len() < 4 {
-            return false;
-        }
         // Check for CRLF at offset 2 (bytes 2-3)
-        input[2] == 0x0D && input[3] == 0x0A
+        input.len() >= 4 && input[2] == 0x0D && input[3] == 0x0A
     },
     &[],
 )
@@ -3631,13 +3632,10 @@ static LOTUS_WK1: MimeType = MimeType::new(
     "Lotus 1-2-3",
     ".wk1",
     |input| {
-        if input.len() < 8 {
-            return false;
-        }
         // Check for v1 signature: 00 00 02 00 06 04 06 00
         // Version at offset 4-7: 06 04 06 00 = 0x00060406 (little-endian)
-        let version = u32::from_le_bytes([input[4], input[5], input[6], input[7]]);
-        version == 0x00060406
+        input.len() >= 8
+            && u32::from_le_bytes([input[4], input[5], input[6], input[7]]) == 0x00060406
     },
     &[],
 )
@@ -3649,13 +3647,10 @@ static LOTUS_WK3: MimeType = MimeType::new(
     "Lotus 1-2-3",
     ".wk3",
     |input| {
-        if input.len() < 8 {
-            return false;
-        }
         // Check for v3 signature: 00 00 1A 00 00 10 04 00
         // Version at offset 4-7: 00 10 04 00 = 0x00041000 (little-endian)
-        let version = u32::from_le_bytes([input[4], input[5], input[6], input[7]]);
-        version == 0x00041000
+        input.len() >= 8
+            && u32::from_le_bytes([input[4], input[5], input[6], input[7]]) == 0x00041000
     },
     &[],
 )
@@ -3667,13 +3662,10 @@ static LOTUS_WK4: MimeType = MimeType::new(
     "Lotus 1-2-3",
     ".wk4",
     |input| {
-        if input.len() < 8 {
-            return false;
-        }
         // Check for v4/v5 signature: 00 00 1A 00 02 10 04 00
         // Version at offset 4-7: 02 10 04 00 = 0x00041002 (little-endian)
-        let version = u32::from_le_bytes([input[4], input[5], input[6], input[7]]);
-        version == 0x00041002
+        input.len() >= 8
+            && u32::from_le_bytes([input[4], input[5], input[6], input[7]]) == 0x00041002
     },
     &[],
 )
@@ -3701,19 +3693,62 @@ static MRC: MimeType = MimeType::new(APPLICATION_MARC, "MARC", ".mrc", marc, &[]
 // PROGRAMMING & TEXT FORMATS
 // ============================================================================
 
-mimetype!(PHP, TEXT_X_PHP, ".php", b"<?php" | b"<?\n" | b"<?\r" | b"<? ", name: "PHP Source Code", kind: TEXT, parent: &UTF8);
+static PHP: MimeType =
+    MimeType::new(TEXT_X_PHP, "PHP Source Code", ".php", php, &[]).with_parent(&UTF8);
 
 static JAVASCRIPT: MimeType = MimeType::new(TEXT_JAVASCRIPT, "JavaScript", ".js", javascript, &[])
     .with_aliases(&[APPLICATION_JAVASCRIPT])
     .with_parent(&UTF8);
 
-mimetype!(PYTHON, TEXT_X_PYTHON, ".py", b"#!/usr/bin/env python" | b"#!/usr/bin/python" | b"#!python" | b"# -*- coding:", name: "Python Source Code", kind: TEXT, aliases: [TEXT_X_SCRIPT_PYTHON, APPLICATION_X_PYTHON], parent: &UTF8);
+static JAVA: MimeType =
+    MimeType::new(TEXT_X_JAVA, "Java Source Code", ".java", java, &[]).with_parent(&UTF8);
 
-mimetype!(PERL, TEXT_X_PERL, ".pl", b"#!/usr/bin/env perl" | b"#!/usr/bin/perl" | b"#!perl", name: "Perl Source Code", kind: TEXT, parent: &UTF8);
+static TYPESCRIPT: MimeType = MimeType::new(
+    TEXT_X_TYPESCRIPT,
+    "TypeScript Source Code",
+    ".ts",
+    typescript,
+    &[],
+)
+.with_aliases(&[APPLICATION_X_TYPESCRIPT])
+.with_extension_aliases(&[".tsx"])
+.with_parent(&UTF8);
 
-mimetype!(RUBY, TEXT_X_RUBY, ".rb", b"#!/usr/bin/env ruby" | b"#!/usr/bin/ruby" | b"#!ruby", name: "Ruby Source Code", kind: TEXT, aliases: [APPLICATION_X_RUBY], parent: &UTF8);
+static CPP: MimeType = MimeType::new(TEXT_X_CPP, "C++ Source Code", ".cpp", cpp, &[])
+    .with_aliases(&[TEXT_X_CXX, TEXT_X_CPPSRC])
+    .with_extension_aliases(&[".cc", ".cxx", ".hpp", ".hxx", ".h++"])
+    .with_parent(&C_LANG);
 
-mimetype!(LUA, TEXT_X_LUA, ".lua", b"#!/usr/bin/env lua" | b"#!/usr/bin/lua" | b"#!lua" | b"\x1bLua", name: "Lua Source Code", kind: TEXT, parent: &UTF8);
+static C_LANG: MimeType = MimeType::new(TEXT_X_C, "C Source Code", ".c", c_lang, &[&CPP])
+    .with_aliases(&[TEXT_X_CSRC])
+    .with_extension_aliases(&[".h"])
+    .with_parent(&UTF8);
+
+static GO_LANG: MimeType =
+    MimeType::new(TEXT_X_GO, "Go Source Code", ".go", go_lang, &[]).with_parent(&UTF8);
+
+static RUST_LANG: MimeType =
+    MimeType::new(TEXT_X_RUST, "Rust Source Code", ".rs", rust_lang, &[]).with_parent(&UTF8);
+
+static CSHARP: MimeType =
+    MimeType::new(TEXT_X_CSHARP, "C# Source Code", ".cs", csharp, &[]).with_parent(&UTF8);
+
+static VB: MimeType =
+    MimeType::new(TEXT_X_VB, "Visual Basic Source Code", ".vb", vb, &[]).with_parent(&UTF8);
+
+static PYTHON: MimeType = MimeType::new(TEXT_X_PYTHON, "Python Source Code", ".py", python, &[])
+    .with_aliases(&[TEXT_X_SCRIPT_PYTHON, APPLICATION_X_PYTHON])
+    .with_parent(&UTF8);
+
+static PERL: MimeType =
+    MimeType::new(TEXT_X_PERL, "Perl Source Code", ".pl", perl, &[]).with_parent(&UTF8);
+
+static RUBY: MimeType = MimeType::new(TEXT_X_RUBY, "Ruby Source Code", ".rb", ruby, &[])
+    .with_aliases(&[APPLICATION_X_RUBY])
+    .with_parent(&UTF8);
+
+static LUA: MimeType =
+    MimeType::new(TEXT_X_LUA, "Lua Source Code", ".lua", lua, &[]).with_parent(&UTF8);
 
 mimetype!(SHELL, TEXT_X_SHELLSCRIPT, ".sh", b"#!/bin/sh" | b"#!/bin/bash" | b"#!/usr/bin/env bash" | b"#!/bin/zsh", name: "Shell Script", kind: TEXT, aliases: [TEXT_X_SH, APPLICATION_X_SHELLSCRIPT, APPLICATION_X_SH], parent: &UTF8);
 
@@ -4349,8 +4384,7 @@ fn html(input: &[u8]) -> bool {
 }
 
 fn xml(input: &[u8]) -> bool {
-    let input = input.trim_ascii_start();
-    input.starts_with(b"<?xml")
+    input.trim_ascii_start().starts_with(b"<?xml")
 }
 
 fn mp4_precise(input: &[u8]) -> bool {
@@ -4411,10 +4445,7 @@ fn ogg_multiplexed(_input: &[u8]) -> bool {
 }
 
 fn mobi(input: &[u8]) -> bool {
-    if input.len() < 68 {
-        return false;
-    }
-    &input[60..64] == b"BOOKMOBI"
+    input.len() >= 68 && &input[60..64] == b"BOOKMOBI"
 }
 
 fn heic(input: &[u8]) -> bool {
@@ -4574,13 +4605,10 @@ fn is_matroska_file_type(input: &[u8], file_type: &[u8]) -> bool {
 }
 
 fn vint_width(v: i32) -> usize {
-    let mut mask = 128;
-    let mut num = 1;
-    while num < 8 && (v & mask) == 0 {
-        mask >>= 1;
-        num += 1;
-    }
-    num
+    // EBML variable-length integer width is determined by the position of the first set bit
+    // Returns (number of leading zeros + 1), clamped to maximum of 8
+    let byte = (v & 0xFF) as u8;
+    (byte.leading_zeros() as usize + 1).min(8)
 }
 
 fn mpeg(input: &[u8]) -> bool {
@@ -4732,11 +4760,8 @@ fn vsdx(input: &[u8]) -> bool {
 fn epub(input: &[u8]) -> bool {
     // EPUB uses offset-based detection like Go implementation
     // Go: Epub = offset([]byte("mimetypeapplication/epub+zip"), 30)
-    if input.len() < 30 + 28 {
-        return false;
-    }
     let expected = b"mimetypeapplication/epub+zip";
-    &input[30..30 + expected.len()] == expected
+    input.len() >= 30 + expected.len() && &input[30..30 + expected.len()] == expected
 }
 
 fn jar(input: &[u8]) -> bool {
@@ -5535,17 +5560,11 @@ fn abw(input: &[u8]) -> bool {
 // ============================================================================
 
 fn mdb(input: &[u8]) -> bool {
-    if input.len() < 32 {
-        return false;
-    }
-    &input[4..19] == b"Standard Jet DB"
+    input.len() >= 32 && &input[4..19] == b"Standard Jet DB"
 }
 
 fn accdb(input: &[u8]) -> bool {
-    if input.len() < 32 {
-        return false;
-    }
-    &input[4..19] == b"Standard ACE DB"
+    input.len() >= 32 && &input[4..19] == b"Standard ACE DB"
 }
 
 fn dbf(input: &[u8]) -> bool {
@@ -5592,11 +5611,135 @@ fn lotus123(input: &[u8]) -> bool {
 }
 
 fn marc(input: &[u8]) -> bool {
-    if input.len() < 24 {
+    // MARC leader validation
+    input.len() >= 24 && input[10] == b'2' && input[11] == b'2' && &input[20..24] == b"4500"
+}
+
+// ============================================================================
+// COMMON LANGUAGE DETECTION UTILITIES
+// ============================================================================
+
+/// Pattern definition for language detection
+#[derive(Debug, Clone)]
+#[doc(hidden)]
+struct LangPattern {
+    bytes: &'static [u8],
+    weight: u8,
+}
+
+impl LangPattern {
+    const fn new(bytes: &'static [u8], weight: u8) -> Self {
+        LangPattern { bytes, weight }
+    }
+
+    const fn simple(bytes: &'static [u8]) -> Self {
+        LangPattern { bytes, weight: 1 }
+    }
+}
+
+/// Single-pass pattern matcher for language detection
+#[doc(hidden)]
+struct SinglePassMatcher<'a> {
+    sample: &'a [u8],
+    patterns: &'a [LangPattern],
+    found: Vec<bool>,
+}
+
+impl<'a> SinglePassMatcher<'a> {
+    fn new(sample: &'a [u8], patterns: &'a [LangPattern]) -> Self {
+        let found = vec![false; patterns.len()];
+        SinglePassMatcher {
+            sample,
+            patterns,
+            found,
+        }
+    }
+
+    /// Perform single-pass matching of all patterns and return score
+    fn scan(mut self) -> (Vec<bool>, u8) {
+        let mut i = 0;
+
+        'outer: while i < self.sample.len() {
+            // Check each pattern at current position
+            for (idx, pattern) in self.patterns.iter().enumerate() {
+                if !self.found[idx] && self.matches_at(i, pattern.bytes) {
+                    self.found[idx] = true;
+                    i += pattern.bytes.len();
+                    continue 'outer;
+                }
+            }
+
+            // No pattern matched, advance by 1
+            i += 1;
+        }
+
+        // Calculate total score
+        let score = self
+            .patterns
+            .iter()
+            .enumerate()
+            .map(|(idx, p)| if self.found[idx] { p.weight } else { 0 })
+            .sum();
+
+        (self.found, score)
+    }
+
+    /// Scan with early stop when threshold is exceeded
+    /// Returns true if threshold was exceeded (meaning antipatterns detected)
+    fn scan_early_stop(mut self, threshold: u8) -> bool {
+        let mut score = 0u8;
+        let mut i = 0;
+
+        'outer: while i < self.sample.len() {
+            // Check each pattern at current position
+            for (idx, pattern) in self.patterns.iter().enumerate() {
+                if !self.found[idx] && self.matches_at(i, pattern.bytes) {
+                    self.found[idx] = true;
+                    score = score.saturating_add(pattern.weight);
+
+                    // Early return if threshold exceeded
+                    if score > threshold {
+                        return true;
+                    }
+
+                    i += pattern.bytes.len();
+                    continue 'outer;
+                }
+            }
+
+            // No pattern matched, advance by 1
+            i += 1;
+        }
+
+        false
+    }
+
+    #[inline]
+    fn matches_at(&self, pos: usize, pattern: &[u8]) -> bool {
+        pos + pattern.len() <= self.sample.len()
+            && &self.sample[pos..pos + pattern.len()] == pattern
+    }
+}
+
+/// Check for common shebangs (checks if shebang line contains any of the patterns)
+#[inline]
+fn has_lang_shebang(input: &[u8], shebangs: &[&[u8]]) -> bool {
+    if !input.starts_with(b"#!") {
         return false;
     }
-    // MARC leader validation
-    input[10] == b'2' && input[11] == b'2' && &input[20..24] == b"4500"
+
+    // Find end of shebang line
+    let end = input
+        .iter()
+        .position(|&b| b == b'\n')
+        .unwrap_or(input.len())
+        .min(256);
+    let shebang_line = &input[..end];
+
+    // Check if any pattern appears in the shebang line
+    shebangs
+        .iter()
+        .any(|&pattern| shebang_line.windows(pattern.len()).any(|w| w == pattern))
 }
 
 // ============================================================================
@@ -5604,13 +5747,922 @@ fn marc(input: &[u8]) -> bool {
 // ============================================================================
 
 fn javascript(input: &[u8]) -> bool {
-    // Check for shebang
-    input.starts_with(b"#!/usr/bin/env node") ||
-    input.starts_with(b"#!/usr/bin/node") ||
-    // Check for common JS patterns at start
-    input.starts_with(b"/*") ||
-    input.starts_with(b"//") ||
-    has_js_keywords(input)
+    // Check for shebang first
+    const NODE_SHEBANGS: &[&[u8]] = &[b"#!/usr/bin/env node", b"#!/usr/bin/node"];
+
+    if has_lang_shebang(input, NODE_SHEBANGS) {
+        return true;
+    }
+
+    let sample = &input[..input.len().min(1024)];
+
+    // Anti-patterns (indicates NOT JavaScript)
+    const ANTI_JS: &[LangPattern] = &[
+        LangPattern::simple(b"#include"), // C/C++
+        LangPattern::simple(b"package "), // Java/Go
+        LangPattern::simple(b"using "),   // C#
+        LangPattern::simple(b"fn "),      // Rust
+    ];
+
+    // Check anti-patterns FIRST - early stop on first match
+    if SinglePassMatcher::new(sample, ANTI_JS).scan_early_stop(0) {
+        return false;
+    }
+
+    // JavaScript requires braces for code blocks
+    let has_braces = sample.contains(&b'{') && sample.contains(&b'}');
+    if !has_braces {
+        return false;
+    }
+
+    // JavaScript patterns with weights
+    const JS_PATTERNS: &[LangPattern] = &[
+        LangPattern::new(b"=>", 2), // arrow function - strong
+        LangPattern::new(b"const ", 1),
+        LangPattern::new(b"let ", 1),
+        LangPattern::new(b"function ", 1),
+        LangPattern::new(b"var ", 1),
+        LangPattern::new(b"export ", 2),  // export - strong
+        LangPattern::new(b"require(", 2), // require - strong
+        LangPattern::new(b"console.", 1),
+        LangPattern::new(b"return ", 1),
+    ];
+
+    // Check for TypeScript false positive (interface with type annotation)
+    let mut has_interface_ts = false;
+    let mut has_colon_space = false;
+    for i in 0..sample.len() {
+        if i + 10 <= sample.len() && &sample[i..i + 10] == b"interface " {
+            has_interface_ts = true;
+        }
+        if i + 2 <= sample.len() && &sample[i..i + 2] == b": " {
+            has_colon_space = true;
+        }
+        if has_interface_ts && has_colon_space {
+            return false;
+        }
+    }
+
+    let js_matcher = SinglePassMatcher::new(sample, JS_PATTERNS);
+    let (found, score) = js_matcher.scan();
+
+    // Has strong indicator (arrow, export, require) OR multiple weaker ones
+    let has_strong = found[0] || found[5] || found[6];
+    let has_function_return = found[3] && found[8];
+
+    has_strong || has_function_return || score >= 2
+}
+
+fn java(input: &[u8]) -> bool {
+    let sample = &input[..input.len().min(1024)];
+
+    // Anti-patterns (JavaScript/TypeScript/C# false positives) - check FIRST
+    let anti_patterns = [
+        LangPattern::new(b"=>", 10),           // JavaScript arrow function
+        LangPattern::new(b"using System", 10), // C#
+        LangPattern::new(b"export ", 5),       // TypeScript/JavaScript
+        LangPattern::new(b"type ", 5),         // TypeScript
+        LangPattern::new(b"namespace ", 5),    // C#/C++
+        LangPattern::new(b"function ", 5),     // JavaScript
+        LangPattern::new(b"async ", 5),        // JavaScript
+        LangPattern::new(b"await ", 5),        // JavaScript
+        LangPattern::new(b"{ get", 3),         // C# property
+        LangPattern::new(b"{ set", 3),         // C# property
+        LangPattern::new(b"const ", 2),        // JavaScript
+        LangPattern::new(b"let ", 2),          // JavaScript
+        LangPattern::simple(b"var "),          // JavaScript (but also Java)
+    ];
+
+    // Check antipatterns FIRST - early stop if exceed threshold of 2
+    if SinglePassMatcher::new(sample, &anti_patterns).scan_early_stop(2) {
+        return false;
+    }
+
+    // Java requires braces for code blocks
+    let has_braces = sample.contains(&b'{') && sample.contains(&b'}');
+    if !has_braces {
+        return false;
+    }
+
+    // Java patterns with weights
+    let patterns = [
+        LangPattern::new(b"public static void main", 4),
+        LangPattern::new(b"public class ", 3),
+        LangPattern::new(b"public interface ", 3),
+        LangPattern::new(b"public abstract ", 3),
+        LangPattern::new(b"public enum ", 3),
+        LangPattern::new(b"package ", 3),
+        LangPattern::new(b"import java.", 3),
+        LangPattern::new(b"import javax.", 3),
+        LangPattern::new(b"@Override", 3),
+        LangPattern::new(b"@Autowired", 3),
+        LangPattern::new(b"@Component", 3),
+        LangPattern::new(b"@Service", 3),
+        LangPattern::new(b"@Repository", 3),
+        LangPattern::new(b"@RestController", 3),
+        LangPattern::new(b"@RequestMapping", 3),
+        LangPattern::new(b"System.out.", 3),
+        LangPattern::new(b"private class ", 2),
+        LangPattern::new(b"protected class ", 2),
+        LangPattern::new(b"import com.", 2),
+        LangPattern::new(b"import org.", 2),
+        LangPattern::new(b"extends ", 2),
+        LangPattern::new(b"implements ", 2),
+        LangPattern::new(b"throws ", 2),
+        LangPattern::new(b"catch (", 2),
+        LangPattern::simple(b"import "),
+        LangPattern::simple(b"class "),
+        LangPattern::simple(b"interface "),
+        LangPattern::simple(b"final "),
+        LangPattern::simple(b"try {"),
+        LangPattern::simple(b"finally {"),
+    ];
+
+    SinglePassMatcher::new(sample, &patterns).scan().1 >= 3
+}
+
+fn typescript(input: &[u8]) -> bool {
+    let sample = &input[..input.len().min(1024)];
+
+    // Anti-patterns (Java, C++, C# false positives) - check FIRST
+    let anti_patterns = [
+        LangPattern::new(b"using System", 10),  // C#
+        LangPattern::new(b"{ get; set; }", 10), // C# property
+        LangPattern::new(b"Task<", 8),          // C# async
+        LangPattern::new(b"public class ", 10),
+        LangPattern::new(b"package ", 10),
+        LangPattern::new(b"import java.", 10),
+        LangPattern::new(b"import javax.", 10),
+        LangPattern::new(b"System.out", 10),
+        LangPattern::new(b"std::", 10),
+        LangPattern::new(b"iostream", 10),
+        LangPattern::new(b"#include", 10),
+        LangPattern::new(b"template<", 10),
+        LangPattern::new(b"extern \"C\"", 10),
+        LangPattern::new(b"cout", 8),
+        LangPattern::new(b"cin", 8),
+        LangPattern::new(b"public:", 8),
+        LangPattern::new(b"private:", 8),
+        LangPattern::new(b"protected:", 8),
+        LangPattern::new(b"@Override", 5),
+        LangPattern::new(b"import com.", 5),
+        LangPattern::new(b"import org.", 5),
+    ];
+
+    // Check antipatterns FIRST - early stop if exceed threshold of 5
+    if SinglePassMatcher::new(sample, &anti_patterns).scan_early_stop(5) {
+        return false;
+    }
+
+    // TypeScript requires braces for code blocks
+    let has_braces = sample.contains(&b'{') && sample.contains(&b'}');
+    if !has_braces {
+        return false;
+    }
+
+    // Check for custom type annotations like ": Config", ": User", etc.
+    let has_custom_type_annotation = sample
+        .windows(3)
+        .any(|w| w[0] == b':' && w[1] == b' ' && w[2].is_ascii_uppercase());
+
+    // TypeScript patterns with weights
+    let patterns = [
+        LangPattern::new(b"type ", 3), // TypeScript-specific
+        LangPattern::new(b"enum ", 3),
+        LangPattern::new(b"readonly ", 3), // TypeScript-specific
+        LangPattern::new(b"namespace ", 3),
+        LangPattern::new(b"declare ", 3),  // TypeScript-specific
+        LangPattern::new(b"keyof ", 3),    // TypeScript-specific
+        LangPattern::new(b"Record<", 3),   // TypeScript utility type
+        LangPattern::new(b"Partial<", 3),  // TypeScript utility type
+        LangPattern::new(b"Required<", 3), // TypeScript utility type
+        LangPattern::new(b"Pick<", 3),     // TypeScript utility type
+        LangPattern::new(b"Omit<", 3),     // TypeScript utility type
+        LangPattern::new(b"interface ", 2),
+        LangPattern::new(b" as ", 2), // Type assertion
+        LangPattern::new(b": string", 2),
+        LangPattern::new(b"): string", 2),
+        LangPattern::new(b": number", 2),
+        LangPattern::new(b"): number", 2),
+        LangPattern::new(b": boolean", 2),
+        LangPattern::new(b"): boolean", 2),
+        LangPattern::new(b": void", 2),
+        LangPattern::new(b"): void", 2),
+        LangPattern::new(b": any", 2),
+        LangPattern::new(b"): any", 2),
+        LangPattern::new(b": string[]", 2),
+        LangPattern::new(b"): string[]", 2),
+        LangPattern::new(b": number[]", 2),
+        LangPattern::new(b"): number[]", 2),
+        LangPattern::new(b"<string>", 2),
+        LangPattern::new(b"<number>", 2),
+        LangPattern::new(b"<any>", 2),
+        LangPattern::new(b"<T>", 2),
+        LangPattern::new(b": {", 2), // Object type annotation
+        LangPattern::new(b"implements ", 2),
+        LangPattern::new(b"abstract ", 2),
+        LangPattern::new(b"typeof ", 2),
+        LangPattern::new(b"never", 2),
+        LangPattern::new(b"unknown", 2),
+        LangPattern::simple(b"export "),
+        LangPattern::simple(b"import "),
+        LangPattern::simple(b"from "),
+        LangPattern::simple(b"const "),
+        LangPattern::simple(b"function "),
+        LangPattern::simple(b"extends "),
+        LangPattern::simple(b"private "),
+        LangPattern::simple(b"public "),
+        LangPattern::simple(b"protected "),
+        LangPattern::simple(b"async "),
+        LangPattern::simple(b"await "),
+    ];
+
+    let score = SinglePassMatcher::new(sample, &patterns).scan().1;
+
+    has_custom_type_annotation || score >= 3
+}
+
+fn c_lang(input: &[u8]) -> bool {
+    let sample = &input[..input.len().min(1024)];
+
+    // Avoid Python/Ruby false positives (they are detected earlier in tree order)
+    let has_python_shebang = has_lang_shebang(input, &[b"python"]);
+    let has_ruby_shebang = has_lang_shebang(input, &[b"ruby"]);
+    let has_def = sample.windows(4).any(|w| w == b"def ");
+    let has_end =
+        sample.windows(4).any(|w| w == b"end\n") || sample.windows(4).any(|w| w == b"end ");
+    let has_print = sample.windows(6).any(|w| w == b"print(");
+    let has_import = sample.windows(7).any(|w| w == b"import ");
+
+    // Python: def with print/import, or has both def and print
+    // Ruby: def with end keyword
+    if has_python_shebang
+        || has_ruby_shebang
+        || (has_def && has_end)
+        || (has_def && (has_print || has_import))
+    {
+        return false;
+    }
+
+    // C-specific patterns (also valid in C++)
+    let has_include = sample.windows(8).any(|w| w == b"#include");
+    let has_define = sample.windows(7).any(|w| w == b"#define");
+    let has_ifdef = sample.windows(6).any(|w| w == b"#ifdef");
+    let has_ifndef = sample.windows(7).any(|w| w == b"#ifndef");
+    let has_endif = sample.windows(6).any(|w| w == b"#endif");
+    let has_typedef = sample.windows(8).any(|w| w == b"typedef ");
+    let has_struct = sample.windows(7).any(|w| w == b"struct ");
+    let has_main = sample.windows(9).any(|w| w == b"int main(");
+    let has_void = sample.windows(5).any(|w| w == b"void ");
+    let has_printf = sample.windows(7).any(|w| w == b"printf(");
+    let has_malloc = sample.windows(7).any(|w| w == b"malloc(");
+    let has_sizeof = sample.windows(7).any(|w| w == b"sizeof(");
+    let has_return = sample.windows(7).any(|w| w == b"return ");
+
+    // Also match on C/C++ common patterns to ensure C++ child gets checked
+    let has_class = sample.windows(6).any(|w| w == b"class ");
+    let has_public = sample.windows(7).any(|w| w == b"public:");
+    let has_private = sample.windows(8).any(|w| w == b"private:");
+    let has_protected = sample.windows(10).any(|w| w == b"protected:");
+    let has_int = sample.windows(4).any(|w| w == b"int ");
+    let has_char = sample.windows(5).any(|w| w == b"char ");
+    let has_float = sample.windows(6).any(|w| w == b"float ");
+    let has_double = sample.windows(7).any(|w| w == b"double ");
+
+    // Strong C indicators - preprocessor directives are very C/C++ specific
+    let has_preprocessor = has_include || has_define || has_ifdef || has_ifndef || has_endif;
+
+    // C/C++ requires braces for code blocks
+    let has_braces = sample.contains(&b'{') && sample.contains(&b'}');
+    if !has_braces {
+        return false;
+    }
+
+    // Calculate confidence with weighted scoring
+    let c_score = (has_include as u8) * 2  // #include is strong indicator
+        + (has_define as u8)
+        + (has_ifdef as u8)
+        + (has_ifndef as u8)
+        + (has_endif as u8)
+        + (has_typedef as u8)
+        + (has_struct as u8)
+        + (has_main as u8) * 2  // main() is strong indicator
+        + (has_void as u8)
+        + (has_printf as u8)
+        + (has_malloc as u8)
+        + (has_sizeof as u8)
+        + (has_return as u8)
+        + (has_class as u8)
+        + (has_public as u8) * 2    // C++ access specifiers boost score
+        + (has_private as u8) * 2
+        + (has_protected as u8) * 2
+        + (has_int as u8)
+        + (has_char as u8)
+        + (has_float as u8)
+        + (has_double as u8);
+
+    // Require either preprocessor directives OR multiple C indicators
+    // This is still permissive enough for C++ child to override
+    (has_preprocessor && c_score >= 2) || c_score >= 3
+}
+
+fn cpp(input: &[u8]) -> bool {
+    let sample = &input[..input.len().min(1024)];
+
+    // Anti-patterns (Python, C#, Java, Go false positives)
+    let anti_patterns = [
+        LangPattern::new(b"import ", 10),       // Python, Java
+        LangPattern::new(b"from ", 10),         // Python
+        LangPattern::new(b"def __init__", 10),  // Python
+        LangPattern::new(b"using System", 10),  // C#
+        LangPattern::new(b"package ", 10),      // Java, Go
+        LangPattern::new(b"@Override", 10),     // Java
+        LangPattern::new(b"public class ", 10), // Java, C#
+    ];
+
+    // Check antipatterns FIRST - early stop if exceeds threshold
+    if SinglePassMatcher::new(sample, &anti_patterns).scan_early_stop(9) {
+        return false;
+    }
+
+    // C++ patterns with weights
+    let patterns = [
+        // Strong C++ indicators (weight 10 = alone is enough)
+        LangPattern::new(b"iostream", 10),
+        LangPattern::new(b"namespace ", 10),
+        LangPattern::new(b"std::", 10),
+        LangPattern::new(b"template<", 10),
+        LangPattern::new(b"extern \"C\"", 10),
+        // Access specifiers
+        LangPattern::new(b"public:", 5),
+        LangPattern::new(b"private:", 5),
+        LangPattern::new(b"protected:", 5),
+        // Other C++ patterns
+        LangPattern::new(b"class ", 2),
+        LangPattern::new(b"vector", 2),
+        LangPattern::new(b"string", 2),
+        LangPattern::new(b"cout", 2),
+        LangPattern::new(b"cin", 2),
+    ];
+
+    let (found, score) = SinglePassMatcher::new(sample, &patterns).scan();
+
+    // Strong indicators - any one is enough
+    let has_strong_indicator = found[0]  // iostream
+        || found[1]  // namespace
+        || found[2]  // std::
+        || found[3]  // template<
+        || found[4]; // extern "C"
+
+    // class with access specifiers is also strong
+    let has_class = found[8];
+    let has_access = found[5] || found[6] || found[7]; // public/private/protected
+    let has_class_with_access = has_class && has_access;
+
+    if has_strong_indicator || has_class_with_access {
+        return true;
+    }
+
+    // Require at least 2 weaker patterns (score >= 4, since each weak pattern has weight 2)
+    score >= 4
+}
+
+fn go_lang(input: &[u8]) -> bool {
+    let sample = &input[..input.len().min(1024)];
+
+    // Anti-patterns (Java, C# false positives) - check FIRST
+    let anti_patterns = [
+        LangPattern::new(b"public class ", 10),
+        LangPattern::new(b"private class ", 10),
+        LangPattern::new(b"protected class ", 10),
+        LangPattern::new(b"@Override", 10),
+        LangPattern::new(b"System.out", 10),
+        LangPattern::new(b"using System", 10),  // C#
+        LangPattern::new(b"{ get; set; }", 10), // C#
+        LangPattern::new(b"class ", 5),
+        LangPattern::new(b"extends ", 5),
+        LangPattern::new(b"implements ", 5),
+    ];
+
+    // Check antipatterns FIRST - early stop on first Java/C# antipattern found
+    if SinglePassMatcher::new(sample, &anti_patterns).scan_early_stop(0) {
+        return false;
+    }
+
+    // Go requires braces for code blocks
+    let has_braces = sample.contains(&b'{') && sample.contains(&b'}');
+    if !has_braces {
+        return false;
+    }
+
+    // Go patterns with weights
+    let patterns = [
+        LangPattern::new(b" := ", 3),       // Go-specific short declaration
+        LangPattern::new(b"defer ", 3),     // Go-specific
+        LangPattern::new(b"go ", 3),        // goroutine
+        LangPattern::new(b"chan ", 3),      // channel
+        LangPattern::new(b"select ", 3),    // select statement
+        LangPattern::new(b"err != nil", 3), // Go error handling idiom
+        LangPattern::new(b"func main()", 3),
+        LangPattern::new(b"recover()", 3),
+        LangPattern::new(b"package ", 2),
+        LangPattern::new(b"func ", 2),
+        LangPattern::new(b"import (", 2),
+        LangPattern::new(b"import \"", 2),
+        LangPattern::new(b"fmt.", 2),
+        LangPattern::new(b"struct {", 2),
+        LangPattern::new(b"interface {", 2),
+        LangPattern::new(b"interface{}", 2), // empty interface
+        LangPattern::new(b"range ", 2),
+        LangPattern::new(b"make(", 2),
+        LangPattern::new(b"append(", 2),
+        LangPattern::new(b"if err", 2),
+        LangPattern::new(b"return err", 2),
+        LangPattern::new(b"panic(", 2),
+        LangPattern::new(b"context.", 2),
+        LangPattern::new(b"http.", 2),
+        LangPattern::new(b"func (", 2), // method receiver
+        LangPattern::simple(b"type "),
+        LangPattern::simple(b"len("),
+        LangPattern::simple(b"nil"),
+    ];
+
+    SinglePassMatcher::new(sample, &patterns).scan().1 >= 3
+}
+
+fn rust_lang(input: &[u8]) -> bool {
+    let sample = &input[..input.len().min(1024)];
+
+    // Rust requires braces for code blocks
+    let has_braces = sample.contains(&b'{') && sample.contains(&b'}');
+    if !has_braces {
+        return false;
+    }
+
+    // Check for macro calls (Rust-specific: name!(...))
+    let has_macro_call = sample.windows(3).any(|w| {
+        (w[0].is_ascii_alphanumeric() || w[0] == b'_')
+            && w[1] == b'!'
+            && (w[2] == b'(' || w[2] == b'[' || w[2] == b'{')
+    });
+
+    // Rust patterns with weights
+    let patterns = [
+        LangPattern::new(b"let mut ", 3),      // Rust-specific
+        LangPattern::new(b"crate::", 3),       // Rust-specific
+        LangPattern::new(b"#[derive", 3),      // Rust-specific
+        LangPattern::new(b"&self", 3),         // Rust-specific
+        LangPattern::new(b"Self::", 3),        // Rust-specific
+        LangPattern::new(b"'static", 3),       // Rust lifetime
+        LangPattern::new(b"unsafe ", 3),       // Rust-specific
+        LangPattern::new(b"extern crate ", 3), // Rust-specific
+        LangPattern::new(b"println!(", 3),     // Rust macro
+        LangPattern::new(b"vec![", 3),         // Rust macro
+        LangPattern::new(b"format!(", 3),      // Rust macro
+        LangPattern::new(b"panic!(", 3),       // Rust macro
+        LangPattern::new(b"#[test]", 3),
+        LangPattern::new(b"#[cfg(", 3),
+        LangPattern::new(b"async fn", 3),
+        LangPattern::new(b".await", 3),
+        LangPattern::new(b"fn ", 2),
+        LangPattern::new(b"use ", 2),
+        LangPattern::new(b"mod ", 2),
+        LangPattern::new(b"impl ", 2),
+        LangPattern::new(b"trait ", 2),
+        LangPattern::new(b"match ", 2),
+        LangPattern::new(b"Some(", 2),
+        LangPattern::new(b"Ok(", 2),
+        LangPattern::new(b"Err(", 2),
+        LangPattern::new(b"Vec<", 2),
+        LangPattern::new(b"Box<", 2),
+        LangPattern::new(b"Option<", 2),
+        LangPattern::new(b"Result<", 2),
+        LangPattern::new(b"&mut ", 2),
+        LangPattern::new(b"self.", 2),
+        LangPattern::new(b"unwrap()", 2),
+        LangPattern::new(b"expect(", 2),
+        LangPattern::simple(b"pub "),
+        LangPattern::simple(b"None"),
+    ];
+
+    let score = SinglePassMatcher::new(sample, &patterns).scan().1;
+
+    has_macro_call || score >= 3
+}
+
+fn csharp(input: &[u8]) -> bool {
+    let sample = &input[..input.len().min(1024)];
+
+    // Anti-patterns (C++, Java, TypeScript false positives)
+    let anti_patterns = [
+        LangPattern::new(b"import java.", 10),
+        LangPattern::new(b"import javax.", 10),
+        LangPattern::new(b"import com.", 10),
+        LangPattern::new(b"import org.", 10),
+        LangPattern::new(b"package ", 10),
+        LangPattern::new(b"iostream", 10),
+        LangPattern::new(b"#include", 10),
+        LangPattern::new(b"cout", 8),
+        LangPattern::new(b"std::", 8),
+        LangPattern::new(b"export ", 5), // TypeScript
+        LangPattern::new(b"const ", 3),  // TypeScript/JavaScript
+    ];
+
+    // Check antipatterns FIRST - early stop if exceed threshold
+    if SinglePassMatcher::new(sample, &anti_patterns).scan_early_stop(7) {
+        return false;
+    }
+
+    // C# requires braces for code blocks
+    let has_braces = sample.contains(&b'{') && sample.contains(&b'}');
+    if !has_braces {
+        return false;
+    }
+
+    // C# patterns with weights
+    let patterns = [
+        LangPattern::new(b"using System", 3), // C#-specific
+        LangPattern::new(b"namespace ", 2),
+        LangPattern::new(b"{ get; set; }", 3), // C# property
+        LangPattern::new(b"string ", 2),       // C#-specific type
+        LangPattern::new(b"async ", 2),
+        LangPattern::new(b"await ", 2),
+        LangPattern::new(b"public ", 2),
+        LangPattern::new(b"private ", 2),
+        LangPattern::new(b"static ", 2),
+        LangPattern::simple(b"using "),
+        LangPattern::simple(b"class "),
+        LangPattern::simple(b"void "),
+        LangPattern::simple(b"var "),
+        LangPattern::simple(b"{ get"),
+        LangPattern::simple(b"{ set"),
+    ];
+
+    SinglePassMatcher::new(sample, &patterns).scan().1 >= 3
+}
+
+fn vb(input: &[u8]) -> bool {
+    let sample = &input[..input.len().min(1024)];
+
+    // Helper function for case-insensitive pattern matching
+    fn has_pattern_ci(data: &[u8], pattern: &[u8]) -> bool {
+        data.windows(pattern.len())
+            .any(|w| w.eq_ignore_ascii_case(pattern))
+    }
+
+    // VB-specific patterns (case-insensitive)
+    let has_imports_system = has_pattern_ci(sample, b"Imports System");
+    let has_end_function = has_pattern_ci(sample, b"End Function");
+    let has_end_sub = has_pattern_ci(sample, b"End Sub");
+    let has_end_class = has_pattern_ci(sample, b"End Class");
+    let has_for_each = has_pattern_ci(sample, b"For Each");
+    let has_byval = has_pattern_ci(sample, b"ByVal");
+    let has_byref = has_pattern_ci(sample, b"ByRef");
+    let has_nothing = has_pattern_ci(sample, b"Nothing");
+    let has_module = has_pattern_ci(sample, b"Module");
+    let has_imports = has_pattern_ci(sample, b"Imports");
+    let has_dim = has_pattern_ci(sample, b"Dim ");
+    let has_sub = has_pattern_ci(sample, b"Sub ");
+    let has_function = has_pattern_ci(sample, b"Function");
+    let has_as = has_pattern_ci(sample, b" As ");
+
+    // Calculate VB score
+    let vb_score = (has_dim as u8)
+        + (has_sub as u8)
+        + (has_function as u8)
+        + (has_end_sub as u8) * 2
+        + (has_end_function as u8) * 2
+        + (has_end_class as u8) * 2
+        + (has_module as u8) * 2
+        + (has_imports as u8) * 2
+        + (has_imports_system as u8) * 3
+        + (has_as as u8)
+        + (has_byval as u8) * 2
+        + (has_byref as u8) * 2
+        + (has_nothing as u8)
+        + (has_for_each as u8);
+
+    vb_score >= 3
+}
+
+fn php(input: &[u8]) -> bool {
+    let sample = &input[..input.len().min(1024)];
+
+    // PHP must have opening tag
+    let has_php_tag = sample.starts_with(b"<?php")
+        || sample.starts_with(b"<?\n")
+        || sample.starts_with(b"<?\r")
+        || sample.windows(5).any(|w| w == b"<?php")
+        || sample.windows(3).any(|w| w == b"<?\n" || w == b"<?\r");
+
+    if !has_php_tag {
+        return false;
+    }
+
+    // PHP patterns with weights
+    let patterns = [
+        LangPattern::new(b"namespace ", 3), // PHP-specific
+        LangPattern::new(b"function ", 2),
+        LangPattern::new(b"echo ", 2),
+        LangPattern::new(b"$_", 3), // PHP superglobals
+        LangPattern::new(b"->", 2), // Object method call
+        LangPattern::new(b"class ", 2),
+        LangPattern::new(b"require ", 2),
+        LangPattern::new(b"include ", 2),
+        LangPattern::new(b"isset(", 2),
+        LangPattern::new(b"empty(", 2),
+        LangPattern::simple(b"use "),
+        LangPattern::simple(b"public "),
+        LangPattern::simple(b"private "),
+        LangPattern::simple(b"protected "),
+    ];
+
+    // Check for $ variable sigil (very PHP-specific)
+    let has_dollar = sample.contains(&b'$');
+
+    let score = SinglePassMatcher::new(sample, &patterns).scan().1;
+
+    (score >= 1) || has_dollar
+}
+
+fn python(input: &[u8]) -> bool {
+    // Check for shebang first
+    if has_lang_shebang(input, &[b"python", b"# -*- coding:"]) {
+        return true;
+    }
+
+    let sample = &input[..input.len().min(1024)];
+
+    // Python requires colons for control structures (def:, class:, if:, for:, etc.)
+    if !sample.contains(&b':') {
+        return false;
+    }
+
+    // Python patterns with weights
+    let patterns = [
+        LangPattern::new(b"def ", 2),
+        LangPattern::simple(b"class "),
+        LangPattern::simple(b"import "),
+        LangPattern::simple(b"from "),
+        LangPattern::simple(b"print("),
+        LangPattern::simple(b"if "),
+        LangPattern::new(b"elif ", 2), // Python-specific
+        LangPattern::simple(b"else:"),
+        LangPattern::simple(b"for "),
+        LangPattern::simple(b"while "),
+        LangPattern::new(b"with ", 2), // quite Python-specific
+        LangPattern::simple(b"try:"),
+        LangPattern::new(b"except:", 2), // Python-specific
+        LangPattern::new(b"except ", 2), // except Exception
+        LangPattern::new(b"finally:", 2),
+        LangPattern::new(b"lambda ", 2),
+        LangPattern::new(b"yield ", 2),
+        LangPattern::new(b"async def ", 3),
+        LangPattern::new(b"await ", 2),
+        LangPattern::new(b"@property", 3),
+        LangPattern::new(b"@staticmethod", 3),
+        LangPattern::new(b"@classmethod", 3),
+        LangPattern::new(b"__init__", 3),
+        LangPattern::new(b"__name__", 2),
+        LangPattern::new(b"__main__", 2),
+    ];
+
+    // Anti-patterns (C++ false positives)
+    let anti_patterns = [
+        LangPattern::new(b"class {", 10),
+        LangPattern::new(b"class\n{", 10),
+        LangPattern::new(b"class {\n", 10),
+        LangPattern::new(b"namespace ", 5),
+        LangPattern::new(b"#include", 5),
+        LangPattern::new(b"std::", 5),
+    ];
+
+    // Check antipatterns FIRST - early stop on first C++ antipattern found
+    if SinglePassMatcher::new(sample, &anti_patterns).scan_early_stop(0) {
+        return false;
+    }
+
+    let matcher = SinglePassMatcher::new(sample, &patterns);
+    let (found, score) = matcher.scan();
+
+    // Check for Python-specific indentation pattern (colon followed by indented line)
+    let has_python_indentation = {
+        let lines_iter = sample.split(|&b| b == b'\n');
+        let mut looking_for_indent = false;
+
+        for line in lines_iter {
+            if looking_for_indent {
+                let trimmed = line.trim_ascii();
+                if !trimmed.is_empty() {
+                    if line.starts_with(b"    ") || line.starts_with(b"\t") {
+                        return true;
+                    }
+                    looking_for_indent = false;
+                }
+                // Skip empty lines while looking for indent
+                continue;
+            }
+
+            let trimmed_line = line.trim_ascii_end();
+            if trimmed_line.ends_with(b":") && !trimmed_line.starts_with(b"#") {
+                looking_for_indent = true;
+            }
+        }
+        false
+    };
+
+    // def or class with Python indentation pattern is Python-specific
+    let has_def_or_class = found[0] || found[1];
+    if has_def_or_class && has_python_indentation {
+        return true;
+    }
+
+    score + (has_python_indentation as u8) * 3 >= 4
+}
+
+fn ruby(input: &[u8]) -> bool {
+    // Check for shebang first
+    const RUBY_SHEBANGS: &[&[u8]] = &[b"ruby"];
+    if has_lang_shebang(input, RUBY_SHEBANGS) {
+        return true;
+    }
+
+    // Exclude TCL (which also uses 'puts' but has different shebang)
+    const TCL_SHEBANGS: &[&[u8]] = &[b"tclsh"];
+    if has_lang_shebang(input, TCL_SHEBANGS) {
+        return false;
+    }
+
+    let sample = &input[..input.len().min(1024)];
+
+    // Anti-patterns (Python false positives)
+    let anti_patterns = [
+        LangPattern::new(b"import ", 5),
+        LangPattern::new(b"from ", 5),
+        LangPattern::new(b"def __init__", 10),
+        LangPattern::new(b"self.", 5),
+    ];
+
+    // Check antipatterns FIRST
+    if SinglePassMatcher::new(sample, &anti_patterns).scan_early_stop(4) {
+        return false;
+    }
+
+    // Ruby requires 'end' keyword for blocks
+    let has_end = sample.windows(3).any(|w| w == b"end");
+    if !has_end {
+        return false;
+    }
+
+    // Ruby patterns with weights
+    let patterns = [
+        LangPattern::new(b"attr_accessor", 3), // Ruby-specific
+        LangPattern::new(b"attr_reader", 3),   // Ruby-specific
+        LangPattern::new(b"attr_writer", 3),   // Ruby-specific
+        LangPattern::new(b"require ", 2),
+        LangPattern::new(b"puts ", 2),
+        LangPattern::new(b"def ", 2),
+        LangPattern::new(b"class ", 2),
+        LangPattern::new(b"end\n", 2),
+        LangPattern::new(b"end\r", 2),
+        LangPattern::new(b"module ", 2),
+        LangPattern::simple(b"end "),
+        LangPattern::simple(b"do "),
+        LangPattern::simple(b"elsif "),
+        LangPattern::simple(b"unless "),
+        LangPattern::simple(b"until "),
+    ];
+
+    let (found, score) = SinglePassMatcher::new(sample, &patterns).scan();
+
+    // Ruby requires "end" keyword when using class/def (unlike Python)
+    let has_def_or_class = found[5] || found[6]; // def or class
+    let has_end = found[7] || found[8] || found[10]; // end\n, end\r, end
+
+    // Check for "end" at the very end of sample (without trailing space/newline)
+    let has_end_at_eof = sample.ends_with(b"end");
+
+    if has_def_or_class && !has_end && !has_end_at_eof {
+        return false;
+    }
+
+    score >= 2
+}
+
+fn perl(input: &[u8]) -> bool {
+    // Check for shebang first
+    const PERL_SHEBANGS: &[&[u8]] = &[b"perl"];
+    if has_lang_shebang(input, PERL_SHEBANGS) {
+        return true;
+    }
+
+    let sample = &input[..input.len().min(1024)];
+
+    // Anti-patterns (Java, Go, Rust, C#, C++ false positives)
+    let anti_patterns = [
+        LangPattern::new(b"public class ", 10),     // Java
+        LangPattern::new(b"public enum ", 10),      // Java
+        LangPattern::new(b"public interface ", 10), // Java
+        LangPattern::new(b"import java.", 10),      // Java
+        LangPattern::new(b"import javax.", 10),     // Java
+        LangPattern::new(b"@Override", 10),         // Java
+        LangPattern::new(b"System.out", 10),        // Java
+        LangPattern::new(b"package main", 10),      // Go
+        LangPattern::new(b"func main()", 10),       // Go, Rust
+        LangPattern::new(b"func (", 10),            // Go method receiver
+        LangPattern::new(b" := ", 10),              // Go
+        LangPattern::new(b"using System", 10),      // C#
+        LangPattern::new(b"namespace ", 10),        // C++, C#
+        LangPattern::new(b"fn ", 10),               // Rust
+        LangPattern::new(b"impl ", 10),             // Rust
+    ];
+
+    // Check antipatterns FIRST
+    if SinglePassMatcher::new(sample, &anti_patterns).scan_early_stop(9) {
+        return false;
+    }
+
+    // Perl requires semicolons for statements
+    if !sample.contains(&b';') {
+        return false;
+    }
+
+    // Perl patterns with weights
+    let patterns = [
+        LangPattern::new(b"use strict;", 3),   // Perl-specific
+        LangPattern::new(b"use warnings;", 3), // Perl-specific
+        LangPattern::new(b"package ", 2),
+        LangPattern::new(b"sub ", 2),
+        LangPattern::new(b"use ", 2),
+        LangPattern::new(b"my $", 2),
+        LangPattern::new(b"$_", 2), // Default variable
+        LangPattern::simple(b"my "),
+        LangPattern::simple(b"our "),
+        LangPattern::simple(b"local "),
+        LangPattern::simple(b"foreach "),
+        LangPattern::simple(b"unless "),
+    ];
+
+    // Check for $ variable sigil (very Perl-specific)
+    let has_dollar = sample.contains(&b'$');
+
+    let score = SinglePassMatcher::new(sample, &patterns).scan().1;
+
+    (score >= 2) || (has_dollar && score >= 1)
+}
+
+fn lua(input: &[u8]) -> bool {
+    // Check for shebang first
+    const LUA_SHEBANGS: &[&[u8]] = &[b"lua"];
+    if has_lang_shebang(input, LUA_SHEBANGS) {
+        return true;
+    }
+
+    let sample = &input[..input.len().min(1024)];
+
+    // Anti-patterns (Python, Perl, Shell false positives)
+    let anti_patterns = [
+        LangPattern::new(b"import ", 10),       // Python
+        LangPattern::new(b"from ", 10),         // Python
+        LangPattern::new(b"def __init__", 10),  // Python
+        LangPattern::new(b"use strict;", 10),   // Perl
+        LangPattern::new(b"use warnings;", 10), // Perl
+        LangPattern::new(b"echo ", 5),          // Shell
+        LangPattern::new(b"export ", 5),        // Shell
+    ];
+
+    // Check antipatterns FIRST
+    if SinglePassMatcher::new(sample, &anti_patterns).scan_early_stop(9) {
+        return false;
+    }
+
+    // Lua requires 'end' keyword for blocks
+    let has_end = sample.windows(3).any(|w| w == b"end");
+    if !has_end {
+        return false;
+    }
+
+    // Lua patterns with weights
+    let patterns = [
+        LangPattern::new(b"function ", 3), // Lua-specific
+        LangPattern::new(b"local ", 3),    // Lua-specific
+        LangPattern::new(b"end\n", 2),     // Lua end keyword
+        LangPattern::new(b"end ", 2),
+        LangPattern::new(b"then\n", 2), // Lua conditional
+        LangPattern::new(b"then ", 2),
+        LangPattern::new(b"elseif ", 2), // Lua-specific (not 'elif' or 'elsif')
+        LangPattern::new(b"do\n", 2),    // Lua do block
+        LangPattern::new(b"do ", 2),
+        LangPattern::simple(b"require("),  // Lua module import
+        LangPattern::simple(b"require\""), // Lua module import
+        LangPattern::simple(b"require'"),  // Lua module import
+        LangPattern::simple(b"return "),
+        LangPattern::simple(b"if "),
+        LangPattern::simple(b"for "),
+        LangPattern::simple(b"while "),
+    ];
+
+    SinglePassMatcher::new(sample, &patterns).scan().1 >= 3
 }
 
 fn visual_studio_solution(input: &[u8]) -> bool {
@@ -5814,7 +6866,7 @@ fn mj2(input: &[u8]) -> bool {
 }
 
 // ============================================================================
-// MISCELLANEOUS FORMAT DETECTORS
+// MAC FORMAT DETECTORS
 // ============================================================================
 
 fn macho(input: &[u8]) -> bool {
@@ -6466,26 +7518,9 @@ fn get_ole_clsid(input: &[u8]) -> Option<&[u8]> {
     Some(&input[clsid_offset..clsid_offset + 16])
 }
 
-/// Check if input contains JavaScript keywords
-fn has_js_keywords(input: &[u8]) -> bool {
-    const KEYWORDS: [&[u8]; 7] = [
-        b"function",
-        b"var ",
-        b"let ",
-        b"const ",
-        b"class ",
-        b"import ",
-        b"export ",
-    ];
-    let sample = &input[..input.len().min(256)];
-    KEYWORDS
-        .iter()
-        .any(|&keyword| sample.windows(keyword.len()).any(|w| w == keyword))
-}
-
 /// Simple JSON validation
 fn is_valid_json(input: &[u8]) -> bool {
-    // JSON validation optimized for partial content (first 512 bytes)
+    // JSON validation optimized for partial content (first 1024bytes)
     // For large files, we can't expect balanced brackets, so we look for JSON patterns
     let mut brace_count = 0;
     let mut bracket_count = 0;
@@ -6495,7 +7530,7 @@ fn is_valid_json(input: &[u8]) -> bool {
     let mut has_comma = false;
     let mut has_opening = false;
 
-    for &byte in input.iter().take(512) {
+    for &byte in input.iter().take(1024) {
         // Limit check to first 512 bytes
         if escape_next {
             escape_next = false;
@@ -6539,34 +7574,22 @@ fn is_valid_json(input: &[u8]) -> bool {
 
 /// ELF Object File (ET_REL)
 fn elf_obj(input: &[u8]) -> bool {
-    if input.len() < 18 {
-        return false;
-    }
-    input.starts_with(b"\x7fELF") && input[16] == 1 && input[17] == 0
+    input.len() >= 18 && input.starts_with(b"\x7fELF") && input[16] == 1 && input[17] == 0
 }
 
 /// ELF Executable (ET_EXEC)
 fn elf_exe(input: &[u8]) -> bool {
-    if input.len() < 18 {
-        return false;
-    }
-    input.starts_with(b"\x7fELF") && input[16] == 2 && input[17] == 0
+    input.len() >= 18 && input.starts_with(b"\x7fELF") && input[16] == 2 && input[17] == 0
 }
 
 /// ELF Shared Library (ET_DYN)
 fn elf_lib(input: &[u8]) -> bool {
-    if input.len() < 18 {
-        return false;
-    }
-    input.starts_with(b"\x7fELF") && input[16] == 3 && input[17] == 0
+    input.len() >= 18 && input.starts_with(b"\x7fELF") && input[16] == 3 && input[17] == 0
 }
 
 /// ELF Core Dump (ET_CORE)
 fn elf_dump(input: &[u8]) -> bool {
-    if input.len() < 18 {
-        return false;
-    }
-    input.starts_with(b"\x7fELF") && input[16] == 4 && input[17] == 0
+    input.len() >= 18 && input.starts_with(b"\x7fELF") && input[16] == 4 && input[17] == 0
 }
 
 /// AAF (Advanced Authoring Format)

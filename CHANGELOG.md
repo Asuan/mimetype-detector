@@ -10,6 +10,13 @@ Used prefixes:
 
 ## Unreleased
 
+## 0.3.4 - 2025-12-15
+
+* Added: Java (`text/x-java`), TypeScript (`text/x-typescript`), C (`text/x-c`), C++ (`text/x-c++`), Go (`text/x-go`), Rust (`text/x-rust`), C# (`text/x-csharp`), and Visual Basic (`text/x-vb`) source code detection
+* Updated: C++ is now a child of C in detection tree for `.c .h` header file detection
+* Updated: Optimized EBML `vint_width` function using CPU intrinsics (`leading_zeros()`)
+* Added: 422 MIME type detection tests (524 total tests)
+
 ## 0.3.3 - 2025-12-04
 
 * Added: PSV (Pipe-Separated Values) format support with MIME type `text/pipe-separated-values` (.psv extension)

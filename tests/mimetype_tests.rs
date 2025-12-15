@@ -2356,66 +2356,6 @@ fn test_detect_marc() {
 // ============================================================================
 
 #[test]
-fn test_detect_php() {
-    let data = b"<?php echo 'Hello World'; ?>";
-    let mime_type = detect(data);
-    assert_eq!(mime_type.mime(), TEXT_X_PHP);
-    assert_eq!(mime_type.extension(), ".php");
-    assert!(mime_type.is(TEXT_X_PHP));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    assert!(mime_type.kind().is_text());
-    assert!(!mime_type.name().is_empty());
-}
-
-#[test]
-fn test_detect_javascript() {
-    let data = b"function hello() { return 'world'; }";
-    let mime_type = detect(data);
-    assert_eq!(mime_type.mime(), TEXT_JAVASCRIPT);
-    assert_eq!(mime_type.extension(), ".js");
-    assert!(mime_type.is(TEXT_JAVASCRIPT));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    assert!(mime_type.kind().is_text());
-    assert!(!mime_type.name().is_empty());
-}
-
-#[test]
-fn test_detect_python() {
-    let data = b"#!/usr/bin/env python\nprint('Hello World')";
-    let mime_type = detect(data);
-    assert_eq!(mime_type.mime(), TEXT_X_PYTHON);
-    assert_eq!(mime_type.extension(), ".py");
-    assert!(mime_type.is(TEXT_X_PYTHON));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    assert!(mime_type.kind().is_text());
-    assert!(!mime_type.name().is_empty());
-}
-
-#[test]
-fn test_detect_perl() {
-    let data = b"#!/usr/bin/env perl\nprint \"Hello World\\n\";";
-    let mime_type = detect(data);
-    assert_eq!(mime_type.mime(), TEXT_X_PERL);
-    assert_eq!(mime_type.extension(), ".pl");
-    assert!(mime_type.is(TEXT_X_PERL));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    assert!(mime_type.kind().is_text());
-    assert!(!mime_type.name().is_empty());
-}
-
-#[test]
-fn test_detect_ruby() {
-    let data = b"#!/usr/bin/env ruby\nputs 'Hello World'";
-    let mime_type = detect(data);
-    assert_eq!(mime_type.mime(), TEXT_X_RUBY);
-    assert_eq!(mime_type.extension(), ".rb");
-    assert!(mime_type.is(TEXT_X_RUBY));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    assert!(mime_type.kind().is_text());
-    assert!(!mime_type.name().is_empty());
-}
-
-#[test]
 fn test_detect_lua() {
     let data = b"#!/usr/bin/env lua\nprint('Hello World')";
     let mime_type = detect(data);
@@ -2449,6 +2389,776 @@ fn test_detect_tcl() {
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_text());
     assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_java() {
+    let test_cases = [
+        (
+            b"package com.example;\n\npublic class HelloWorld {\n    public static void main(String[] args) {\n        System.out.println(\"Hello World\");\n    }\n}" as &[u8],
+            "package with public class"
+        ),
+        (
+            b"import java.util.ArrayList;\nimport java.util.List;\n\nclass MyClass {\n    private List<String> items = new ArrayList<>();\n}",
+            "import with class"
+        ),
+        (
+            b"package com.example;\n\npublic enum Color {\n    RED, GREEN, BLUE\n}",
+            "package with public enum"
+        ),
+        (
+            b"import javax.servlet.*;\n\npublic class Servlet extends HttpServlet {\n    public void doGet() {}\n}",
+            "import javax with class"
+        ),
+    ];
+
+    for (data, description) in test_cases {
+        let mime_type = detect(data);
+        assert_eq!(mime_type.mime(), TEXT_X_JAVA, "Failed for: {}", description);
+        assert_eq!(
+            mime_type.extension(),
+            ".java",
+            "Failed for: {}",
+            description
+        );
+        assert!(mime_type.is(TEXT_X_JAVA), "Failed for: {}", description);
+        assert!(mime_type.kind().is_text(), "Failed for: {}", description);
+    }
+}
+
+#[test]
+fn test_detect_typescript() {
+    let test_cases = [
+        (
+            b"interface User {\n    name: string;\n    age: number;\n}\n\nfunction greet(user: User): void {\n    console.log(`Hello ${user.name}`);\n}" as &[u8],
+            "interface with type annotations"
+        ),
+        (
+            b"type Point = {\n    x: number;\n    y: number;\n};\n\nexport const origin: Point = { x: 0, y: 0 };",
+            "type alias with export"
+        ),
+        (
+            b"enum Status {\n    Active,\n    Inactive,\n    Pending\n}",
+            "enum declaration"
+        ),
+        (
+            b"const config: Config = { port: 3000 };\nexport default config;",
+            "const with type annotation"
+        ),
+    ];
+
+    for (data, description) in test_cases {
+        let mime_type = detect(data);
+        assert_eq!(
+            mime_type.mime(),
+            TEXT_X_TYPESCRIPT,
+            "Failed for: {}",
+            description
+        );
+        assert_eq!(mime_type.extension(), ".ts", "Failed for: {}", description);
+        assert!(
+            mime_type.is(TEXT_X_TYPESCRIPT),
+            "Failed for: {}",
+            description
+        );
+        assert!(mime_type.kind().is_text(), "Failed for: {}", description);
+    }
+}
+
+#[test]
+fn test_detect_c() {
+    let test_cases = [
+        (
+            b"#include <stdio.h>\n\nint main() {\n    printf(\"Hello World\\n\");\n    return 0;\n}" as &[u8],
+            "include with printf"
+        ),
+        (
+            b"#include <stdlib.h>\n\ntypedef struct {\n    int x;\n    int y;\n} Point;\n\nvoid* allocate(size_t size) {\n    return malloc(size);\n}",
+            "typedef struct with malloc"
+        ),
+        (
+            b"#include <string.h>\n#define MAX 100\n\nvoid process(void) {\n    char buf[MAX];\n}",
+            "include with define"
+        ),
+    ];
+
+    for (data, description) in test_cases {
+        let mime_type = detect(data);
+        assert_eq!(mime_type.mime(), TEXT_X_C, "Failed for: {}", description);
+        assert_eq!(mime_type.extension(), ".c", "Failed for: {}", description);
+        assert!(mime_type.is(TEXT_X_C), "Failed for: {}", description);
+        assert!(mime_type.kind().is_text(), "Failed for: {}", description);
+    }
+}
+
+#[test]
+fn test_detect_cpp() {
+    let test_cases = [
+        (
+            b"#include <iostream>\n\nnamespace example {\n    class Greeter {\n    public:\n        void greet() {\n            std::cout << \"Hello World\" << std::endl;\n        }\n    };\n}" as &[u8],
+            "namespace with class and cout"
+        ),
+        (
+            b"#include <vector>\n\ntemplate<typename T>\nclass Container {\nprivate:\n    std::vector<T> items;\npublic:\n    void add(T item) { items.push_back(item); }\n};",
+            "template class with vector"
+        ),
+        (
+            b"using namespace std;\n\nint main() {\n    cout << \"Hello\" << endl;\n}",
+            "using namespace std"
+        ),
+    ];
+
+    for (data, description) in test_cases {
+        let mime_type = detect(data);
+        assert_eq!(mime_type.mime(), TEXT_X_CPP, "Failed for: {}", description);
+        assert_eq!(mime_type.extension(), ".cpp", "Failed for: {}", description);
+        assert!(mime_type.is(TEXT_X_CPP), "Failed for: {}", description);
+        assert!(mime_type.kind().is_text(), "Failed for: {}", description);
+    }
+}
+
+#[test]
+fn test_detect_go() {
+    let test_cases = [
+        (
+            b"package main\n\nimport \"fmt\"\n\nfunc main() {\n    fmt.Println(\"Hello World\")\n}" as &[u8],
+            "package main with import"
+        ),
+        (
+            b"package worker\n\nfunc process(ch chan int) {\n    defer close(ch)\n    for i := 0; i < 10; i++ {\n        ch <- i\n    }\n}",
+            "channels with defer"
+        ),
+        (
+            b"package utils\n\nfunc Add(a, b int) int {\n    result := a + b\n    return result\n}",
+            "short variable declaration"
+        ),
+        (
+            b"package models\n\ntype User struct {\n    ID int\n    Name string\n    Email string\n}\n\ntype Repository interface {\n    Save(u *User) error\n    Find(id int) (*User, error)\n}",
+            "struct and interface definitions"
+        ),
+    ];
+
+    for (data, description) in test_cases {
+        let mime_type = detect(data);
+        assert_eq!(mime_type.mime(), TEXT_X_GO, "Failed for: {}", description);
+        assert_eq!(mime_type.extension(), ".go", "Failed for: {}", description);
+        assert!(mime_type.is(TEXT_X_GO), "Failed for: {}", description);
+        assert!(mime_type.kind().is_text(), "Failed for: {}", description);
+    }
+}
+
+#[test]
+fn test_detect_rust() {
+    let test_cases = [
+        (
+            b"fn main() {\n    println!(\"Hello World\");\n}\n\npub fn add(a: i32, b: i32) -> i32 {\n    a + b\n}" as &[u8],
+            "fn main with println macro"
+        ),
+        (
+            b"use std::fmt;\n\ntrait Printable {\n    fn print(&self);\n}\n\nimpl Printable for String {\n    fn print(&self) {\n        println!(\"{}\", self);\n    }\n}",
+            "trait with impl"
+        ),
+        (
+            b"pub mod utils {\n    pub fn process() {\n        let mut x = 5;\n        x += 1;\n    }\n}",
+            "pub mod with let mut"
+        ),
+    ];
+
+    for (data, description) in test_cases {
+        let mime_type = detect(data);
+        assert_eq!(mime_type.mime(), TEXT_X_RUST, "Failed for: {}", description);
+        assert_eq!(mime_type.extension(), ".rs", "Failed for: {}", description);
+        assert!(mime_type.is(TEXT_X_RUST), "Failed for: {}", description);
+        assert!(mime_type.kind().is_text(), "Failed for: {}", description);
+    }
+}
+
+#[test]
+fn test_detect_csharp() {
+    let test_cases = [
+        (
+            b"using System;\n\nnamespace HelloWorld\n{\n    class Program\n    {\n        static void Main(string[] args)\n        {\n            Console.WriteLine(\"Hello World\");\n        }\n    }\n}" as &[u8],
+            "using System with namespace and Main"
+        ),
+        (
+            b"using System.Collections.Generic;\n\npublic class Person\n{\n    public string Name { get; set; }\n    public int Age { get; set; }\n}",
+            "class with properties (get/set)"
+        ),
+        (
+            b"namespace MyApp\n{\n    public interface IRepository\n    {\n        Task<List<User>> GetUsersAsync();\n    }\n}",
+            "namespace with interface and async"
+        ),
+    ];
+
+    for (data, description) in test_cases {
+        let mime_type = detect(data);
+        assert_eq!(
+            mime_type.mime(),
+            TEXT_X_CSHARP,
+            "Failed for: {}",
+            description
+        );
+        assert_eq!(mime_type.extension(), ".cs", "Failed for: {}", description);
+        assert!(mime_type.is(TEXT_X_CSHARP), "Failed for: {}", description);
+        assert!(mime_type.kind().is_text(), "Failed for: {}", description);
+    }
+}
+
+#[test]
+fn test_detect_vb() {
+    let test_cases = [
+        (
+            b"Imports System\n\nModule Program\n    Sub Main()\n        Console.WriteLine(\"Hello World\")\n    End Sub\nEnd Module" as &[u8],
+            "Imports System with Module and Sub"
+        ),
+        (
+            b"Public Class Person\n    Private _name As String\n    \n    Public Property Name() As String\n        Get\n            Return _name\n        End Get\n        Set(value As String)\n            _name = value\n        End Set\n    End Property\nEnd Class",
+            "class with property and Get/Set"
+        ),
+        (
+            b"Public Function Calculate(ByVal x As Integer, ByVal y As Integer) As Integer\n    Dim result As Integer\n    result = x + y\n    Return result\nEnd Function",
+            "function with ByVal and Dim"
+        ),
+        (
+            b"Dim numbers() As Integer = {1, 2, 3, 4, 5}\nFor Each num As Integer In numbers\n    Console.WriteLine(num)\nNext",
+            "Dim array with For Each"
+        ),
+    ];
+
+    for (data, description) in test_cases {
+        let mime_type = detect(data);
+        assert_eq!(mime_type.mime(), TEXT_X_VB, "Failed for: {}", description);
+        assert_eq!(mime_type.extension(), ".vb", "Failed for: {}", description);
+        assert!(mime_type.is(TEXT_X_VB), "Failed for: {}", description);
+        assert!(mime_type.kind().is_text(), "Failed for: {}", description);
+    }
+}
+
+#[test]
+fn test_detect_python() {
+    let test_cases = [
+        (
+            b"def greet(name):\n    print(f\"Hello {name}\")\n\nclass Person:\n    def __init__(self, name):\n        self.name = name" as &[u8],
+            "def and class without shebang"
+        ),
+        (
+            b"import os\nfrom pathlib import Path\n\ndef process_file(path):\n    if Path(path).exists():\n        print(f\"Processing {path}\")\n",
+            "import with from"
+        ),
+        (
+            b"#!/usr/bin/env python3\nprint('Hello World')",
+            "shebang with print"
+        ),
+    ];
+
+    for (data, description) in test_cases {
+        let mime_type = detect(data);
+        assert_eq!(
+            mime_type.mime(),
+            TEXT_X_PYTHON,
+            "Failed for: {}",
+            description
+        );
+        assert_eq!(mime_type.extension(), ".py", "Failed for: {}", description);
+        assert!(mime_type.is(TEXT_X_PYTHON), "Failed for: {}", description);
+        assert!(mime_type.kind().is_text(), "Failed for: {}", description);
+    }
+}
+
+#[test]
+fn test_detect_ruby() {
+    let test_cases = [
+        (
+            b"class Greeter\n  def initialize(name)\n    @name = name\n  end\n\n  def greet\n    puts \"Hello #{@name}\"\n  end\nend" as &[u8],
+            "class with def and end"
+        ),
+        (
+            b"require 'json'\nrequire 'net/http'\n\ndef fetch_data(url)\n  response = Net::HTTP.get(URI(url))\n  JSON.parse(response)\nend",
+            "require with def and end"
+        ),
+        (
+            b"#!/usr/bin/env ruby\nputs 'Hello World'",
+            "shebang with puts"
+        ),
+    ];
+
+    for (data, description) in test_cases {
+        let mime_type = detect(data);
+        assert_eq!(mime_type.mime(), TEXT_X_RUBY, "Failed for: {}", description);
+        assert_eq!(mime_type.extension(), ".rb", "Failed for: {}", description);
+        assert!(mime_type.is(TEXT_X_RUBY), "Failed for: {}", description);
+        assert!(mime_type.kind().is_text(), "Failed for: {}", description);
+    }
+}
+
+#[test]
+fn test_detect_perl() {
+    let test_cases = [
+        (
+            b"use strict;\nuse warnings;\n\nsub greet {\n    my $name = shift;\n    print \"Hello $name\\n\";\n}\n\nmy $user = \"World\";\ngreet($user);" as &[u8],
+            "use strict with sub"
+        ),
+        (
+            b"package MyModule;\nuse strict;\n\nsub new {\n    my $class = shift;\n    return bless {}, $class;\n}\n\n1;",
+            "package with sub"
+        ),
+        (
+            b"#!/usr/bin/perl\nprint \"Hello World\\n\";",
+            "shebang with print"
+        ),
+    ];
+
+    for (data, description) in test_cases {
+        let mime_type = detect(data);
+        assert_eq!(mime_type.mime(), TEXT_X_PERL, "Failed for: {}", description);
+        assert_eq!(mime_type.extension(), ".pl", "Failed for: {}", description);
+        assert!(mime_type.is(TEXT_X_PERL), "Failed for: {}", description);
+        assert!(mime_type.kind().is_text(), "Failed for: {}", description);
+    }
+}
+
+#[test]
+fn test_detect_php() {
+    let test_cases = [
+        (
+            b"<?php\nnamespace App\\Controller;\n\nclass UserController {\n    public function index() {\n        echo \"Hello World\";\n    }\n}" as &[u8],
+            "namespace with class"
+        ),
+        (
+            b"<?php\n$name = \"World\";\necho \"Hello $name\";",
+            "variable with echo"
+        ),
+        (
+            b"<?php\nfunction greet($name) {\n    return \"Hello $name\";\n}",
+            "function with dollar sign"
+        ),
+    ];
+
+    for (data, description) in test_cases {
+        let mime_type = detect(data);
+        assert_eq!(mime_type.mime(), TEXT_X_PHP, "Failed for: {}", description);
+        assert_eq!(mime_type.extension(), ".php", "Failed for: {}", description);
+        assert!(mime_type.is(TEXT_X_PHP), "Failed for: {}", description);
+        assert!(mime_type.kind().is_text(), "Failed for: {}", description);
+    }
+}
+
+#[test]
+fn test_javascript() {
+    let test_cases = [
+        (
+            b"const greet = (name) => {\n    console.log(`Hello ${name}`);\n};\n\nconst add = (a, b) => a + b;" as &[u8],
+            "arrow functions with const"
+        ),
+        (
+            b"function hello() { return 'world'; }",
+            "function declaration with return"
+        ),
+        (
+            b"#!/usr/bin/env node\nconsole.log('Hello');",
+            "node shebang"
+        ),
+        (
+            b"export default function() {\n    return 42;\n}",
+            "export default function"
+        ),
+    ];
+
+    for (data, description) in test_cases {
+        let mime_type = detect(data);
+        assert_eq!(
+            mime_type.mime(),
+            TEXT_JAVASCRIPT,
+            "Failed for: {}",
+            description
+        );
+        assert_eq!(mime_type.extension(), ".js", "Failed for: {}", description);
+    }
+}
+
+#[test]
+fn test_language_disambiguation() {
+    let test_cases = [
+        (
+            b"#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << \"Hello\" << endl;\n}" as &[u8],
+            TEXT_X_CPP,
+            "C++ not detected as JavaScript"
+        ),
+        (
+            b"package com.example;\npublic class Main {\n    public static void main(String[] args) {}\n}",
+            TEXT_X_JAVA,
+            "Java not detected as JavaScript/Go"
+        ),
+        (
+            b"interface Config {\n    port: number;\n    host: string;\n}\n\nexport const config: Config = { port: 3000, host: 'localhost' };",
+            TEXT_X_TYPESCRIPT,
+            "TypeScript not detected as Java"
+        ),
+        (
+            b"package main\n\nfunc main() {\n    fmt.Println(\"Hello\")\n}",
+            TEXT_X_GO,
+            "Go not detected as Java"
+        ),
+        (
+            b"def greet(name):\n    print(f\"Hello {name}\")\n\nclass Person:\n    def __init__(self, name):\n        self.name = name",
+            TEXT_X_PYTHON,
+            "Python not detected as Ruby"
+        ),
+    ];
+
+    for (data, expected_mime, description) in test_cases {
+        let mime_type = detect(data);
+        assert_eq!(
+            mime_type.mime(),
+            expected_mime,
+            "Failed for: {}",
+            description
+        );
+    }
+}
+
+#[test]
+fn test_php_false_positives() {
+    let test_cases = [
+        (
+            b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<root>\n    <item>test</item>\n</root>"
+                as &[u8],
+            TEXT_XML,
+            "XML with <?xml not detected as PHP",
+        ),
+        (
+            b"<html>\n<head><title>Test</title></head>\n<body>Content here</body>\n</html>",
+            TEXT_HTML,
+            "HTML without PHP tags not detected as PHP",
+        ),
+        (
+            b"This is a text file with <? in the middle but no PHP code",
+            TEXT_UTF8,
+            "Plain text with <? not detected as PHP",
+        ),
+        (
+            b"<? not enough for PHP detection without php keyword",
+            TEXT_UTF8,
+            "Incomplete PHP tag not detected as PHP",
+        ),
+    ];
+
+    for (data, expected_mime, description) in test_cases {
+        let mime_type = detect(data);
+        assert_ne!(mime_type.mime(), TEXT_X_PHP, "Failed for: {}", description);
+        assert_eq!(
+            mime_type.mime(),
+            expected_mime,
+            "Failed for: {}",
+            description
+        );
+    }
+}
+
+#[test]
+fn test_javascript_false_positives() {
+    let test_cases = [
+        (
+            b"// This is a C++ comment\n#include <iostream>\nint main() { return 0; }" as &[u8],
+            TEXT_X_CPP,
+            "C++ with // comments not detected as JavaScript",
+        ),
+        (
+            b"/* C comment */\n#include <stdio.h>\nint main() { return 0; }",
+            TEXT_X_C,
+            "C with /* */ comments not detected as JavaScript",
+        ),
+        (
+            b"package com.example;\n\n// Java comment\npublic class Test {}",
+            TEXT_X_JAVA,
+            "Java with comments not detected as JavaScript",
+        ),
+        (
+            b"# Python comment\ndef function():\n    pass",
+            TEXT_X_PYTHON,
+            "Python not detected as JavaScript",
+        ),
+    ];
+
+    for (data, expected_mime, description) in test_cases {
+        let mime_type = detect(data);
+        assert_ne!(
+            mime_type.mime(),
+            TEXT_JAVASCRIPT,
+            "Failed for: {}",
+            description
+        );
+        assert_eq!(
+            mime_type.mime(),
+            expected_mime,
+            "Failed for: {}",
+            description
+        );
+    }
+}
+
+#[test]
+fn test_csharp_false_positives() {
+    let test_cases = [
+        (
+            b"package com.example;\n\nimport java.util.List;\n\npublic class Test {\n    public static void main(String[] args) {}\n}" as &[u8],
+            TEXT_X_JAVA,
+            "Java with import not detected as C#",
+        ),
+        (
+            b"#include <iostream>\nnamespace std {\n    class Test {};\n}" as &[u8],
+            TEXT_X_CPP,
+            "C++ with namespace not detected as C#",
+        ),
+        (
+            b"interface Person {\n  name: string;\n  age: number;\n}\n\nexport default Person;" as &[u8],
+            TEXT_X_TYPESCRIPT,
+            "TypeScript interface not detected as C#",
+        ),
+        (
+            b"#!/usr/bin/env ruby\nclass Example\n  def initialize\n    @name = 'test'\n  end\nend",
+            TEXT_X_RUBY,
+            "Ruby class not detected as C#",
+        ),
+    ];
+
+    for (data, expected_mime, description) in test_cases {
+        let mime_type = detect(data);
+        assert_ne!(
+            mime_type.mime(),
+            TEXT_X_CSHARP,
+            "Failed for: {}",
+            description
+        );
+        assert_eq!(
+            mime_type.mime(),
+            expected_mime,
+            "Failed for: {}",
+            description
+        );
+    }
+}
+
+#[test]
+fn test_vb_false_positives() {
+    let test_cases = [
+        (
+            b"using System;\n\nnamespace Test {\n    public class Program {}\n}" as &[u8],
+            TEXT_X_CSHARP,
+            "C# code not detected as VB",
+        ),
+        (
+            b"class Test\n  def initialize\n    @dim = 1\n  end\nend" as &[u8],
+            TEXT_X_RUBY,
+            "Ruby with 'dim' variable not detected as VB",
+        ),
+        (
+            b"package main\n\nimport \"fmt\"\n\nfunc main() {\n    dim := 42\n    fmt.Println(dim)\n}",
+            TEXT_X_GO,
+            "Go with 'dim' variable not detected as VB",
+        ),
+        (
+            b"dim = 42\nfunction calculate() {\n  return dim * 2;\n}",
+            TEXT_JAVASCRIPT,
+            "JavaScript with 'dim' variable not detected as VB",
+        ),
+    ];
+
+    for (data, expected_mime, description) in test_cases {
+        let mime_type = detect(data);
+        assert_ne!(mime_type.mime(), TEXT_X_VB, "Failed for: {}", description);
+        assert_eq!(
+            mime_type.mime(),
+            expected_mime,
+            "Failed for: {}",
+            description
+        );
+    }
+}
+
+#[test]
+fn test_python_vs_ruby_disambiguation() {
+    let test_cases = [
+        (
+            b"class MyClass\n  def initialize\n    @var = 1\n  end\n\n  def method\n    puts @var\n  end\nend" as &[u8],
+            TEXT_X_RUBY,
+            "Ruby with end keyword not detected as Python"
+        ),
+        (
+            b"class MyClass:\n    def __init__(self):\n        self.var = 1\n\n    def method(self):\n        print(self.var)",
+            TEXT_X_PYTHON,
+            "Python with indentation not detected as Ruby"
+        ),
+        (
+            b"require 'bundler'\n\ndef process_data\n  puts 'Processing'\nend\n\nprocess_data",
+            TEXT_X_RUBY,
+            "Ruby with require and end not detected as Python"
+        ),
+        (
+            b"import sys\nfrom os import path\n\ndef process_data():\n    print('Processing')\n\nif __name__ == '__main__':\n    process_data()",
+            TEXT_X_PYTHON,
+            "Python with import/from not detected as Ruby"
+        ),
+    ];
+
+    for (data, expected_mime, description) in test_cases {
+        let mime_type = detect(data);
+        assert_eq!(
+            mime_type.mime(),
+            expected_mime,
+            "Failed for: {}",
+            description
+        );
+    }
+}
+
+#[test]
+fn test_java_vs_go_disambiguation() {
+    let test_cases = [
+        (
+            b"package main\n\nimport \"fmt\"\nimport \"os\"\n\nfunc main() {\n    fmt.Println(\"Hello\")\n}" as &[u8],
+            TEXT_X_GO,
+            "Go with package main not detected as Java"
+        ),
+        (
+            b"package com.example.app;\n\nimport java.util.List;\nimport java.util.ArrayList;\n\npublic class App {}",
+            TEXT_X_JAVA,
+            "Java with package com.example not detected as Go"
+        ),
+        (
+            b"package utils\n\nfunc Calculate(a, b int) int {\n    result := a + b\n    return result\n}",
+            TEXT_X_GO,
+            "Go with := operator not detected as Java"
+        ),
+        (
+            b"package org.test;\n\npublic interface Service {\n    void execute();\n}",
+            TEXT_X_JAVA,
+            "Java interface not detected as Go"
+        ),
+    ];
+
+    for (data, expected_mime, description) in test_cases {
+        let mime_type = detect(data);
+        assert_eq!(
+            mime_type.mime(),
+            expected_mime,
+            "Failed for: {}",
+            description
+        );
+    }
+}
+
+#[test]
+fn test_typescript_vs_java_vs_javascript() {
+    let test_cases = [
+        (
+            b"interface User {\n    name: string;\n    age: number;\n}\n\nconst user: User = { name: 'John', age: 30 };" as &[u8],
+            TEXT_X_TYPESCRIPT,
+            "TypeScript interface with type annotation not detected as Java"
+        ),
+        (
+            b"const data = { x: 1, y: 2 };\nconst result = data.x + data.y;\nconsole.log(result);",
+            TEXT_JAVASCRIPT,
+            "JavaScript const without types not detected as TypeScript"
+        ),
+        (
+            b"import java.io.*;\n\npublic interface Comparable {\n    int compareTo(Object o);\n    boolean equals(Object obj);\n}",
+            TEXT_X_JAVA,
+            "Java interface with void methods not detected as TypeScript"
+        ),
+        (
+            b"type Point = { x: number; y: number };\ntype Line = { start: Point; end: Point };\nexport { Point, Line };",
+            TEXT_X_TYPESCRIPT,
+            "TypeScript type aliases not detected as Java/JavaScript"
+        ),
+    ];
+
+    for (data, expected_mime, description) in test_cases {
+        let mime_type = detect(data);
+        assert_eq!(
+            mime_type.mime(),
+            expected_mime,
+            "Failed for: {}",
+            description
+        );
+    }
+}
+
+#[test]
+fn test_c_vs_cpp_disambiguation() {
+    let test_cases = [
+        (
+            b"#include <stdio.h>\n#include <stdlib.h>\n\nint main(void) {\n    printf(\"Hello\\n\");\n    return 0;\n}" as &[u8],
+            TEXT_X_C,
+            "C with stdio.h not detected as C++"
+        ),
+        (
+            b"#include <iostream>\n#include <string>\n\nint main() {\n    std::cout << \"Hello\" << std::endl;\n    return 0;\n}",
+            TEXT_X_CPP,
+            "C++ with iostream not detected as C"
+        ),
+        (
+            b"typedef struct {\n    int x;\n    int y;\n} Point;\n\nvoid process(Point* p) {\n    p->x = 0;\n}",
+            TEXT_X_C,
+            "C struct with typedef not detected as C++"
+        ),
+        (
+            b"class Point {\nprivate:\n    int x, y;\npublic:\n    Point(int x, int y) : x(x), y(y) {}\n};",
+            TEXT_X_CPP,
+            "C++ class with constructor not detected as C"
+        ),
+        (
+            b"#include <vector>\n\ntemplate<typename T>\nT max(T a, T b) {\n    return a > b ? a : b;\n}",
+            TEXT_X_CPP,
+            "C++ template not detected as C"
+        ),
+    ];
+
+    for (data, expected_mime, description) in test_cases {
+        let mime_type = detect(data);
+        assert_eq!(
+            mime_type.mime(),
+            expected_mime,
+            "Failed for: {}",
+            description
+        );
+    }
+}
+
+#[test]
+fn test_perl_vs_php_disambiguation() {
+    let test_cases = [
+        (
+            b"#!/usr/bin/perl\nuse strict;\nuse warnings;\n\nmy $var = 'test';\nprint \"$var\\n\";" as &[u8],
+            TEXT_X_PERL,
+            "Perl with $var not detected as PHP"
+        ),
+        (
+            b"<?php\n$var = 'test';\necho $var . \"\\n\";\n?>",
+            TEXT_X_PHP,
+            "PHP with $var not detected as Perl"
+        ),
+        (
+            b"use strict;\n\nsub process {\n    my $data = shift;\n    return $data->{'key'};\n}\n\n1;",
+            TEXT_X_PERL,
+            "Perl module with sub not detected as PHP"
+        ),
+        (
+            b"<?php\nnamespace App;\n\nfunction process($data) {\n    return $data['key'];\n}",
+            TEXT_X_PHP,
+            "PHP with namespace not detected as Perl"
+        ),
+    ];
+
+    for (data, expected_mime, description) in test_cases {
+        let mime_type = detect(data);
+        assert_eq!(
+            mime_type.mime(),
+            expected_mime,
+            "Failed for: {}",
+            description
+        );
+    }
 }
 
 #[test]
