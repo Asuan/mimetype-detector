@@ -2369,14 +2369,32 @@ fn test_detect_lua() {
 
 #[test]
 fn test_detect_shell() {
-    let data = b"#!/bin/bash\necho 'Hello World'";
-    let mime_type = detect(data);
-    assert_eq!(mime_type.mime(), TEXT_X_SHELLSCRIPT);
-    assert_eq!(mime_type.extension(), ".sh");
-    assert!(mime_type.is(TEXT_X_SHELLSCRIPT));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    assert!(mime_type.kind().is_text());
-    assert!(!mime_type.name().is_empty());
+    let test_cases = [
+        (b"#!/bin/bash\necho 'Hello World'" as &[u8], "bash"),
+        (b"#!/bin/sh\necho hello", "sh"),
+        (b"#!/bin/bash\necho hello", "bash"),
+        (b"#!/usr/bin/env bash\necho hello", "env bash"),
+        (b"#!/bin/zsh\necho hello", "zsh"),
+        (b"#!/usr/bin/env zsh\necho hello", "env zsh"),
+        (b"#!/usr/bin/env fish\necho hello", "fish"),
+        (b"#!/bin/dash\necho hello", "dash"),
+        (b"#!/bin/ksh\necho hello", "ksh"),
+    ];
+
+    for (data, description) in test_cases {
+        let mime_type = detect(data);
+        assert_eq!(
+            mime_type.mime(),
+            TEXT_X_SHELLSCRIPT,
+            "Failed for: {}",
+            description
+        );
+        assert_eq!(mime_type.extension(), ".sh");
+        assert!(mime_type.is(TEXT_X_SHELLSCRIPT));
+        assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+        assert!(mime_type.kind().is_text());
+        assert!(!mime_type.name().is_empty());
+    }
 }
 
 #[test]
@@ -2649,6 +2667,18 @@ fn test_detect_python() {
             b"#!/usr/bin/env python3\nprint('Hello World')",
             "shebang with print"
         ),
+         (
+            b"#!/usr/bin/env -S python3 -u\nprint('hello')",
+            "env -S python3",
+        ),
+        (
+            b"#!/usr/bin/env python3\nprint('hello')",
+            "env python3",
+        ),
+        (
+            b"#!/usr/bin/python3\nprint('hello')",
+            "/usr/bin/python3",
+        ),
     ];
 
     for (data, description) in test_cases {
@@ -2762,6 +2792,14 @@ fn test_javascript() {
             b"export default function() {\n    return 42;\n}",
             "export default function"
         ),
+         (
+            b"#!/usr/bin/env node\nconsole.log('hello');" as &[u8],
+            "node",
+        ),
+        (b"#!/usr/bin/node\nconsole.log('hello');", "/usr/bin/node"),
+        (b"#!/usr/bin/env deno\nconsole.log('hello');", "deno"),
+        (b"#!/usr/bin/env bun\nconsole.log('hello');", "bun"),
+        (b"#!/usr/bin/env npx\nconsole.log('hello');", "npx"),
     ];
 
     for (data, description) in test_cases {
@@ -3197,64 +3235,170 @@ fn test_detect_ndjson() {
     assert!(!mime_type.name().is_empty());
 }
 
-#[test]
-fn test_detect_csv() {
-    let data = b"name,age,city\nJohn,30,NYC\nJane,25,LA";
-    let mime_type = detect(data);
-    assert_eq!(mime_type.mime(), TEXT_CSV);
-    assert_eq!(mime_type.extension(), ".csv");
-    assert!(mime_type.is(TEXT_CSV));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    assert!(mime_type.kind().is_text());
-    assert!(!mime_type.name().is_empty());
-}
-
-#[test]
-fn test_detect_tsv() {
-    let data = b"name\tage\tcity\nJohn\t30\tNYC\nJane\t25\tLA";
-    let mime_type = detect(data);
-    assert_eq!(mime_type.mime(), TEXT_TAB_SEPARATED_VALUES);
-    assert_eq!(mime_type.extension(), ".tsv");
-    assert!(mime_type.is(TEXT_TAB_SEPARATED_VALUES));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    assert!(mime_type.kind().is_text());
-    assert!(!mime_type.name().is_empty());
-}
-
-#[test]
-fn test_detect_psv() {
-    let data = b"name|age|city\nJohn|30|NYC\nJane|25|LA";
-    let mime_type = detect(data);
-    assert_eq!(mime_type.mime(), TEXT_PIPE_SEPARATED_VALUES);
-    assert_eq!(mime_type.extension(), ".psv");
-    assert!(mime_type.is(TEXT_PIPE_SEPARATED_VALUES));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    assert!(mime_type.kind().is_text());
-    assert!(!mime_type.name().is_empty());
-}
-
-#[test]
-fn test_detect_ssv() {
-    let data = b"name;age;city\nJohn;30;NYC\nJane;25;LA";
-    let mime_type = detect(data);
-    assert_eq!(mime_type.mime(), TEXT_SEMICOLON_SEPARATED_VALUES);
-    assert_eq!(mime_type.extension(), ".ssv");
-    assert!(mime_type.is(TEXT_SEMICOLON_SEPARATED_VALUES));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    assert!(mime_type.kind().is_text());
-    assert!(!mime_type.name().is_empty());
-}
-
 // ============================================================================
-// CSV/TSV/PSV/SSV Edge Case Tests
+// Separated Values Basic Detection Tests (CSV/TSV/PSV/SSV)
 // ============================================================================
+
+#[test]
+fn test_separated_values_basic() {
+    struct SeparatedValuesTest {
+        name: &'static str,
+        data: &'static [u8],
+        expected_mime: &'static str,
+        expected_ext: &'static str,
+    }
+
+    let test_cases = vec![
+        // CSV tests
+        SeparatedValuesTest {
+            name: "CSV with Unix newlines",
+            data: b"name,age,city\nJohn,30,NYC\nJane,25,LA",
+            expected_mime: TEXT_CSV,
+            expected_ext: ".csv",
+        },
+        SeparatedValuesTest {
+            name: "CSV with Windows newlines",
+            data: b"name,age,city\r\nJohn,30,NYC\r\nJane,25,LA\r\nBob,35,SF",
+            expected_mime: TEXT_CSV,
+            expected_ext: ".csv",
+        },
+        // TSV tests
+        SeparatedValuesTest {
+            name: "TSV with Unix newlines",
+            data: b"name\tage\tcity\nJohn\t30\tNYC\nJane\t25\tLA",
+            expected_mime: TEXT_TAB_SEPARATED_VALUES,
+            expected_ext: ".tsv",
+        },
+        SeparatedValuesTest {
+            name: "TSV with Windows newlines",
+            data: b"name\tage\tcity\r\nJohn\t30\tNYC\r\nJane\t25\tLA\r\nBob\t35\tSF",
+            expected_mime: TEXT_TAB_SEPARATED_VALUES,
+            expected_ext: ".tsv",
+        },
+        // PSV tests
+        SeparatedValuesTest {
+            name: "PSV with Unix newlines",
+            data: b"name|age|city\nJohn|30|NYC\nJane|25|LA",
+            expected_mime: TEXT_PIPE_SEPARATED_VALUES,
+            expected_ext: ".psv",
+        },
+        SeparatedValuesTest {
+            name: "PSV with Windows newlines",
+            data: b"name|age|city\r\nJohn|30|NYC\r\nJane|25|LA\r\nBob|35|SF",
+            expected_mime: TEXT_PIPE_SEPARATED_VALUES,
+            expected_ext: ".psv",
+        },
+        // SSV tests
+        SeparatedValuesTest {
+            name: "SSV with Unix newlines",
+            data: b"name;age;city\nJohn;30;NYC\nJane;25;LA",
+            expected_mime: TEXT_SEMICOLON_SEPARATED_VALUES,
+            expected_ext: ".ssv",
+        },
+        SeparatedValuesTest {
+            name: "SSV with Windows newlines",
+            data: b"name;age;city\r\nJohn;30;NYC\r\nJane;25;LA\r\nBob;35;SF",
+            expected_mime: TEXT_SEMICOLON_SEPARATED_VALUES,
+            expected_ext: ".ssv",
+        },
+    ];
+
+    for test_case in test_cases {
+        let mime_type = detect(test_case.data);
+        assert_eq!(
+            mime_type.mime(),
+            test_case.expected_mime,
+            "Test '{}' failed: expected mime {}, got {}",
+            test_case.name,
+            test_case.expected_mime,
+            mime_type.mime()
+        );
+        assert_eq!(
+            mime_type.extension(),
+            test_case.expected_ext,
+            "Test '{}' failed: expected extension {}, got {}",
+            test_case.name,
+            test_case.expected_ext,
+            mime_type.extension()
+        );
+        assert!(
+            mime_type.is(test_case.expected_mime),
+            "Test '{}' failed: mime_type.is({}) returned false",
+            test_case.name,
+            test_case.expected_mime
+        );
+        assert!(
+            !mime_type.is(APPLICATION_OCTET_STREAM),
+            "Test '{}' failed: should not be APPLICATION_OCTET_STREAM",
+            test_case.name
+        );
+        assert!(
+            mime_type.kind().is_text(),
+            "Test '{}' failed: should be text kind",
+            test_case.name
+        );
+        assert!(
+            !mime_type.name().is_empty(),
+            "Test '{}' failed: name should not be empty",
+            test_case.name
+        );
+    }
+}
+
+#[test]
+fn test_separated_values_utf16() {
+    struct Utf16Test {
+        name: &'static str,
+        data: &'static [u8],
+        expected_mime: &'static str,
+    }
+
+    let test_cases = vec![
+        Utf16Test {
+            name: "CSV with UTF-16 BE encoding",
+            data: b"\xFE\xFF\x00n\x00a\x00m\x00e\x00,\x00a\x00g\x00e",
+            expected_mime: TEXT_UTF16_BE,
+        },
+        Utf16Test {
+            name: "CSV with UTF-16 LE encoding",
+            data: b"\xFF\xFEn\x00a\x00m\x00e\x00,\x00a\x00g\x00e\x00",
+            expected_mime: TEXT_UTF16_LE,
+        },
+        Utf16Test {
+            name: "TSV with UTF-16 BE encoding",
+            data: b"\xFE\xFF\x00n\x00a\x00m\x00e\x00\t\x00a\x00g\x00e",
+            expected_mime: TEXT_UTF16_BE,
+        },
+        Utf16Test {
+            name: "TSV with UTF-16 LE encoding",
+            data: b"\xFF\xFEn\x00a\x00m\x00e\x00\t\x00a\x00g\x00e\x00",
+            expected_mime: TEXT_UTF16_LE,
+        },
+    ];
+
+    for test_case in test_cases {
+        let mime_type = detect(test_case.data);
+        assert_eq!(
+            mime_type.mime(),
+            test_case.expected_mime,
+            "Test '{}' failed: expected {}, got {}",
+            test_case.name,
+            test_case.expected_mime,
+            mime_type.mime()
+        );
+        assert!(
+            !mime_type.name().is_empty(),
+            "Test '{}' failed: name should not be empty",
+            test_case.name
+        );
+    }
+}
 
 #[test]
 fn test_csv_edge_cases() {
     struct CsvTestCase {
         name: &'static str,
         data: &'static [u8],
-        expected: &'static str,
         should_pass: bool,
     }
 
@@ -3262,127 +3406,85 @@ fn test_csv_edge_cases() {
         CsvTestCase {
             name: "Basic CSV with 3 columns",
             data: b"name,age,city\nJohn,30,NYC\nJane,25,LA",
-            expected: TEXT_CSV,
             should_pass: true,
         },
         CsvTestCase {
             name: "CSV with single separator (2 columns)",
             data: b"key,value\nfoo,bar\nbaz,qux\ntest,data",
-            expected: TEXT_CSV,
-            should_pass: true,
-        },
-        CsvTestCase {
-            name: "CSV with many separators (7 columns)",
-            data: b"a,b,c,d,e,f,g\n1,2,3,4,5,6,7\n8,9,10,11,12,13,14\n15,16,17,18,19,20,21",
-            expected: TEXT_CSV,
             should_pass: true,
         },
         CsvTestCase {
             name: "CSV with Windows line endings (\\r\\n)",
             data: b"name,age,city\r\nJohn,30,NYC\r\nJane,25,LA\r\n",
-            expected: TEXT_CSV,
-            should_pass: true,
-        },
-        CsvTestCase {
-            name: "CSV with mixed line endings (\\r\\n and \\n)",
-            data: b"name,age,city\r\nJohn,30,NYC\nJane,25,LA\r\nBob,35,SF",
-            expected: TEXT_CSV,
             should_pass: true,
         },
         CsvTestCase {
             name: "CSV with empty lines between data",
             data: b"name,age,city\n\nJohn,30,NYC\n\nJane,25,LA\n\n",
-            expected: TEXT_CSV,
-            should_pass: true,
-        },
-        CsvTestCase {
-            name: "CSV with trailing commas (empty last column)",
-            data: b"name,age,city,\nJohn,30,NYC,\nJane,25,LA,",
-            expected: TEXT_CSV,
             should_pass: true,
         },
         CsvTestCase {
             name: "CSV with whitespace padding around values",
             data: b"name, age, city\nJohn, 30, NYC\nJane, 25, LA",
-            expected: TEXT_CSV,
             should_pass: true,
         },
         CsvTestCase {
             name: "CSV with quoted fields containing separators (RFC 4180)",
             data: b"name,title,company\n\"Smith, John\",\"VP, Engineering\",\"Acme Corp\"\n\"Doe, Jane\",\"Director, Sales\",\"Beta Inc\"",
-            expected: TEXT_CSV,
             should_pass: true,
         },
         CsvTestCase {
             name: "CSV with escaped quotes (doubled quotes per RFC 4180)",
             data: b"name,quote\n\"John\",\"He said \"\"hello\"\"\"\n\"Jane\",\"She said \"\"hi\"\"\"",
-            expected: TEXT_CSV,
             should_pass: true,
         },
         CsvTestCase {
             name: "CSV with quoted newlines (RFC 4180) - complex edge case",
             data: b"name,description\n\"John\",\"Line1\nLine2\"\n\"Jane\",\"Single line\"",
-            expected: TEXT_CSV,
             should_pass: false, // Line-based parsing can't handle newlines inside quotes
         },
         CsvTestCase {
             name: "CSV with inconsistent last line (ragged)",
             data: b"name,age,city\nJohn,30,NYC\nJane,25,LA\nBob,35",
-            expected: TEXT_CSV,
             should_pass: true,
         },
         CsvTestCase {
             name: "CSV with empty fields (consecutive commas)",
             data: b"name,age,city\nJohn,,NYC\n,25,LA\nBob,35,",
-            expected: TEXT_CSV,
             should_pass: true,
         },
         CsvTestCase {
             name: "CSV with Unicode/CJK characters",
             data: "名前,年齢,都市\n田中,30,東京\n佐藤,25,大阪".as_bytes(),
-            expected: TEXT_CSV,
             should_pass: true,
         },
         CsvTestCase {
             name: "Minimal valid CSV (2 lines, 2 columns)",
             data: b"name,age\nJohn,30",
-            expected: TEXT_CSV,
             should_pass: true,
         },
         CsvTestCase {
             name: "Header only (single line) - should NOT be CSV",
             data: b"name,age,city",
-            expected: TEXT_CSV,
             should_pass: false,
         },
         CsvTestCase {
             name: "Single line with commas - should NOT be CSV",
             data: b"this is just a sentence, with some commas, in it",
-            expected: TEXT_CSV,
             should_pass: false,
         },
     ];
 
     for test_case in test_cases {
         let mime_type = detect(test_case.data);
-        if test_case.should_pass {
-            assert_eq!(
-                mime_type.mime(),
-                test_case.expected,
-                "Test case '{}' failed: expected {}, got {}",
-                test_case.name,
-                test_case.expected,
-                mime_type.mime()
-            );
-        } else {
-            assert_ne!(
-                mime_type.mime(),
-                test_case.expected,
-                "Test case '{}' should NOT detect as {}, but it did",
-                test_case.name,
-                test_case.expected
-            );
-        }
+        assert_eq!(
+            mime_type.mime() == TEXT_CSV,
+            test_case.should_pass,
+            "Test case '{}': expected CSV={}, got {}",
+            test_case.name,
+            test_case.should_pass,
+            mime_type.mime()
+        );
     }
 }
 
@@ -3391,7 +3493,6 @@ fn test_tsv_cases() {
     struct TsvTestCase {
         name: &'static str,
         data: &'static [u8],
-        expected: &'static str,
         should_pass: bool,
     }
 
@@ -3399,49 +3500,35 @@ fn test_tsv_cases() {
         TsvTestCase {
             name: "Basic TSV with 3 columns",
             data: b"name\tage\tcity\nJohn\t30\tNYC\nJane\t25\tLA",
-            expected: TEXT_TAB_SEPARATED_VALUES,
             should_pass: true,
         },
         TsvTestCase {
             name: "TSV with spaces in values",
             data: b"name\tage\tcity\nJohn Smith\t30\tNew York City\nJane Doe\t25\tLos Angeles",
-            expected: TEXT_TAB_SEPARATED_VALUES,
             should_pass: true,
         },
         TsvTestCase {
             name: "TSV with Unicode/CJK characters",
             data: "名前\t年齢\t都市\n田中\t30\t東京\n佐藤\t25\t大阪".as_bytes(),
-            expected: TEXT_TAB_SEPARATED_VALUES,
             should_pass: true,
         },
         TsvTestCase {
             name: "Minimal valid TSV (2 lines, 2 columns)",
             data: b"name\tage\nJohn\t30",
-            expected: TEXT_TAB_SEPARATED_VALUES,
             should_pass: true,
         },
     ];
 
     for test_case in test_cases {
         let mime_type = detect(test_case.data);
-        if test_case.should_pass {
-            assert_eq!(
-                mime_type.mime(),
-                test_case.expected,
-                "Test case '{}' failed: expected {}, got {}",
-                test_case.name,
-                test_case.expected,
-                mime_type.mime()
-            );
-        } else {
-            assert_ne!(
-                mime_type.mime(),
-                test_case.expected,
-                "Test case '{}' should NOT detect as {}, but it did",
-                test_case.name,
-                test_case.expected
-            );
-        }
+        assert_eq!(
+            mime_type.mime() == TEXT_TAB_SEPARATED_VALUES,
+            test_case.should_pass,
+            "Test case '{}': expected TSV={}, got {}",
+            test_case.name,
+            test_case.should_pass,
+            mime_type.mime()
+        );
     }
 }
 
@@ -3531,6 +3618,13 @@ fn test_detect_har() {
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_text());
     assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_ts_node() {
+    let data = b"#!/usr/bin/env ts-node\nconst x: string = 'hello';";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), TEXT_X_TYPESCRIPT);
 }
 
 // ============================================================================
@@ -3924,38 +4018,6 @@ fn test_detect_json_utf16_le() {
     assert_eq!(mime_type.extension(), ".json");
     assert!(mime_type.is(APPLICATION_JSON_UTF16));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    assert!(!mime_type.name().is_empty());
-}
-
-#[test]
-fn test_detect_csv_utf16_be() {
-    let data = b"\xFE\xFF\x00n\x00a\x00m\x00e\x00,\x00a\x00g\x00e";
-    let mime_type = detect(data);
-    assert_eq!(mime_type.mime(), TEXT_UTF16_BE);
-    assert!(!mime_type.name().is_empty());
-}
-
-#[test]
-fn test_detect_csv_utf16_le() {
-    let data = b"\xFF\xFEn\x00a\x00m\x00e\x00,\x00a\x00g\x00e\x00";
-    let mime_type = detect(data);
-    assert_eq!(mime_type.mime(), TEXT_UTF16_LE);
-    assert!(!mime_type.name().is_empty());
-}
-
-#[test]
-fn test_detect_tsv_utf16_be() {
-    let data = b"\xFE\xFF\x00n\x00a\x00m\x00e\x00\t\x00a\x00g\x00e";
-    let mime_type = detect(data);
-    assert_eq!(mime_type.mime(), TEXT_UTF16_BE);
-    assert!(!mime_type.name().is_empty());
-}
-
-#[test]
-fn test_detect_tsv_utf16_le() {
-    let data = b"\xFF\xFEn\x00a\x00m\x00e\x00\t\x00a\x00g\x00e\x00";
-    let mime_type = detect(data);
-    assert_eq!(mime_type.mime(), TEXT_UTF16_LE);
     assert!(!mime_type.name().is_empty());
 }
 

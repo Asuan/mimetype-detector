@@ -32,7 +32,7 @@ use crate::MimeKind;
 build_prefix_vec! {
     /// Prefix vector for fast ROOT child lookup
     /// Uses first byte (0-255) to index into array of MimeType slices
-    /// Covers 193 out of 264 ROOT children using 92 unique first bytes
+    /// Covers 199 out of 264 ROOT children using 92 unique first bytes
     /// Static array with zero runtime overhead - no LazyLock, no mutex, no heap allocations
     static ROOT_PREFIX_VEC: [
         0x00 => [&JXS, &ICO, &SHX, &TGA, &WASM, &MRW, &WORKS_SPREADSHEET, &WORKS_XLR, &CUR, &MDB, &ACCDB, &QUARK, &AMIGA_HUNK] as __PV_00,
@@ -53,7 +53,7 @@ build_prefix_vec! {
         0x23 => [&USD_ASCII, &IQE, &AMR, &HDR, &M3U, &VMDK, &VRML] as __PV_23,  // USD ASCII ('#usda'), IQE, AMR, HDR, M3U, VMDK, VRML
         0x25 => [&PS, &FDF, &PDF] as __PV_25,
         0x28 => [&WAT, &DWF] as __PV_28,  // WebAssembly Text '(module', Design Web Format '(DWF'
-        0x2d => [&CSR, &P7S, &PMA, &LHA, &LZS] as __PV_2D,  // CSR, P7S, PMA, LHA, LZS
+        0x2d => [&CSR, &P7S, &PEM, &PMA, &LHA, &LZS, &PGP_MESSAGE, &PGP_SIGNED_MESSAGE, &PGP_PUBLIC_KEY, &PGP_PRIVATE_KEY, &PGP_SIGNATURE] as __PV_2D,  // CSR, P7S, PEM, PMA, LHA, LZS, PGP formats
         0x20 => [&NEO_GEO_POCKET_ROM, &WORKS_DB, &IGES] as __PV_20,  // Neo Geo Pocket (parent checks header, child refines to Color), Microsoft Works DB, IGES CAD format
         0x2e => [&NINTENDO_DS_ROM, &REALMEDIA, &AU, &REALAUDIO] as __PV_2E,  // Nintendo DS ROM, RealMedia, AU/SND, RealAudio
         0x2f => [&XPM, &MAYA_ASCII] as __PV_2F,  // XPM, Maya ASCII
@@ -76,15 +76,15 @@ build_prefix_vec! {
         0x46 => [&FLV, &DFF, &FVT, &SWF, &RAF, &EIGHTSVX, &MAYA_BINARY, &FLIF] as __PV_46,  // Added SWF ('FWS'), RAF ('FUJIFILM'), 8SVX ('FORM'), Maya Binary ('FOR4'/'FOR8'), FLIF
         0x47 => [&GIF, &GRIB] as __PV_47,  // GIF, GRIB weather data
         0x48 => [&XCI] as __PV_48,  // Nintendo Switch ROM (XCI - 'HEAD')
-        0x49 => [&IQM, &JXR, &LIT, &TIFF, &CHM, &INSTALL_SHIELD_CAB, &CRW, &IT, &ORF, &RW2, &KODAK_KDC, &KODAK_DCR, &STEP] as __PV_49,  // IQM, TIFF includes CR2/NEF as children, CHM already here, Kodak RAW, STEP ('ISO-10303-21')
+        0x49 => [&IQM, &JXR, &LIT, &TIFF, &CHM, &INSTALL_SHIELD_CAB, &CRW, &IT, &RW2, &KODAK_KDC, &KODAK_DCR, &ORF, &STEP] as __PV_49,  // IQM, TIFF includes CR2/NEF as children, ORF variants (IIRO/IIRS) are TIFF-based but need direct detection, Kodak RAW, STEP ('ISO-10303-21')
         0x4b => [&FBX, &VMDK] as __PV_4B,  // Autodesk FBX (Kaydara), VMDK ('KDMV')
         0x4c => [&COFF, &LNK, &LZIP, &LRF, &LRZIP] as __PV_4C,  // COFF (i386), LNK, LZIP, LRF (Sony Reader), LRZIP
-        0x4d => [&MODEL3D_BINARY, &MLA, &MUSEPACK, &CAB, &MIDI, &EXE, &AUTODESK_3DS, &TIFF, &ORF, &MOZILLA_ARCHIVE, &WIM, &SGI_MOVIE] as __PV_4D,  // Model3D Binary ('MD30'), MLA, 3DS (exclude TIFF), ORF (MMOR variant), Mozilla Archive, WIM, SGI Movie
+        0x4d => [&MODEL3D_BINARY, &MLA, &MUSEPACK, &CAB, &MIDI, &EXE, &AUTODESK_3DS, &TIFF, &ORF, &MOZILLA_ARCHIVE, &WIM, &SGI_MOVIE] as __PV_4D,  // Model3D Binary ('MD30'), MLA, 3DS (exclude TIFF), ORF (MMOR) is TIFF-based but needs direct detection, Mozilla Archive, WIM, SGI Movie
         0x4e => [&NINTENDO_SWITCH_NSO, &NES] as __PV_4E,  // Nintendo Switch NSO, NES ROM
         0x4f => [&OTF, &OGG, &AVRO] as __PV_4F,  // OTF, OGG, Apache Avro
         0x50 => [&USD_BINARY, &PFM, &NINTENDO_SWITCH_NSP, &PARQUET, &ZIP, &PBM, &PGM, &PPM, &PAM, &PAK] as __PV_50,  // USD Binary ('PXR-USDC'), PFM, Nintendo Switch NSP, Parquet, ZIP, Portable formats, PAK
         0x51 => [&QCOW2, &QCOW, &CINEMA4D] as __PV_51,  // QEMU Copy-on-Write v2 ('QFI\xFB'), v1 ('QFI'), Cinema4D ('QC4DC4D6')
-        0x52 => [&WINDOWS_REG, &RAR, &ANI, &SOUNDFONT2, &CDA, &RZIP] as __PV_52,  // Windows Registry, RAR, ANI (RIFF ACON), SoundFont 2 (RIFF sfbk), CDA (RIFF CDDA), RZIP
+        0x52 => [&WINDOWS_REG, &RAR, &RIFF, &RZIP] as __PV_52,  // Windows Registry, RAR, RIFF container (children: WAV, AVI, WEBP, etc.), RZIP
         0x53 => [&FITS, &SQLITE3, &STUFFIT, &STUFFITX, &SEQBOX, &DPX] as __PV_53,  // FITS, SQLite3, StuffIt, StuffItX, SeqBox, DPX (SDPX)
         0x54 => [&TTA, &TZIF] as __PV_54,
         0x55 => [&U3D] as __PV_55,
@@ -163,59 +163,46 @@ pub static ROOT: MimeType = MimeType::new(
     &[
         // Complex formats that require offset or pattern checking
         // (Simple formats with clear first-byte signatures are in PREFIX_VEC)
-        &JP2,       // Offset 4-8 check
-        &JPX,       // Offset 4-8 check
-        &JPM,       // Offset 4-8 check
-        &WEBP,      // RIFF format (conflict)
-        &TAR,       // No magic number
-        &LOTUS123,  // Offset 4-7 check (parent; children WK1/WK3/WK4 refine version)
-        &MP3,       // Multiple first bytes (conflict)
-        &APE,       // Conflict with 0x4D
-        &WAV,       // RIFF format (conflict)
-        &AIFF,      // FORM format, offset 8
-        &MPEG,      // Conflict with 0x00
-        &QUICKTIME, // Offset 4-8 check
-        &MQV,       // Offset 4-8 check
-        &MP4,       // Offset 4-8 check
-        &AVI,       // RIFF format (conflict)
-        &MTV,       // RIFF format - MTV video
-        &TTF,       // Multiple patterns (conflict)
-        &EOT,       // 34 null bytes
-        &DBF,       // Multiple first bytes
-        &DCM,       // Offset 128 check
-        &MOBI,      // Offset 60 check
-        &DXF,       // Space patterns
-        &WPD,       // Conflict with 0xFF
-        &MACHO,     // Multiple magics (conflict)
-        &QCP,       // RIFF format (conflict)
-        &HDF,       // Parent format (children HDF4/HDF5 in PREFIX_VEC)
-        &MRC,       // Offset checks
-        &ZSTD,      // Range check on first 4 bytes
-        &PAT,       // Offset 20 check
-        &GBR,       // Offset 20 check
-        &PCX,       // Conflict with 0x0A
-        &CDR,       // RIFF format (conflict)
-        &ILBM,      // IFF/FORM format
-        &EMF,       // Offset 40 check
-        &WMF,       // Multiple signatures
-        &VDI,       // VirtualBox VDI - offset 64 check
-        &OGG_OPUS,  // Offset 28 check
-        &FIT,       // FIT format - offset 8 check
-        &MPEG2TS,   // Pattern at offset 188
-        &ACE,       // Offset 7 check
-        &ISO9660,   // Large offset checks
-        &ID3V2,     // Multiple signatures
-        &ICC,       // Offset 36 check
-        &PEM,       // Multiple signatures
-        &EBML,      // Variable-length encoding
-        &GBA_ROM,   // GameBoy Advance ROM - offset 4
-        &GB_ROM,    // GameBoy ROM - offset 260 (parent to GBC_ROM)
-        // PGP formats
-        &PGP_MESSAGE,         // PGP encrypted/signed message
-        &PGP_SIGNED_MESSAGE,  // PGP clear-signed message
-        &PGP_PUBLIC_KEY,      // PGP public key block
-        &PGP_PRIVATE_KEY,     // PGP private key block
-        &PGP_SIGNATURE,       // PGP detached signature
+        &JP2,                 // Offset 4-8 check
+        &JPX,                 // Offset 4-8 check
+        &JPM,                 // Offset 4-8 check
+        &TAR,                 // No magic number
+        &LOTUS123,            // Offset 4-7 check (parent; children WK1/WK3/WK4 refine version)
+        &MP3,                 // Multiple first bytes (conflict)
+        &APE,                 // Conflict with 0x4D
+        &AIFF,                // FORM format, offset 8
+        &MPEG,                // Conflict with 0x00
+        &QUICKTIME,           // Offset 4-8 check
+        &MQV,                 // Offset 4-8 check
+        &MP4,                 // Offset 4-8 check
+        &TTF,                 // Multiple patterns (conflict)
+        &EOT,                 // 34 null bytes
+        &DBF,                 // Multiple first bytes
+        &DCM,                 // Offset 128 check
+        &MOBI,                // Offset 60 check
+        &DXF,                 // Space patterns
+        &WPD,                 // Conflict with 0xFF
+        &MACHO,               // Multiple magics (conflict)
+        &HDF,                 // Parent format (children HDF4/HDF5 in PREFIX_VEC)
+        &MRC,                 // Offset checks
+        &ZSTD,                // Range check on first 4 bytes
+        &PAT,                 // Offset 20 check
+        &GBR,                 // Offset 20 check
+        &PCX,                 // Conflict with 0x0A
+        &ILBM,                // IFF/FORM format
+        &EMF,                 // Offset 40 check
+        &WMF,                 // Multiple signatures
+        &VDI,                 // VirtualBox VDI - offset 64 check
+        &OGG_OPUS,            // Offset 28 check
+        &FIT,                 // FIT format - offset 8 check
+        &MPEG2TS,             // Pattern at offset 188
+        &ACE,                 // Offset 7 check
+        &ISO9660,             // Large offset checks
+        &ID3V2,               // Multiple signatures
+        &ICC,                 // Offset 36 check
+        &EBML,                // Variable-length encoding
+        &GBA_ROM,             // GameBoy Advance ROM - offset 4
+        &GB_ROM,              // GameBoy ROM - offset 260 (parent to GBC_ROM)
         &MSO,                 // ActiveMime - offset 0x32 check
         &EMPTY,               // Empty file - zero-length check
         &PYTHON_BYTECODE,     // Python .pyc - checks offset 2-3
@@ -1144,8 +1131,6 @@ mimetype!(JXL, IMAGE_JXL, ".jxl", b"\xFF\x0A" | b"\x00\x00\x00\x0CJXL \x0D\x0A\x
 
 mimetype!(GIF, IMAGE_GIF, ".gif", b"GIF87a" | b"GIF89a", name: "Graphics Interchange Format", kind: IMAGE);
 
-mimetype!(WEBP, IMAGE_WEBP, ".webp", offset: (8, b"WEBP", prefix: (0, b"RIFF")), name: "WebP Image", kind: IMAGE);
-
 // Forward declarations for TIFF children
 // Canon Raw 2 - TIFF-based with CR2 marker
 mimetype!(CR2, IMAGE_X_CANON_CR2, ".cr2", offset: (8, b"CR\x02\x00"), name: "Canon Raw 2", kind: IMAGE);
@@ -1273,12 +1258,6 @@ mimetype!(SUN_RASTER, IMAGE_X_SUN_RASTER, ".ras", [0x59, 0xA6, 0x6A, 0x95], name
 // Silicon Graphics Image - Film/VFX format
 mimetype!(SGI, IMAGE_X_SGI, ".sgi", [0x01, 0xDA], name: "Silicon Graphics Image", kind: IMAGE);
 
-// Windows Animated Cursor - RIFF container
-mimetype!(ANI, APPLICATION_X_NAVI_ANIMATION, ".ani", offset: (8, b"ACON", prefix: (0, b"RIFF")), name: "Windows Animated Cursor", kind: IMAGE);
-
-// CorelDRAW - RIFF container
-mimetype!(CDR, APPLICATION_VND_COREL_DRAW, ".cdr", offset: (8, b"CDR", prefix: (0, b"RIFF")), name: "CorelDRAW Image", kind: IMAGE, aliases: [APPLICATION_CDR, APPLICATION_X_CDR]);
-
 // IFF/ILBM - Amiga graphics format (FORM container)
 mimetype!(ILBM, IMAGE_X_ILBM, ".lbm", offset: (8, b"ILBM", prefix: (0, b"FORM")), name: "Interchange File Format", kind: IMAGE, aliases: [IMAGE_X_IFF], ext_aliases: [".iff", ".ilbm"]);
 
@@ -1333,10 +1312,77 @@ static MP2: MimeType =
 
 mimetype!(FLAC, AUDIO_FLAC, ".flac", b"fLaC", name: "Free Lossless Audio Codec", kind: AUDIO, aliases: [AUDIO_X_FLAC]);
 
-mimetype!(WAV, AUDIO_WAV, ".wav", offset: (8, b"WAVE", prefix: (0, b"RIFF")), name: "Waveform Audio File", kind: AUDIO, aliases: [AUDIO_X_WAV, AUDIO_VND_WAVE, AUDIO_WAVE]);
+// RIFF container format - parent for WAV, AVI, WEBP, ANI, CDR, SoundFont2, QCP, CDA, MTV
+mimetype!(RIFF, APPLICATION_X_RIFF, ".riff", b"RIFF", name: "Resource Interchange File Format", kind: APPLICATION, children: [&WAV, &SOUNDFONT2, &QCP, &CDA, &WEBP, &ANI, &CDR, &AVI, &MTV]);
 
-// SoundFont 2 format (RIFF-based)
-mimetype!(SOUNDFONT2, AUDIO_X_SOUNDFONT, ".sf2", offset: (8, b"sfbk", prefix: (0, b"RIFF")), name: "SoundFont 2.0", kind: AUDIO);
+static WAV: MimeType = MimeType::new(AUDIO_WAV, "Waveform Audio File", ".wav", riff_wav, &[])
+    .with_aliases(&[AUDIO_X_WAV, AUDIO_VND_WAVE, AUDIO_WAVE])
+    .with_kind(MimeKind::AUDIO)
+    .with_parent(&RIFF);
+
+static SOUNDFONT2: MimeType = MimeType::new(
+    AUDIO_X_SOUNDFONT,
+    "SoundFont 2.0",
+    ".sf2",
+    riff_soundfont2,
+    &[],
+)
+.with_kind(MimeKind::AUDIO)
+.with_parent(&RIFF);
+
+static QCP: MimeType = MimeType::new(
+    AUDIO_QCELP,
+    "Qualcomm PureVoice Audio",
+    ".qcp",
+    riff_qcp,
+    &[],
+)
+.with_kind(MimeKind::AUDIO)
+.with_parent(&RIFF);
+
+static CDA: MimeType = MimeType::new(APPLICATION_X_CDF, "CD Audio Track", ".cda", riff_cda, &[])
+    .with_kind(MimeKind::AUDIO)
+    .with_parent(&RIFF);
+
+static WEBP: MimeType = MimeType::new(IMAGE_WEBP, "WebP Image", ".webp", riff_webp, &[])
+    .with_kind(MimeKind::IMAGE)
+    .with_parent(&RIFF);
+
+static ANI: MimeType = MimeType::new(
+    APPLICATION_X_NAVI_ANIMATION,
+    "Windows Animated Cursor",
+    ".ani",
+    riff_ani,
+    &[],
+)
+.with_kind(MimeKind::IMAGE)
+.with_parent(&RIFF);
+
+static CDR: MimeType = MimeType::new(
+    APPLICATION_VND_COREL_DRAW,
+    "CorelDRAW Image",
+    ".cdr",
+    riff_cdr,
+    &[],
+)
+.with_aliases(&[APPLICATION_CDR, APPLICATION_X_CDR])
+.with_kind(MimeKind::IMAGE)
+.with_parent(&RIFF);
+
+static AVI: MimeType = MimeType::new(
+    VIDEO_X_MSVIDEO,
+    "Audio Video Interleave",
+    ".avi",
+    riff_avi,
+    &[],
+)
+.with_aliases(&[VIDEO_AVI, VIDEO_MSVIDEO])
+.with_kind(MimeKind::VIDEO)
+.with_parent(&RIFF);
+
+static MTV: MimeType = MimeType::new(VIDEO_X_MTV, "MTV Video", ".mtv", riff_mtv, &[])
+    .with_kind(MimeKind::VIDEO)
+    .with_parent(&RIFF);
 
 mimetype!(AIFF, AUDIO_AIFF, ".aiff", offset: (8, b"AIFF", prefix: (0, b"FORM")), name: "Audio Interchange File Format", kind: AUDIO, aliases: [AUDIO_X_AIFF], ext_aliases: [".aif"]);
 
@@ -1402,8 +1448,6 @@ static OGG_OPUS: MimeType = MimeType::new(
 mimetype!(M3U, AUDIO_X_MPEGURL, ".m3u", b"#EXTM3U", name: "M3U Playlist", kind: TEXT, aliases: [AUDIO_MPEGURL], ext_aliases: [".m3u8"]);
 
 mimetype!(AAC, AUDIO_AAC, ".aac", b"\xFF\xF1" | b"\xFF\xF9", name: "Advanced Audio Coding", kind: AUDIO);
-
-mimetype!(QCP, AUDIO_QCELP, ".qcp", offset: (8, b"QLCM", prefix: (0, b"RIFF")), name: "Qualcomm PureVoice Audio", kind: AUDIO);
 
 mimetype!(M4A, AUDIO_X_M4A, ".m4a", offset: (8, b"M4A ", prefix: (4, b"ftyp")), name: "MPEG-4 Audio", kind: AUDIO);
 
@@ -1483,8 +1527,6 @@ static MKV: MimeType = MimeType::new(VIDEO_X_MATROSKA, "Matroska", ".mkv", mkv, 
     .with_extension_aliases(&[".mk3d", ".mka", ".mks"])
     .with_kind(MimeKind::VIDEO);
 
-mimetype!(AVI, VIDEO_X_MSVIDEO, ".avi", offset: (8, b"AVI LIST", prefix: (0, b"RIFF")), name: "Audio Video Interleave", kind: VIDEO, aliases: [VIDEO_AVI, VIDEO_MSVIDEO]);
-
 // MPEG Video (.mpg) - 00 00 01 B3
 static MPEG_VIDEO: MimeType = MimeType::new(
     VIDEO_MPEG,
@@ -1550,8 +1592,6 @@ static WMA: MimeType = MimeType::new(AUDIO_X_MS_WMA, "Windows Media Audio", ".wm
 static WMV: MimeType = MimeType::new(VIDEO_X_MS_WMV, "Windows Media Video", ".wmv", wmv, &[])
     .with_kind(MimeKind::VIDEO)
     .with_parent(&ASF);
-
-mimetype!(CDA, APPLICATION_X_CDF, ".cda", offset: (8, b"CDDA", prefix: (0, b"RIFF")), name: "CD Audio Track", kind: AUDIO);
 
 mimetype!(M4V, VIDEO_X_M4V, ".m4v", offset: (8, b"M4V ", prefix: (4, b"ftyp")), name: "iTunes Video", kind: VIDEO);
 
@@ -1626,9 +1666,6 @@ mimetype!(FLC, VIDEO_FLC, ".flc", [0x12, 0xAF], name: "Autodesk FLIC Animation",
 
 // Fast Search and Transfer Video - Surveillance video format
 mimetype!(FVT, VIDEO_VND_FVT, ".fvt", b"FVT", name: "Fast Search & Transfer Video", kind: VIDEO);
-
-// MTV - MTV video format (RIFF-based)
-mimetype!(MTV, VIDEO_X_MTV, ".mtv", offset: (8, b"MTV", prefix: (0, b"RIFF")), name: "MTV Video", kind: VIDEO);
 
 // AbiWord Template - Template variant of AbiWord (gzip-compressed)
 static AWT: MimeType = MimeType::new(
@@ -2540,59 +2577,39 @@ static PYTHON_BYTECODE: MimeType = MimeType::new(
 // ============================================================================
 
 // PGP Message - Encrypted or signed message
-static PGP_MESSAGE: MimeType = MimeType::new(
-    APPLICATION_PGP,
-    "PGP Message",
-    ".pgp",
-    |input| input.starts_with(b"-----BEGIN PGP MESSAGE-----"),
-    &[],
-)
-.with_extension_aliases(&[".gpg", ".asc"])
-.with_kind(MimeKind::APPLICATION);
+mimetype!(PGP_MESSAGE, APPLICATION_PGP, ".pgp",
+    b"-----BEGIN PGP MESSAGE-----",
+    name: "PGP Message",
+    kind: APPLICATION,
+    ext_aliases: [".gpg", ".asc"]);
 
 // PGP Signed Message - Clear-signed message
-static PGP_SIGNED_MESSAGE: MimeType = MimeType::new(
-    APPLICATION_PGP_SIGNED,
-    "PGP Signed Message",
-    ".asc",
-    |input| input.starts_with(b"-----BEGIN PGP SIGNED MESSAGE-----"),
-    &[],
-)
-.with_extension_aliases(&[".sig"])
-.with_kind(MimeKind::APPLICATION);
+mimetype!(PGP_SIGNED_MESSAGE, APPLICATION_PGP_SIGNED, ".asc",
+    b"-----BEGIN PGP SIGNED MESSAGE-----",
+    name: "PGP Signed Message",
+    kind: APPLICATION,
+    ext_aliases: [".sig"]);
 
 // PGP Public Key Block
-static PGP_PUBLIC_KEY: MimeType = MimeType::new(
-    APPLICATION_PGP_KEYS,
-    "PGP Public Key",
-    ".asc",
-    |input| input.starts_with(b"-----BEGIN PGP PUBLIC KEY BLOCK-----"),
-    &[],
-)
-.with_extension_aliases(&[".pgp", ".gpg", ".key"])
-.with_kind(MimeKind::APPLICATION);
+mimetype!(PGP_PUBLIC_KEY, APPLICATION_PGP_KEYS, ".asc",
+    b"-----BEGIN PGP PUBLIC KEY BLOCK-----",
+    name: "PGP Public Key",
+    kind: APPLICATION,
+    ext_aliases: [".pgp", ".gpg", ".key"]);
 
 // PGP Private Key Block
-static PGP_PRIVATE_KEY: MimeType = MimeType::new(
-    APPLICATION_PGP_KEYS,
-    "PGP Public Key",
-    ".asc",
-    |input| input.starts_with(b"-----BEGIN PGP PRIVATE KEY BLOCK-----"),
-    &[],
-)
-.with_extension_aliases(&[".pgp", ".gpg", ".key"])
-.with_kind(MimeKind::APPLICATION);
+mimetype!(PGP_PRIVATE_KEY, APPLICATION_PGP_KEYS, ".asc",
+    b"-----BEGIN PGP PRIVATE KEY BLOCK-----",
+    name: "PGP Private Key",
+    kind: APPLICATION,
+    ext_aliases: [".pgp", ".gpg", ".key"]);
 
 // PGP Signature - Detached signature
-static PGP_SIGNATURE: MimeType = MimeType::new(
-    APPLICATION_PGP_SIGNATURE,
-    "PGP Signature",
-    ".sig",
-    |input| input.starts_with(b"-----BEGIN PGP SIGNATURE-----"),
-    &[],
-)
-.with_extension_aliases(&[".asc"])
-.with_kind(MimeKind::APPLICATION);
+mimetype!(PGP_SIGNATURE, APPLICATION_PGP_SIGNATURE, ".sig",
+    b"-----BEGIN PGP SIGNATURE-----",
+    name: "PGP Signature",
+    kind: APPLICATION,
+    ext_aliases: [".asc"]);
 
 // ============================================================================
 // ANDROID BINARY FORMATS
@@ -2647,7 +2664,14 @@ mimetype!(CR3, IMAGE_X_CANON_CR3, ".cr3", offset: (4, b"ftypcrx "), name: "Canon
 mimetype!(RAF, IMAGE_X_FUJI_RAF, ".raf", b"FUJIFILMCCD-RAW ", name: "Fujifilm RAF Image", kind: IMAGE);
 
 // Olympus ORF - TIFF-based with custom magic
-mimetype!(ORF, IMAGE_X_OLYMPUS_ORF, ".orf", b"IIRO" | b"IIRS" | b"MMOR", name: "Olympus Raw Image", kind: IMAGE);
+static ORF: MimeType = MimeType::new(
+    IMAGE_X_OLYMPUS_ORF,
+    "Olympus Raw Image",
+    ".orf",
+    |input| input.starts_with(b"IIRO") || input.starts_with(b"IIRS") || input.starts_with(b"MMOR"),
+    &[],
+)
+.with_kind(MimeKind::IMAGE);
 
 // Panasonic RW2 - TIFF-based with IIU signature
 static RW2: MimeType = MimeType::new(
@@ -2959,115 +2983,70 @@ static DBASE: MimeType = MimeType::new(
 // ADDITIONAL IMAGE FORMATS
 // ============================================================================
 
-/// Adobe Digital Negative (DNG)
+/// Adobe Digital Negative (DNG) - TIFF-based RAW format
 static DNG: MimeType = MimeType::new(
     IMAGE_X_ADOBE_DNG,
     "Adobe DNG",
     ".dng",
-    |input| {
-        // DNG is TIFF-based, check for TIFF header and DNG-specific tags
-        // We'll make it a child of TIFF
-        if input.len() < 8 {
-            return false;
-        }
-        // Check TIFF header (little or big endian)
-        let is_tiff =
-            (input[0] == 0x49 && input[1] == 0x49 && input[2] == 0x2A && input[3] == 0x00)
-                || (input[0] == 0x4D && input[1] == 0x4D && input[2] == 0x00 && input[3] == 0x2A);
-
-        // For now, we'll detect as DNG if it has TIFF header and check file size/content
-        // Real DNG detection would check for specific IFD tags
-        is_tiff && input.len() > 1000 // DNG files are typically larger
-    },
+    |input| input.windows(5).any(|w| w == b"Adobe") || input.windows(3).any(|w| w == b"DNG"),
     &[],
 )
 .with_kind(MimeKind::IMAGE)
-.with_parent(&TIFF); // DNG is based on TIFF
+.with_parent(&TIFF);
 
-/// Sony ARW Raw format
+/// Sony ARW Raw format - TIFF-based with Sony maker notes
 static ARW: MimeType = MimeType::new(
     IMAGE_X_SONY_ARW,
     "Sony ARW",
     ".arw",
     |input| {
-        // ARW is TIFF-based, check for Sony-specific markers
-        if input.len() < 8 {
-            return false;
-        }
-        // Check for TIFF header (little-endian common for Sony)
-        if !(input[0] == 0x49 && input[1] == 0x49 && input[2] == 0x2A && input[3] == 0x00) {
-            return false;
-        }
-        // Look for Sony markers (simplified check)
-        input.len() > 100
+        let search_len = input.len().min(512);
+        input.len() >= 200 && input[0..search_len].windows(4).any(|w| w == b"SONY")
     },
     &[],
 )
 .with_kind(MimeKind::IMAGE)
 .with_parent(&TIFF);
 
-/// Pentax PEF Raw format
+/// Pentax PEF Raw format - TIFF-based with Pentax maker notes
 static PEF: MimeType = MimeType::new(
     IMAGE_X_PENTAX_PEF,
     "Pentax PEF",
     ".pef",
     |input| {
-        // PEF is TIFF-based
-        if input.len() < 8 {
-            return false;
-        }
-        // Check for TIFF header
-        let is_tiff =
-            (input[0] == 0x49 && input[1] == 0x49 && input[2] == 0x2A && input[3] == 0x00)
-                || (input[0] == 0x4D && input[1] == 0x4D && input[2] == 0x00 && input[3] == 0x2A);
-
-        // Simplified check for PEF
-        is_tiff && input.len() > 500
+        // Look for "PENTAX" or "AOC" maker note signature in available data
+        let search_len = input.len().min(512);
+        input.len() >= 200
+            && (input[0..search_len].windows(6).any(|w| w == b"PENTAX")
+                || input[0..search_len].windows(3).any(|w| w == b"AOC"))
     },
     &[],
 )
 .with_kind(MimeKind::IMAGE)
 .with_parent(&TIFF);
 
-/// Sony SR2 Raw format
+/// Sony SR2 Raw format - TIFF-based, older Sony format
 static SR2: MimeType = MimeType::new(
     IMAGE_X_SONY_SR2,
     "Sony SR2",
     ".sr2",
     |input| {
-        // SR2 is TIFF-based, older Sony format
-        if input.len() < 8 {
-            return false;
-        }
-        // Check for TIFF header (little-endian for Sony)
-        if !(input[0] == 0x49 && input[1] == 0x49 && input[2] == 0x2A && input[3] == 0x00) {
-            return false;
-        }
-        // Simplified check - SR2 files are consumer camera format, smaller than professional formats
-        input.len() > 50 && input.len() < 3_000_000
+        let search_len = input.len().min(512);
+        input.len() >= 200 && input[0..search_len].windows(4).any(|w| w == b"SONY")
     },
     &[],
 )
 .with_kind(MimeKind::IMAGE)
 .with_parent(&TIFF);
 
-/// Hasselblad 3FR Raw format
+/// Hasselblad 3FR Raw format - TIFF-based professional medium format
 static HASSELBLAD_3FR: MimeType = MimeType::new(
     IMAGE_X_HASSELBLAD_3FR,
     "Hasselblad 3FR",
     ".3fr",
     |input| {
-        // 3FR is TIFF-based
-        if input.len() < 8 {
-            return false;
-        }
-        // Check for TIFF header (can be either endian)
-        let is_tiff =
-            (input[0] == 0x49 && input[1] == 0x49 && input[2] == 0x2A && input[3] == 0x00)
-                || (input[0] == 0x4D && input[1] == 0x4D && input[2] == 0x00 && input[3] == 0x2A);
-
-        // Simplified check for 3FR - professional camera format, typically large files
-        is_tiff && input.len() > 1000
+        let search_len = input.len().min(1024);
+        input.len() >= 200 && input[0..search_len].windows(10).any(|w| w == b"HASSELBLAD")
     },
     &[],
 )
@@ -3750,7 +3729,10 @@ static RUBY: MimeType = MimeType::new(TEXT_X_RUBY, "Ruby Source Code", ".rb", ru
 static LUA: MimeType =
     MimeType::new(TEXT_X_LUA, "Lua Source Code", ".lua", lua, &[]).with_parent(&UTF8);
 
-mimetype!(SHELL, TEXT_X_SHELLSCRIPT, ".sh", b"#!/bin/sh" | b"#!/bin/bash" | b"#!/usr/bin/env bash" | b"#!/bin/zsh", name: "Shell Script", kind: TEXT, aliases: [TEXT_X_SH, APPLICATION_X_SHELLSCRIPT, APPLICATION_X_SH], parent: &UTF8);
+static SHELL: MimeType = MimeType::new(TEXT_X_SHELLSCRIPT, "Shell Script", ".sh", shell, &[])
+    .with_aliases(&[TEXT_X_SH, APPLICATION_X_SHELLSCRIPT, APPLICATION_X_SH])
+    .with_kind(MimeKind::TEXT)
+    .with_parent(&UTF8);
 
 mimetype!(BATCH, TEXT_X_MSDOS_BATCH, ".bat", b"REM " | b"@ECHO OFF" | b"@echo off" | b"@Echo Off", name: "Batch Script", kind: TEXT, ext_aliases: [".cmd"], parent: &UTF8);
 
@@ -4371,12 +4353,8 @@ fn html(input: &[u8]) -> bool {
                 if byte == b' ' || byte == b'>' {
                     return true;
                 }
-            } else {
-                // Tag matches exactly at end of input - rare but valid for some cases
-                if tag == b"<!--" {
-                    return true;
-                }
-                // For regular tags, we need proper termination
+            } else if tag == b"<!--" {
+                return true;
             }
         }
     }
@@ -5723,23 +5701,19 @@ impl<'a> SinglePassMatcher<'a> {
 
 /// Check for common shebangs (checks if shebang line contains any of the patterns)
 #[inline]
-fn has_lang_shebang(input: &[u8], shebangs: &[&[u8]]) -> bool {
+fn shebang_is(input: &[u8], shebangs: &[&[u8]]) -> bool {
     if !input.starts_with(b"#!") {
         return false;
     }
-
-    // Find end of shebang line
     let end = input
         .iter()
         .position(|&b| b == b'\n')
         .unwrap_or(input.len())
-        .min(256);
-    let shebang_line = &input[..end];
-
-    // Check if any pattern appears in the shebang line
+        .min(128);
+    let line = &input[2..end];
     shebangs
         .iter()
-        .any(|&pattern| shebang_line.windows(pattern.len()).any(|w| w == pattern))
+        .any(|p| line.windows(p.len()).any(|w| w == *p))
 }
 
 // ============================================================================
@@ -5747,10 +5721,8 @@ fn has_lang_shebang(input: &[u8], shebangs: &[&[u8]]) -> bool {
 // ============================================================================
 
 fn javascript(input: &[u8]) -> bool {
-    // Check for shebang first
-    const NODE_SHEBANGS: &[&[u8]] = &[b"#!/usr/bin/env node", b"#!/usr/bin/node"];
-
-    if has_lang_shebang(input, NODE_SHEBANGS) {
+    // JavaScript runtimes: node, nodejs, deno, bun, npx
+    if shebang_is(input, &[b"node", b"nodejs", b"deno", b"bun", b"npx"]) {
         return true;
     }
 
@@ -5882,6 +5854,10 @@ fn java(input: &[u8]) -> bool {
 }
 
 fn typescript(input: &[u8]) -> bool {
+    if shebang_is(input, &[b"ts-node"]) {
+        return true;
+    }
+
     let sample = &input[..input.len().min(1024)];
 
     // Anti-patterns (Java, C++, C# false positives) - check FIRST
@@ -5985,22 +5961,15 @@ fn typescript(input: &[u8]) -> bool {
 fn c_lang(input: &[u8]) -> bool {
     let sample = &input[..input.len().min(1024)];
 
-    // Avoid Python/Ruby false positives (they are detected earlier in tree order)
-    let has_python_shebang = has_lang_shebang(input, &[b"python"]);
-    let has_ruby_shebang = has_lang_shebang(input, &[b"ruby"]);
+    // Avoid Python/Ruby false positives (check for common patterns)
     let has_def = sample.windows(4).any(|w| w == b"def ");
     let has_end =
         sample.windows(4).any(|w| w == b"end\n") || sample.windows(4).any(|w| w == b"end ");
     let has_print = sample.windows(6).any(|w| w == b"print(");
     let has_import = sample.windows(7).any(|w| w == b"import ");
 
-    // Python: def with print/import, or has both def and print
-    // Ruby: def with end keyword
-    if has_python_shebang
-        || has_ruby_shebang
-        || (has_def && has_end)
-        || (has_def && (has_print || has_import))
-    {
+    // Python: def with print/import; Ruby: def with end keyword
+    if has_def && (has_end || has_print || has_import) {
         return false;
     }
 
@@ -6346,6 +6315,10 @@ fn vb(input: &[u8]) -> bool {
 }
 
 fn php(input: &[u8]) -> bool {
+    if shebang_is(input, &[b"php"]) {
+        return true;
+    }
+
     let sample = &input[..input.len().min(1024)];
 
     // PHP must have opening tag
@@ -6386,12 +6359,25 @@ fn php(input: &[u8]) -> bool {
 }
 
 fn python(input: &[u8]) -> bool {
-    // Check for shebang first
-    if has_lang_shebang(input, &[b"python", b"# -*- coding:"]) {
+    // Check shebang first (most definitive signal)
+    if shebang_is(input, &[b"python", b"pypy", b"jython", b"micropython"]) {
         return true;
     }
 
     let sample = &input[..input.len().min(1024)];
+
+    // Check for Python magic encoding comment (PEP 263)
+    // Must be in first or second line: # -*- coding: utf-8 -*-
+    if sample.len() > 15 {
+        let first_two_lines = sample.split(|&b| b == b'\n').take(2).any(|line| {
+            line.windows(8)
+                .any(|w| w == b"# -*- co" || w == b"# coding")
+                || line.windows(6).any(|w| w == b"coding")
+        });
+        if first_two_lines {
+            return true;
+        }
+    }
 
     // Python requires colons for control structures (def:, class:, if:, for:, etc.)
     if !sample.contains(&b':') {
@@ -6482,15 +6468,8 @@ fn python(input: &[u8]) -> bool {
 
 fn ruby(input: &[u8]) -> bool {
     // Check for shebang first
-    const RUBY_SHEBANGS: &[&[u8]] = &[b"ruby"];
-    if has_lang_shebang(input, RUBY_SHEBANGS) {
+    if shebang_is(input, &[b"ruby", b"jruby", b"rbx", b"truffleruby"]) {
         return true;
-    }
-
-    // Exclude TCL (which also uses 'puts' but has different shebang)
-    const TCL_SHEBANGS: &[&[u8]] = &[b"tclsh"];
-    if has_lang_shebang(input, TCL_SHEBANGS) {
-        return false;
     }
 
     let sample = &input[..input.len().min(1024)];
@@ -6551,8 +6530,7 @@ fn ruby(input: &[u8]) -> bool {
 
 fn perl(input: &[u8]) -> bool {
     // Check for shebang first
-    const PERL_SHEBANGS: &[&[u8]] = &[b"perl"];
-    if has_lang_shebang(input, PERL_SHEBANGS) {
+    if shebang_is(input, &[b"perl"]) {
         return true;
     }
 
@@ -6613,8 +6591,7 @@ fn perl(input: &[u8]) -> bool {
 
 fn lua(input: &[u8]) -> bool {
     // Check for shebang first
-    const LUA_SHEBANGS: &[&[u8]] = &[b"lua"];
-    if has_lang_shebang(input, LUA_SHEBANGS) {
+    if shebang_is(input, &[b"lua", b"luajit"]) {
         return true;
     }
 
@@ -6665,6 +6642,13 @@ fn lua(input: &[u8]) -> bool {
     SinglePassMatcher::new(sample, &patterns).scan().1 >= 3
 }
 
+fn shell(input: &[u8]) -> bool {
+    shebang_is(
+        input,
+        &[b"/sh", b"bash", b"zsh", b"fish", b"dash", b"ksh", b"csh"],
+    )
+}
+
 fn visual_studio_solution(input: &[u8]) -> bool {
     // Microsoft Visual Studio Solution File
     // Can optionally start with UTF-8 BOM (EF BB BF)
@@ -6712,10 +6696,7 @@ fn ndjson(input: &[u8]) -> bool {
 #[inline]
 fn detect_delimited_format(input: &[u8], separator: u8) -> bool {
     // Split on both \n and \r to handle all line ending styles (Unix, Windows, old Mac)
-    let lines = input
-        .split(|&b| b == b'\n' || b == b'\r')
-        .filter(|line| !line.trim_ascii().is_empty()) // Skip empty/whitespace lines
-        .take(15);
+    let lines = input.split(|&b| b == b'\n' || b == b'\r').take(5);
     detect_csv_generic(lines, |line| count_csv_separators_quoted(line, separator))
 }
 
@@ -7123,12 +7104,19 @@ fn detect_html_content(text: &str) -> bool {
         "<P",
     ];
 
+    let text = text.trim_start();
+
+    // Early exit if doesn't start with '<'
+    if !text.starts_with('<') {
+        return false;
+    }
+
     for tag in HTML_TAGS {
         if case_insensitive_starts_with(text, tag) {
             // Check for proper tag termination
             if text.len() > tag.len() {
-                let next_char = text.chars().nth(tag.len()).unwrap_or(' ');
-                if next_char == ' ' || next_char == '>' || next_char == '\t' || next_char == '\n' {
+                let next_byte = text.as_bytes()[tag.len()];
+                if matches!(next_byte, b' ' | b'>' | b'\t' | b'\n') {
                     return true;
                 }
             }
@@ -7162,10 +7150,7 @@ fn detect_json_content(text: &str) -> bool {
 /// Generic function to detect delimited text in decoded text (for UTF-16 and UTF-8 BOM)
 #[inline]
 fn detect_delimited_content(text: &str, separator: u8) -> bool {
-    let lines = text
-        .lines()
-        .filter(|line| !line.trim().is_empty()) // Skip empty lines
-        .take(15); // Increased sample size
+    let lines = text.lines().take(5);
     detect_csv_generic(lines, |line| {
         count_csv_separators_quoted(line.as_bytes(), separator)
     })
@@ -7321,8 +7306,7 @@ where
     T: Iterator,
     F: Fn(T::Item) -> usize,
 {
-    // Use stack-allocated array to avoid heap allocation (max 15 lines sampled)
-    const MAX_LINES: usize = 15;
+    const MAX_LINES: usize = 5;
     let mut separator_counts: [usize; MAX_LINES] = [0; MAX_LINES];
     let mut line_count = 0;
     let mut total_separators = 0;
@@ -7335,6 +7319,10 @@ where
         separator_counts[line_count] = count;
         total_separators += count;
         line_count += 1;
+
+        if line_count == 1 && count == 0 {
+            return false;
+        }
     }
 
     if line_count < 2 {
@@ -7658,4 +7646,51 @@ fn detect_opendocument_format(input: &[u8], mimetype: &[u8]) -> bool {
     input.len() >= 30 + total_len
         && &input[30..30 + prefix_len] == MIMETYPE_PREFIX
         && &input[30 + prefix_len..30 + total_len] == mimetype
+}
+
+// ============================================================================
+// RIFF CONTAINER FORMAT MATCHERS
+// ============================================================================
+
+/// RIFF child format matcher: checks for form type at offset 8
+/// All RIFF children inherit the RIFF header check from parent
+#[inline]
+fn riff_child(input: &[u8], form_type: &[u8]) -> bool {
+    input.len() >= 8 + form_type.len() && &input[8..8 + form_type.len()] == form_type
+}
+
+fn riff_wav(input: &[u8]) -> bool {
+    riff_child(input, b"WAVE")
+}
+
+fn riff_webp(input: &[u8]) -> bool {
+    riff_child(input, b"WEBP")
+}
+
+fn riff_avi(input: &[u8]) -> bool {
+    riff_child(input, b"AVI LIST")
+}
+
+fn riff_ani(input: &[u8]) -> bool {
+    riff_child(input, b"ACON")
+}
+
+fn riff_cdr(input: &[u8]) -> bool {
+    riff_child(input, b"CDR")
+}
+
+fn riff_soundfont2(input: &[u8]) -> bool {
+    riff_child(input, b"sfbk")
+}
+
+fn riff_qcp(input: &[u8]) -> bool {
+    riff_child(input, b"QLCM")
+}
+
+fn riff_cda(input: &[u8]) -> bool {
+    riff_child(input, b"CDDA")
+}
+
+fn riff_mtv(input: &[u8]) -> bool {
+    riff_child(input, b"MTV")
 }

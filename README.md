@@ -23,7 +23,7 @@ Fast MIME type detection for ~450 file formats with zero dependencies.
 
 ```toml
 [dependencies]
-mimetype-detector = "0.3.4"
+mimetype-detector = "0.3.5"
 ```
 
 ## Usage

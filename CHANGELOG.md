@@ -10,6 +10,15 @@ Used prefixes:
 
 ## Unreleased
 
+## 0.3.5 - 2026.02.09
+
+* Updated: move some items into prefix for performance perspective
+* Added: RIFF root item to group riff child format
+* Updated: improve CSV like detections
+* Updated: improved bash script detection
+* Updated: improved html detectors performance
+* Updated: improved TIFF-based RAW format detection (DNG, ARW, PEF, SR2, 3FR, ORF) using simple string patterns
+
 ## 0.3.4 - 2025-12-15
 
 * Added: Java (`text/x-java`), TypeScript (`text/x-typescript`), C (`text/x-c`), C++ (`text/x-c++`), Go (`text/x-go`), Rust (`text/x-rust`), C# (`text/x-csharp`), and Visual Basic (`text/x-vb`) source code detection

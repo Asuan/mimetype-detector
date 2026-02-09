@@ -485,6 +485,9 @@ pub const VIDEO_OGG_MEDIA: &str = "video/ogg";
 /// OGG Multiplexed (audio+video+text)
 pub const APPLICATION_OGG_MULTIPLEXED: &str = "application/ogg";
 
+/// RIFF container format
+pub const APPLICATION_X_RIFF: &str = "application/x-riff";
+
 /// Monkey's Audio
 pub const AUDIO_APE: &str = "audio/ape";
 
