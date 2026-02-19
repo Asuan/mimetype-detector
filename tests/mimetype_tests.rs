@@ -925,14 +925,56 @@ fn test_detect_dds() {
 
 #[test]
 fn test_detect_pcx() {
-    let data = b"\x0A\x05\x01\x08\x00\x00\x00\x00";
-    let mime_type = detect(data);
+    // Realistic PCX header (128 bytes minimum)
+    let mut data = vec![0u8; 128];
+    data[0] = 0x0A; // Manufacturer (ZSoft)
+    data[1] = 0x05; // Version 5
+    data[2] = 0x01; // RLE encoding
+    data[3] = 0x08; // 8 bits per pixel
+                    // Window coordinates (xMin=0, yMin=0, xMax=319, yMax=199)
+    data[4..6].copy_from_slice(&0u16.to_le_bytes()); // xMin
+    data[6..8].copy_from_slice(&0u16.to_le_bytes()); // yMin
+    data[8..10].copy_from_slice(&319u16.to_le_bytes()); // xMax
+    data[10..12].copy_from_slice(&199u16.to_le_bytes()); // yMax
+    data[12] = 0x48; // HDpi (72)
+    data[13] = 0x48; // VDpi (72)
+                     // Palette bytes 14-63 left as zeros
+    data[64] = 0x00; // Reserved
+    data[65] = 0x01; // Number of planes
+    data[66..68].copy_from_slice(&320u16.to_le_bytes()); // Bytes per line (even number)
+    data[68..70].copy_from_slice(&1u16.to_le_bytes()); // Palette info (color)
+
+    let mime_type = detect(&data);
     assert_eq!(mime_type.mime(), IMAGE_X_PCX);
     assert_eq!(mime_type.extension(), ".pcx");
     assert!(mime_type.is(IMAGE_X_PCX));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_image());
     assert!(!mime_type.name().is_empty());
+
+    // text check
+    // Text file starting with newline (0x0A) should NOT be detected as PCX
+    let text_data = b"\nThis is a text file\nwith multiple lines\nand newlines\n";
+    let mime_type = detect(text_data);
+    assert_ne!(
+        mime_type.mime(),
+        IMAGE_X_PCX,
+        "Text file with newline should not be detected as PCX"
+    );
+
+    // Text file with more content starting with 0x0A (simulating a text file that might conflict)
+    let mut text_buffer = vec![0u8; 200];
+    text_buffer[0] = 0x0A; // Newline
+                           // Fill with ASCII text
+    (1..150).for_each(|i| {
+        text_buffer[i] = b'A' + ((i % 26) as u8);
+    });
+    let mime_type2 = detect(&text_buffer);
+    assert_ne!(
+        mime_type2.mime(),
+        IMAGE_X_PCX,
+        "Random data starting with 0x0A should not be PCX"
+    );
 }
 
 #[test]
@@ -4928,13 +4970,15 @@ fn test_detect_cfb() {
 
 #[test]
 fn test_detect_asx() {
-    // ASX - Advanced Stream Redirector (ASF-based XML playlist)
+    // XML content at offset 30
     let data =
-        b"\x30\x26\xb2\x75\x8e\x66\xcf\x11\xa6\xd9\x00\xaa\x00\x62\xce\x6c<asx version=\"3.0\">";
+        b"<asx version=\"3.0\"><Entry><ref href=\"videofilename.asf\" /></Entry></ASX>".to_vec();
+    let mime_type = detect(&data);
 
-    let mime_type = detect(data);
     assert_eq!(mime_type.mime(), VIDEO_X_MS_ASX);
     assert_eq!(mime_type.extension(), ".asx");
+    assert!(mime_type.is(VIDEO_X_MS_ASX));
+    assert!(mime_type.kind().is_video());
     assert!(!mime_type.name().is_empty());
 }
 
@@ -5006,14 +5050,28 @@ fn test_detect_ai() {
 
 #[test]
 fn test_detect_dvr_ms() {
-    // Microsoft Digital Video Recording - ASF-based format
-    // DVR-MS shares ASF signature, so should detect as ASF
-    let data = b"\x30\x26\xb2\x75\x8e\x66\xcf\x11\xa6\xd9\x00\xaa\x00\x62\xce\x6c";
+    // Microsoft Digital Video Recording - ASF-based format with "DVR File Version" marker
+    // Create proper ASF header structure with DVR-MS marker
+    let mut data = Vec::new();
 
-    let mime_type = detect(data);
-    // DVR-MS detection returns false, so it should be detected as parent ASF
-    assert_eq!(mime_type.mime(), VIDEO_X_MS_ASF);
-    assert_eq!(mime_type.extension(), ".asf");
+    // ASF Header Object GUID
+    data.extend_from_slice(b"\x30\x26\xb2\x75\x8e\x66\xcf\x11\xa6\xd9\x00\xaa\x00\x62\xce\x6c");
+
+    // Header size: 30 + 16 (DVR File Version marker) = 46 bytes
+    let header_size: u64 = 46;
+    data.extend_from_slice(&header_size.to_le_bytes());
+
+    // Number of header objects (1) + Reserved (0)
+    data.extend_from_slice(&[1, 0, 0, 0, 0, 0]);
+
+    // DVR File Version marker at offset 30
+    data.extend_from_slice(b"DVR File Version");
+
+    let mime_type = detect(&data);
+    assert_eq!(mime_type.mime(), VIDEO_X_MS_DVR);
+    assert_eq!(mime_type.extension(), ".dvr-ms");
+    assert!(mime_type.is(VIDEO_X_MS_DVR));
+    assert!(mime_type.kind().is_video());
     assert!(!mime_type.name().is_empty());
 }
 
@@ -5143,22 +5201,55 @@ fn test_detect_qcow() {
 
 #[test]
 fn test_detect_wma() {
-    // Windows Media Audio - ASF-based format
-    let data = b"\x30\x26\xb2\x75\x8e\x66\xcf\x11\xa6\xd9\x00\xaa\x00\x62\xce\x6c";
-    let mime_type = detect(data);
-    // Without .wma extension, detects as generic ASF
-    assert_eq!(mime_type.mime(), VIDEO_X_MS_ASF);
+    // Windows Media Audio - ASF-based format with Audio Stream GUID
+    // Create proper ASF header structure with Audio Stream GUID
+    let mut data = Vec::new();
+
+    // ASF Header Object GUID
+    data.extend_from_slice(b"\x30\x26\xb2\x75\x8e\x66\xcf\x11\xa6\xd9\x00\xaa\x00\x62\xce\x6c");
+
+    // Header size: 30 + 16 (Audio Stream GUID) = 46 bytes
+    let header_size: u64 = 46;
+    data.extend_from_slice(&header_size.to_le_bytes());
+
+    // Number of header objects (1) + Reserved (0)
+    data.extend_from_slice(&[1, 0, 0, 0, 0, 0]);
+
+    // Audio Stream GUID: F8699E40-5B4D-11CF-A8FD-00805F5C442B at offset 30
+    data.extend_from_slice(b"\x40\x9E\x69\xF8\x5B\x4D\x11\xCF\xA8\xFD\x00\x80\x5F\x5C\x44\x2B");
+
+    let mime_type = detect(&data);
+    assert_eq!(mime_type.mime(), AUDIO_X_MS_WMA);
+    assert_eq!(mime_type.extension(), ".wma");
+    assert!(mime_type.is(AUDIO_X_MS_WMA));
+    assert!(mime_type.kind().is_audio());
     assert!(!mime_type.name().is_empty());
 }
 
 #[test]
 fn test_detect_wmv() {
-    // Windows Media Video - ASF-based format
-    let data = b"\x30\x26\xb2\x75\x8e\x66\xcf\x11\xa6\xd9\x00\xaa\x00\x62\xce\x6c";
-    let mime_type = detect(data);
-    // WMV is an alias of ASF
+    // Windows Media Video - ASF-based format with Video Stream GUID
+    // Create proper ASF header structure with Video Stream GUID
+    let mut data = Vec::new();
+
+    // ASF Header Object GUID
+    data.extend_from_slice(b"\x30\x26\xb2\x75\x8e\x66\xcf\x11\xa6\xd9\x00\xaa\x00\x62\xce\x6c");
+
+    // Header size: 30 + 16 (Video Stream GUID) = 46 bytes
+    let header_size: u64 = 46;
+    data.extend_from_slice(&header_size.to_le_bytes());
+
+    // Number of header objects (1) + Reserved (0)
+    data.extend_from_slice(&[1, 0, 0, 0, 0, 0]);
+
+    // Video Stream GUID: BC19EFC0-5B4D-11CF-A8FD-00805F5C442B at offset 30
+    data.extend_from_slice(b"\xC0\xEF\x19\xBC\x5B\x4D\x11\xCF\xA8\xFD\x00\x80\x5F\x5C\x44\x2B");
+
+    let mime_type = detect(&data);
+    assert_eq!(mime_type.mime(), VIDEO_X_MS_WMV);
+    assert_eq!(mime_type.extension(), ".wmv");
     assert!(mime_type.is(VIDEO_X_MS_WMV));
-    assert_eq!(mime_type.extension(), ".asf");
+    assert!(mime_type.kind().is_video());
     assert!(!mime_type.name().is_empty());
 }
 
@@ -6341,5 +6432,230 @@ fn test_detect_autodesk_max() {
     assert!(mime_type.kind().is_model());
     assert!(!mime_type.name().is_empty());
     assert!(mime_type.kind().is_document()); // Inherits from OLE
+    assert!(!mime_type.name().is_empty());
+}
+#[test]
+fn test_detect_par2() {
+    let data = b"PAR2\x00PKT";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_PAR2);
+    assert_eq!(mime_type.extension(), ".par2");
+    assert!(mime_type.is(APPLICATION_X_PAR2));
+    assert!(mime_type.kind().is_archive());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_zlib() {
+    // Valid ZLIB with binary content
+    let data = b"\x78\x9c\x00\x00\x05\x00\xfa";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_ZLIB);
+    assert!(mime_type.is(APPLICATION_ZLIB));
+    assert!(mime_type.kind().is_archive());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_zlib_not_text() {
+    // "x " (0x78 0x20) passes header checksum but is text - should NOT be detected as ZLIB
+    let text_data = b"x some plain text content";
+    let mime_type = detect(text_data);
+    assert_ne!(mime_type.mime(), APPLICATION_ZLIB);
+}
+
+#[test]
+fn test_detect_bufr() {
+    let data = b"BUFR\x00\x00\x00\x03";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_BUFR);
+    assert_eq!(mime_type.extension(), ".bufr");
+    assert!(mime_type.is(APPLICATION_X_BUFR));
+    assert!(mime_type.kind().is_application());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_bufr_v4() {
+    let data = b"BUFR\x00\x00\x00\x04";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_BUFR);
+    assert!(mime_type.is(APPLICATION_X_BUFR));
+}
+
+#[test]
+fn test_detect_os2_hlp() {
+    let data = b"HSP\x10\x9b\x00";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_OS2_HLP);
+    assert_eq!(mime_type.extension(), ".hlp");
+    assert!(mime_type.is(APPLICATION_X_OS2_HLP));
+    assert!(mime_type.kind().is_application());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_os2_inf() {
+    let data = b"HSP\x01\x9b\x00";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_OS2_INF);
+    assert_eq!(mime_type.extension(), ".inf");
+    assert!(mime_type.is(APPLICATION_X_OS2_INF));
+    assert!(mime_type.kind().is_application());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_framemaker() {
+    let mut data = b"<MakerFile 8.0>".to_vec();
+    data.push(0x00); // Null byte to distinguish from plain text
+    let mime_type = detect(&data);
+    assert_eq!(mime_type.mime(), APPLICATION_VND_FRAMEMAKER);
+    assert_eq!(mime_type.extension(), ".fm");
+    assert!(mime_type.is(APPLICATION_VND_FRAMEMAKER));
+    assert!(mime_type.kind().is_document());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_toml() {
+    let test_cases: Vec<(&str, &[u8])> = vec![
+        (
+            "basic_config",
+            b"# TOML configuration file\r\n\n\n\n[package]\nname = \"mimetype-detector\"\nversion = \"0.3.5\"\nauthors = [\"Author Name\"]\nedition = \"2021\"\n\n[dependencies]\nserde = \"1.0\"\ntokio = \"1.0\"\nserver.host = \"localhost\"\nserver.port = 8080\n" as &[u8],
+        ),
+        (
+            "cargo_toml",
+            b"[package]\nname = \"my-project\"\nversion = \"1.0.0\"\nedition = \"2021\"\nlicense = \"MIT\"\n\n[dependencies]\nserde = \"1.0\"\ntokio = { version = \"1.0\", features = [\"full\"] }\nclap = \"4.0\"\nlog = \"0.4\"\n" as &[u8],
+        ),
+        (
+            "arrays_and_tables",
+            b"title = \"TOML Example\"\nauthor = \"Example Author\"\n\n[owner]\nname = \"Tom Preston-Werner\"\ndob = 1979-05-27T07:32:00-08:00\nemail = \"example@example.com\"\n\n[[products]]\nname = \"Hammer\"\nsku = 738594937\nprice = \"15.99\"\n\n[[products]]\nname = \"Nail\"\nsku = 284758393\nprice = \"0.25\"\n" as &[u8],
+        ),
+        (
+            "inline_tables",
+            br#"[servers]
+alpha = { ip = "10.0.0.1", role = "frontend" }
+beta = { ip = "10.0.0.2", role = "backend" }
+gamma = { ip = "10.0.0.3", role = "cache" }
+
+[database]
+connection_string = "postgresql://localhost/db"
+max_connections = 100
+timeout = "30s"
+pool_size = 10
+"# as &[u8],
+        ),
+        (
+            "nested_tables",
+            b"[a.b.c]\nkey = \"value\"\nanother = \"data\"\n\n[a]\nx = 1\nname = \"section a\"\n\n[a.b]\ny = 2\nvalue = \"nested\"\n\n[fruit]\napple.color = \"red\"\napple.taste.sweet = true\napple.price = \"1.50\"\nbanana.color = \"yellow\"\n" as &[u8],
+        ),
+        (
+            "multiline_strings",
+            b"[package]\nname = \"example\"\nversion = \"1.0.0\"\n\n[info]\ndescription = \"\"\"\nThis is a multiline\nstring in TOML format.\nIt can span multiple lines.\n\"\"\"\nauthor = \"Test Author\"\nlicense = \"MIT\"\n" as &[u8],
+        ),
+        (
+            "numbers_and_booleans",
+            b"[config]\nname = \"app config\"\ninteger = 42\nfloat = 3.14159\nboolean_true = true\nboolean_false = false\n\n[advanced]\ntype = \"numeric\"\nhex = 0xDEADBEEF\noctal = 0o755\nbinary = 0b11010110\nmode = \"advanced\"\nstatus = \"enabled\"\n" as &[u8],
+        ),
+        (
+            "dotted_keys",
+            b"[fruit]\nname = \"Orange\"\nphysical.color = \"orange\"\nphysical.shape = \"round\"\nphysical.weight = \"150g\"\n\n[site]\nurl = \"example.com\"\nsite.\"google.com\" = true\nsite.\"github.com\" = true\n" as &[u8],
+        ),
+        (
+            "array_of_tables",
+            b"[[fruits]]\nname = \"apple\"\ncolor = \"red\"\n\n[fruits.physical]\ncolor = \"red\"\nshape = \"round\"\nweight = \"150g\"\n\n[[fruits]]\nname = \"banana\"\ncolor = \"yellow\"\n\n[fruits.physical]\ncolor = \"yellow\"\nshape = \"curved\"\n" as &[u8],
+        ),
+        (
+            "with_comments",
+            b"# This is a full-line comment\n# Another comment\n[section]\nkey = \"value\"\nname = \"test\"\nversion = \"1.0\"\n# Comment in the middle\n[another]\ndata = \"value\"\nmore = \"data\"\ncount = 42\n" as &[u8],
+        ),
+        (
+            "crlf_basic",
+            b"[package]\r\nname = \"my-project\"\r\nversion = \"1.0.0\"\r\nedition = \"2021\"\r\nlicense = \"MIT\"\r\n\r\n[dependencies]\r\nserde = \"1.0\"\r\ntokio = \"1.0\"\r\nclap = \"4.0\"\r\n" as &[u8],
+        ),
+        (
+            "crlf_with_comments",
+            b"# Windows TOML file\r\n[server]\r\nhost = \"localhost\"\r\nport = 8080\r\ntimeout = 30\r\ndebug = true\r\n\r\n[database]\r\nurl = \"postgres://localhost\"\r\npool_size = 10\r\n" as &[u8],
+        ),
+        (
+            "crlf_nested_sections",
+            b"[app]\r\nname = \"test\"\r\nversion = \"2.0\"\r\n\r\n[app.server]\r\nhost = \"0.0.0.0\"\r\nport = 3000\r\n\r\n[app.database]\r\ndriver = \"postgres\"\r\nname = \"mydb\"\r\n" as &[u8],
+        ),
+    ];
+
+    for (case_name, data) in test_cases {
+        let mime_type = detect(data);
+        assert_eq!(
+            mime_type.mime(),
+            APPLICATION_TOML,
+            "Failed for case: {}",
+            case_name
+        );
+        assert_eq!(
+            mime_type.extension(),
+            ".toml",
+            "Failed for case: {}",
+            case_name
+        );
+        assert!(
+            mime_type.is(APPLICATION_TOML),
+            "Failed for case: {}",
+            case_name
+        );
+        assert!(mime_type.kind().is_text(), "Failed for case: {}", case_name);
+        assert!(
+            !mime_type.name().is_empty(),
+            "Failed for case: {}",
+            case_name
+        );
+    }
+}
+
+#[test]
+fn test_detect_alembic() {
+    let data = b"Ogawa";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_ALEMBIC);
+    assert_eq!(mime_type.extension(), ".abc");
+    assert!(mime_type.is(APPLICATION_X_ALEMBIC));
+    assert!(mime_type.kind().is_model());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_openflight() {
+    // OpenFlight header: opcode 1, length 120
+    let data = b"\x00\x01\x00\x78";
+    let mut full_data = data.to_vec();
+    full_data.resize(128, 0); // Pad to minimum size
+    let mime_type = detect(&full_data);
+    assert_eq!(mime_type.mime(), MODEL_VND_OPENFLIGHT);
+    assert_eq!(mime_type.extension(), ".flt");
+    assert!(mime_type.is(MODEL_VND_OPENFLIGHT));
+    assert!(mime_type.kind().is_model());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_opengex() {
+    let data = b"// OpenGEX\nMetric (key = \"distance\") { float { 1.0 } }\n";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), MODEL_VND_OPENGEX);
+    assert_eq!(mime_type.extension(), ".ogex");
+    assert!(mime_type.is(MODEL_VND_OPENGEX));
+    assert!(mime_type.kind().is_model());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_threedxml() {
+    // Create a simple ZIP with 3DXML-specific filename
+    let data = create_zip_with_file(b"Manifest.xml");
+    let mime_type = detect(&data);
+    assert_eq!(mime_type.mime(), MODEL_VND_3DXML);
+    assert_eq!(mime_type.extension(), ".3dxml");
+    assert!(mime_type.is(MODEL_VND_3DXML));
+    assert!(mime_type.kind().is_model());
     assert!(!mime_type.name().is_empty());
 }

@@ -1,8 +1,8 @@
 [package]
 name = "mimetype-detector"
-version = "0.3.5"
+version = "0.3.6"
 edition = "2021"
-description = "Fast, accurate, and thread-safe MIME type detection for ~450 file formats with zero dependencies"
+description = "Fast, accurate, and thread-safe MIME type detection for ~500 file formats with zero dependencies"
 license = "MIT OR Apache-2.0"
 authors = ["Siargei"]
 repository = "https://github.com/Asuan/mimetype-detector"
@@ -24,7 +24,7 @@ codegen-units = 1
 [dependencies]
 
 [dev-dependencies]
-criterion = "0.5"
+criterion = { version = "0.8", features = ["html_reports"] }
 
 [[bench]]
 name = "detection_bench"

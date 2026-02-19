@@ -1,5 +1,6 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use mimetype_detector::detect;
+use std::hint::black_box;
 
 fn benchmark_detection(c: &mut Criterion) {
     // PNG

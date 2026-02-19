@@ -1,12 +1,13 @@
 # Supported File Formats
 
-This document provides a comprehensive listing of all 531 file formats supported by the mimetype-detector library.
+This document provides a comprehensive listing of all 543 file formats supported by the mimetype-detector library.
 
 ## All Supported Formats (Alphabetical)
 
 | Format | Name | MIME Type | Extension(s) | Aliases | Notes |
 |--------|------|-----------|--------------|---------|-------|
 | 3D Studio Max | 3DS Model | `application/x-3ds` | `.3ds` | | Autodesk 3DS mesh format |
+| 3DXML | Dassault 3DXML | `model/vnd.3dxml` | `.3dxml` | | CAD / Visualization |
 | 3GPP | 3GPP Multimedia | `video/3gpp` | `.3gp` | `video/3gp`, `audio/3gpp` | 3GPP Multimedia |
 | 3GPP2 | 3GPP2 Multimedia | `video/3gpp2` | `.3g2` | `video/3g2`, `audio/3gpp2` | 3GPP2 Multimedia |
 | 3MF | 3D Manufacturing Format | `application/vnd.ms-package.3dmanufacturing-3dmodel+xml` | `.3mf` | | 3D Manufacturing |
@@ -21,8 +22,10 @@ This document provides a comprehensive listing of all 531 file formats supported
 | Adobe AIR Application | Adobe AIR Application | `application/vnd.adobe.air-application-installer-package+zip` | `.air` | | ZIP-based Adobe AIR app |
 | Adobe DNG | Adobe DNG | `image/x-adobe-dng` | `.dng` | | Digital Negative (TIFF-based) |
 | Adobe Flash | Adobe Flash | `application/x-shockwave-flash` | `.swf` | | |
+| Adobe FrameMaker | Adobe FrameMaker | `application/vnd.framemaker` | `.fm` | | Technical documentation and publishing format |
 | Age Encryption | Age Encryption | `application/x-age-encryption` | `.age` | | Modern file encryption format |
 | AIFF | Audio Interchange File Format | `audio/aiff` | `.aiff`, `.aif` | | |
+| Alembic | Alembic | `application/x-alembic` | `.abc` | | Animation geometry cache format |
 | Amiga Disk File | Amiga Disk File | `application/x-amiga-disk-format` | `.adf` | | Amiga floppy disk image (DOS0-DOS5) |
 | Amiga Hunk Executable | Amiga Hunk Executable | `application/x-amiga-executable` | `.amiga` | | Amiga legacy executable format |
 | AMF | AMF | `application/x-amf` | `.amf` | | Additive Manufacturing |
@@ -61,6 +64,7 @@ This document provides a comprehensive listing of all 531 file formats supported
 | BMFont Binary | BMFont Binary | `application/x-angelcode-bmfont` | `.fnt` | | AngelCode bitmap font generator binary format |
 | BMP | Bitmap Image File | `image/bmp` | `.bmp`, `.dib` | `image/x-bmp`, `image/x-ms-bmp` | |
 | BPG | Better Portable Graphics | `image/bpg` | `.bpg` | | Better Portable Graphics |
+| BUFR | BUFR Meteorological Data | `application/x-bufr` | `.bufr` | | Binary Universal Form for meteorological data (WMO standard) |
 | BroadBand eBook | BroadBand eBook | `application/x-lrf` | `.lrf` | | Sony Reader format |
 | BZIP | Bzip Archive | `application/x-bzip` | `.bz` | | Legacy BZIP compression (BZ0) |
 | BZIP2 | Bzip2 Archive | `application/x-bzip2` | `.bz2` | | |
@@ -290,6 +294,8 @@ This document provides a comprehensive listing of all 531 file formats supported
 | OneNote | OneNote | `application/onenote` | `.one` | | |
 | OpenDocument Text Master Template | OpenDocument Text Master Template | `application/vnd.oasis.opendocument.text-master-template` | `.otm` | `application/x-vnd.oasis.opendocument.text-master-template` | Text Master Template |
 | OpenEXR | OpenEXR High Dynamic Range Image | `image/x-exr` | `.exr` | | High dynamic range format |
+| OpenFlight | OpenFlight | `model/vnd.openflight` | `.flt` | | Real-time visualization |
+| OpenGEX | OpenGEX | `model/vnd.opengex` | `.ogex` | | Game engine scene transfer format |
 | OpenNURBS | OpenNURBS | `model/x-3dm` | `.3dm` | | Rhino 3D model format |
 | OpenRaster | OpenRaster | `image/openraster` | `.ora` | | Layered image format (ZIP-based) |
 | OpenType | OpenType Font | `font/otf` | `.otf` | | |
@@ -302,7 +308,10 @@ This document provides a comprehensive listing of all 531 file formats supported
 | Outlook Message | Outlook PST | `application/vnd.ms-outlook` | `.msg` | | |
 | Outlook Personal Storage Table | Outlook PST | `application/vnd.ms-outlook` | `.pst` | | Personal email archive with B-tree structure |
 | OWL | OWL | `application/owl+xml` | `.owl` | | OWL Ontology |
+| OS/2 Help | OS/2 Help | `application/x-os2-hlp` | `.hlp` | | OS/2 binary help file format |
+| OS/2 INF | OS/2 INF | `application/x-os2-inf` | `.inf` | | OS/2 binary information file format |
 | PAK | PAK Archive | `application/x-pak` | `.pak` | | PAK Archive (games) |
+| Par2 | Par2 Recovery File | `application/x-par2` | `.par2` | | Parchive 2 recovery file |
 | PCAP | Packet Capture | `application/vnd.tcpdump.pcap` | `.pcap` | | Packet Capture (libpcap) |
 | PCAPNG | Next Generation Packet Capture | `application/x-pcapng` | `.pcapng` | | Next Generation PCAP |
 | PCX | PC Paintbrush | `image/x-pcx` | `.pcx` | | Picture Exchange / PC Paintbrush |
@@ -411,6 +420,7 @@ This document provides a comprehensive listing of all 531 file formats supported
 | TCX | TCX | `application/vnd.garmin.tcx+xml` | `.tcx` | | Training Center XML |
 | TIFF | Tagged Image File Format | `image/tiff` | `.tiff`, `.tif` | | |
 | TMX | Tmx XML | `application/x-tmx+xml` | `.tmx` | | Tiled Map XML (game development) |
+| TOML | TOML Configuration File | `application/toml` | `.toml` | | Configuration file format |
 | True Audio | True Audio | `audio/x-tta` | `.tta` | | Lossless codec |
 | Truevision TGA | Truevision Targa | `image/x-tga` | `.tga` | | Targa format |
 | TrueType | TrueType Font | `font/ttf` | `.ttf` | `font/sfnt`, `application/x-font-ttf`, `application/font-sfnt` | |
@@ -537,6 +547,7 @@ This document provides a comprehensive listing of all 531 file formats supported
 | Sega Master System ROM | Sega Master System ROM | `application/x-sms-rom` | `.sms` |  | |
 | TASTY Format | TASTY Format | `application/x-tasty` | `.tasty` |  | |
 | Visio | Visio | `application/vnd.visio` | `.vsd` |  | |
+| ZLIB | ZLIB Compression | `application/zlib` | | | ZLIB compressed data (RFC 6713) |
 | Zstandard | Zstandard Compression | `application/zstd` | `.zst` | | |
 
 ---

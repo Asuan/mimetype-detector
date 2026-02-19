@@ -122,6 +122,9 @@ pub const APPLICATION_X_ZIP_COMPRESSED: &str = "application/x-zip-compressed";
 pub const APPLICATION_X_RAR_COMPRESSED: &str = "application/x-rar-compressed";
 pub const APPLICATION_X_RAR: &str = "application/x-rar";
 
+/// Par2 (Parchive 2) recovery file
+pub const APPLICATION_X_PAR2: &str = "application/x-par2";
+
 /// GZIP compression
 pub const APPLICATION_GZIP: &str = "application/gzip";
 pub const APPLICATION_X_GZIP: &str = "application/x-gzip";
@@ -145,6 +148,9 @@ pub const APPLICATION_X_XZ: &str = "application/x-xz";
 
 /// Zstandard compression
 pub const APPLICATION_ZSTD: &str = "application/zstd";
+
+/// ZLIB compression
+pub const APPLICATION_ZLIB: &str = "application/zlib";
 
 /// LZIP compression
 pub const APPLICATION_LZIP: &str = "application/lzip";
@@ -782,6 +788,9 @@ pub const APPLICATION_VND_ADOBE_AIR_APPLICATION_INSTALLER_PACKAGE_ZIP: &str =
 /// Adobe Flash Project
 pub const APPLICATION_VND_ADOBE_FLA: &str = "application/vnd.adobe.fla";
 
+/// Adobe FrameMaker
+pub const APPLICATION_VND_FRAMEMAKER: &str = "application/vnd.framemaker";
+
 /// Meta Information Encapsulation
 pub const APPLICATION_X_MIE: &str = "application/x-mie";
 
@@ -1132,6 +1141,9 @@ pub const TEXT_SEMICOLON_SEPARATED_VALUES: &str = "text/semicolon-separated-valu
 pub const TEXT_SEMICOLON_SEPARATED_VALUES_UTF16: &str =
     "text/semicolon-separated-values; charset=utf-16";
 
+/// TOML Configuration File
+pub const APPLICATION_TOML: &str = "application/toml";
+
 /// Rich Text Format
 pub const TEXT_RTF: &str = "text/rtf";
 
@@ -1437,6 +1449,18 @@ pub const MODEL_VND_DWFX_XPS: &str = "model/vnd.dwfx+xps";
 
 /// FictionBook ZIP (compressed e-book)
 pub const APPLICATION_X_FBZ: &str = "application/x-fbz";
+
+/// Alembic Animation Format
+pub const APPLICATION_X_ALEMBIC: &str = "application/x-alembic";
+
+/// OpenFlight Real-time Format
+pub const MODEL_VND_OPENFLIGHT: &str = "model/vnd.openflight";
+
+/// OpenGEX Game Engine Format
+pub const MODEL_VND_OPENGEX: &str = "model/vnd.opengex";
+
+/// Dassault 3DXML Format
+pub const MODEL_VND_3DXML: &str = "model/vnd.3dxml";
 
 // ============================================================================
 // VIRTUAL MACHINE & DISK IMAGE FORMATS
@@ -1899,6 +1923,9 @@ pub const APPLICATION_X_HDF5: &str = "application/x-hdf5";
 /// GRIB weather data format
 pub const APPLICATION_X_GRIB: &str = "application/x-grib";
 
+/// BUFR meteorological data format
+pub const APPLICATION_X_BUFR: &str = "application/x-bufr";
+
 // ============================================================================
 // CINEMA FORMATS
 // ============================================================================
@@ -1921,6 +1948,12 @@ pub const APPLICATION_X_MS_EVT: &str = "application/x-ms-evt";
 
 /// Windows Event Log XML
 pub const APPLICATION_X_MS_EVTX: &str = "application/x-ms-evtx";
+
+/// OS/2 Help file
+pub const APPLICATION_X_OS2_HLP: &str = "application/x-os2-hlp";
+
+/// OS/2 INF file
+pub const APPLICATION_X_OS2_INF: &str = "application/x-os2-inf";
 
 /// ActiveMime (Microsoft Office embedded OLE object)
 pub const APPLICATION_X_MSO: &str = "application/x-mso";

@@ -12,6 +12,22 @@ Used prefixes:
 
 ## 0.3.5 - 2026.02.09
 
+* Updated: improved PCX (.pcx) detection accuracy to prevent false positives with text files
+* Updated: improved performance: removed to string conversion for simple cases in favor byte search
+* Added: Par2 (.par2) - Parchive 2 recovery file format (`application/x-par2`)
+* Added:  ZLIB - ZLIB compression format (`application/zlib`)
+* Added: TOML (.toml) - TOML Configuration File format (`application/toml`)
+* Added: Alembic (.abc) - Animation geometry cache format (`application/x-alembic`)
+* Added: OpenFlight (.flt) - Real-time visualization format (`model/vnd.openflight`)
+* Added: OpenGEX (.ogex) - Game engine scene transfer format (`model/vnd.opengex`)
+* Added: 3DXML (.3dxml) - Dassault CAD/visualization format (`model/vnd.3dxml`)
+* Added: BUFR (.bufr) - Binary Universal Form for meteorological data (`application/x-bufr`)
+* Added: Adobe FrameMaker (.fm) - Technical documentation format (`application/vnd.framemaker`)
+* Added: OS/2 Help file (.hlp) - OS/2 binary help file format (`application/x-os2-hlp`)
+* Added: OS/2 INF file (.inf) - OS/2 binary information file format (`application/x-os2-inf`)
+
+## 0.3.5 - 2026.02.09
+
 * Updated: move some items into prefix for performance perspective
 * Added: RIFF root item to group riff child format
 * Updated: improve CSV like detections

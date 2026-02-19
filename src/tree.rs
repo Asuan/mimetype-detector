@@ -35,7 +35,7 @@ build_prefix_vec! {
     /// Covers 199 out of 264 ROOT children using 92 unique first bytes
     /// Static array with zero runtime overhead - no LazyLock, no mutex, no heap allocations
     static ROOT_PREFIX_VEC: [
-        0x00 => [&JXS, &ICO, &SHX, &TGA, &WASM, &MRW, &WORKS_SPREADSHEET, &WORKS_XLR, &CUR, &MDB, &ACCDB, &QUARK, &AMIGA_HUNK] as __PV_00,
+        0x00 => [&OPENFLIGHT, &JXS, &ICO, &SHX, &TGA, &WASM, &MRW, &WORKS_SPREADSHEET, &WORKS_XLR, &CUR, &MDB, &ACCDB, &QUARK, &AMIGA_HUNK] as __PV_00,
         0x01 => [&SGI] as __PV_01,
         0x02 => [&ARSC, &CLARISWORKS] as __PV_02,  // Android Resource Storage Container, ClarisWorks
         0x03 => [&AXML, &DBASE] as __PV_03,  // Android Binary XML and dBASE
@@ -56,33 +56,33 @@ build_prefix_vec! {
         0x2d => [&CSR, &P7S, &PEM, &PMA, &LHA, &LZS, &PGP_MESSAGE, &PGP_SIGNED_MESSAGE, &PGP_PUBLIC_KEY, &PGP_PRIVATE_KEY, &PGP_SIGNATURE] as __PV_2D,  // CSR, P7S, PEM, PMA, LHA, LZS, PGP formats
         0x20 => [&NEO_GEO_POCKET_ROM, &WORKS_DB, &IGES] as __PV_20,  // Neo Geo Pocket (parent checks header, child refines to Color), Microsoft Works DB, IGES CAD format
         0x2e => [&NINTENDO_DS_ROM, &REALMEDIA, &AU, &REALAUDIO] as __PV_2E,  // Nintendo DS ROM, RealMedia, AU/SND, RealAudio
-        0x2f => [&XPM, &MAYA_ASCII] as __PV_2F,  // XPM, Maya ASCII
+        0x2f => [&XPM, &MAYA_ASCII, &OPENGEX] as __PV_2F,  // XPM, Maya ASCII, OpenGEX
         0x30 => [&ASF, &CPIO, &DER_CERT, &EVT] as __PV_30,  // ASF, CPIO ASCII variant, DER certificates, Windows Event Log
         0x31 => [&MICROSOFT_WRITE] as __PV_31,  // Microsoft Write v3.0
         0x32 => [&MICROSOFT_WRITE, &AVR] as __PV_32,  // Microsoft Write v3.1, Audio Visual Research ('2BIT')
         0x33 => [&M3D, &A3D, &OPENNURBS] as __PV_33,  // Model 3D Binary ('3DMO'), Model 3D ASCII ('3DGeometry'), OpenNURBS/Rhino 3DM ('3D Geometry')
         0x34 => [&PICTOR] as __PV_34,  // PICtor/PC Paint DOS graphics
         0x37 => [&N64_ROM, &SEVEN_Z, &ZPAQ] as __PV_37,  // N64 ROM (V64 byte-swapped), 7-Zip, ZPAQ
-        0x3c => [&WPL, &DRAWIO, &XSPF, &XSL, &MATHML, &MUSICXML, &TTML, &SOAP, &TMX, &TSX, &MPD, &CDDX, &DWFX] as __PV_3C,  // XML formats: WPL, draw.io, XSPF, XSLT, MathML, MusicXML, TTML, SOAP, TMX, TSX, MPD, CDDX, DWFX
+        0x3c => [&ASX, &WPL, &DRAWIO, &XSPF, &XSL, &MATHML, &MUSICXML, &TTML, &SOAP, &TMX, &TSX, &MPD, &CDDX, &DWFX, &FRAMEMAKER] as __PV_3C,  // XML formats: WPL, draw.io, XSPF, XSLT, MathML, MusicXML, TTML, SOAP, TMX, TSX, MPD, CDDX, DWFX, FrameMaker
         0x40 => [&N64_ROM] as __PV_40,  // N64 ROM (N64 little-endian)
         0x3f => [&HLP] as __PV_3F,  // Windows Help
         0x38 => [&PSD] as __PV_38,
         0x41 => [&DXF_BINARY, &DJVU, &DWG, &ARROW, &ALZ, &AMV] as __PV_41,  // DXF Binary ('AutoCAD'), DJVU, DWG, Apache Arrow, ALZ, AMV (Actions Media Video)
         0x06 => [&INDESIGN, &MXF] as __PV_06,  // Adobe InDesign, Material Exchange Format
-        0x42 => [&BMFONT_BINARY, &BLEND, &BMP, &BPG, &BZIP3, &BZIP, &BZ2, &LLVM_BITCODE] as __PV_42,  // BMFont, BLEND, BMP, BPG, BZIP3, BZIP before BZ2 for priority, LLVM Bitcode ('BC')
+        0x42 => [&BMFONT_BINARY, &BLEND, &BMP, &BPG, &BUFR, &BZIP3, &BZIP, &BZ2, &LLVM_BITCODE] as __PV_42,  // BMFont, BLEND, BMP, BPG, BUFR, BZIP3, BZIP before BZ2 for priority, LLVM Bitcode ('BC')
         0x43 => [&VOC, &SWF, &CRX, &COMMODORE_64_CARTRIDGE, &VMDK] as __PV_43,  // SWF ('CWS'), CRX, C64 CRT, VMDK ('COWD')
         0x44 => [&ADF, &DDS, &DSF, &DRACO] as __PV_44,  // Amiga Disk File ('DOS'), DDS, DSF, Draco ('DRACO')
         0x45 => [&XM, &EVTX] as __PV_45,  // Extended Module, Windows Event Log XML
         0x46 => [&FLV, &DFF, &FVT, &SWF, &RAF, &EIGHTSVX, &MAYA_BINARY, &FLIF] as __PV_46,  // Added SWF ('FWS'), RAF ('FUJIFILM'), 8SVX ('FORM'), Maya Binary ('FOR4'/'FOR8'), FLIF
         0x47 => [&GIF, &GRIB] as __PV_47,  // GIF, GRIB weather data
-        0x48 => [&XCI] as __PV_48,  // Nintendo Switch ROM (XCI - 'HEAD')
+        0x48 => [&OS2_HLP, &OS2_INF, &XCI] as __PV_48,  // OS/2 Help, OS/2 INF, Nintendo Switch ROM (XCI - 'HEAD')
         0x49 => [&IQM, &JXR, &LIT, &TIFF, &CHM, &INSTALL_SHIELD_CAB, &CRW, &IT, &RW2, &KODAK_KDC, &KODAK_DCR, &ORF, &STEP] as __PV_49,  // IQM, TIFF includes CR2/NEF as children, ORF variants (IIRO/IIRS) are TIFF-based but need direct detection, Kodak RAW, STEP ('ISO-10303-21')
         0x4b => [&FBX, &VMDK] as __PV_4B,  // Autodesk FBX (Kaydara), VMDK ('KDMV')
         0x4c => [&COFF, &LNK, &LZIP, &LRF, &LRZIP] as __PV_4C,  // COFF (i386), LNK, LZIP, LRF (Sony Reader), LRZIP
-        0x4d => [&MODEL3D_BINARY, &MLA, &MUSEPACK, &CAB, &MIDI, &EXE, &AUTODESK_3DS, &TIFF, &ORF, &MOZILLA_ARCHIVE, &WIM, &SGI_MOVIE] as __PV_4D,  // Model3D Binary ('MD30'), MLA, 3DS (exclude TIFF), ORF (MMOR) is TIFF-based but needs direct detection, Mozilla Archive, WIM, SGI Movie
+        0x4d => [&MODEL3D_BINARY, &MLA, &MUSEPACK, &CAB, &MIDI, &EXE, &AUTODESK_3DS, &TIFF, &ORF, &MOZILLA_ARCHIVE, &WIM, &SGI_MOVIE, &OPENGEX] as __PV_4D,  // Model3D Binary ('MD30'), MLA, 3DS (exclude TIFF), ORF (MMOR) is TIFF-based but needs direct detection, Mozilla Archive, WIM, SGI Movie, OpenGEX ('Metric')
         0x4e => [&NINTENDO_SWITCH_NSO, &NES] as __PV_4E,  // Nintendo Switch NSO, NES ROM
-        0x4f => [&OTF, &OGG, &AVRO] as __PV_4F,  // OTF, OGG, Apache Avro
-        0x50 => [&USD_BINARY, &PFM, &NINTENDO_SWITCH_NSP, &PARQUET, &ZIP, &PBM, &PGM, &PPM, &PAM, &PAK] as __PV_50,  // USD Binary ('PXR-USDC'), PFM, Nintendo Switch NSP, Parquet, ZIP, Portable formats, PAK
+        0x4f => [&OTF, &OGG, &ALEMBIC, &AVRO] as __PV_4F,  // OTF, OGG, Alembic, Apache Avro
+        0x50 => [&USD_BINARY, &PFM, &NINTENDO_SWITCH_NSP, &PAR2, &PARQUET, &ZIP, &PBM, &PGM, &PPM, &PAM, &PAK] as __PV_50,  // USD Binary ('PXR-USDC'), PFM, Nintendo Switch NSP, Par2, Parquet, ZIP, Portable formats, PAK
         0x51 => [&QCOW2, &QCOW, &CINEMA4D] as __PV_51,  // QEMU Copy-on-Write v2 ('QFI\xFB'), v1 ('QFI'), Cinema4D ('QC4DC4D6')
         0x52 => [&WINDOWS_REG, &RAR, &RIFF, &RZIP] as __PV_52,  // Windows Registry, RAR, RIFF container (children: WAV, AVI, WEBP, etc.), RZIP
         0x53 => [&FITS, &SQLITE3, &STUFFIT, &STUFFITX, &SEQBOX, &DPX] as __PV_53,  // FITS, SQLite3, StuffIt, StuffItX, SeqBox, DPX (SDPX)
@@ -102,8 +102,8 @@ build_prefix_vec! {
         0x64 => [&TORRENT, &DEX, &DEY] as __PV_64,  // BitTorrent, DEX, DEY all start with 0x64 ('d')
         0x71 => [&QOI, &QOA] as __PV_71,  // Quite OK Image, Quite OK Audio
         0x76 => [&OPENEXR, &VHDX] as __PV_76,  // OpenEXR, VHDX ('vhdxfile')
-        0x66 => [&FARBFELD, &FLAC, &FIGLET_FONT] as __PV_66,  // Farbfeld, FLAC, FigletFont
-        0x67 => [&XCF, &GLB] as __PV_67,
+        0x66 => [&FARBFELD, &FLAC, &FIGLET_FONT ] as __PV_66,  // Farbfeld, FLAC, FigletFont
+        0x67 => [&XCF, &GLB,  &OPENGEX] as __PV_67,  // XCF, GLB, OpenGEX ('GeometryNode')
         0x68 => [&SQUASHFS] as __PV_68,  // Squashfs little-endian ('hsqs')
         0x69 => [&MIFF, &ICNS] as __PV_69,  // MIFF ('id=ImageMagick'), Apple ICNS
         0x6B => [&DMG] as __PV_6B,  // Apple Disk Image
@@ -111,7 +111,7 @@ build_prefix_vec! {
         0x73 => [&STL_ASCII, &SQUASHFS] as __PV_73,  // STL ASCII 3D models, Squashfs ('sqsh')
         0x74 => [&TTC] as __PV_74,
         0x77 => [&WOFF, &WOFF2, &WAVPACK] as __PV_77,
-        0x78 => [&XAR] as __PV_78,
+        0x78 => [&XAR, &ZLIB] as __PV_78,  // XAR, ZLIB
         0x7a => [&ZPAQ] as __PV_7A,  // ZPAQ also starts with "zPQ" (0x7A)
         0x7b => [&JSON_FEED, &GLYPHS] as __PV_7B,  // JSON Feed ('{"version'), Glyphs font ('{\n.appVe')
         0x7e => [&MIE] as __PV_7E,  // Meta Information Encapsulation
@@ -337,6 +337,7 @@ static UTF8: MimeType = MimeType::new(
         &SHELL,
         &BATCH,
         &TCL,
+        &TOML, // TOML must come before JSON (TOML [section] can look like JSON array)
         &JSON,
         &CSV_FORMAT,
         &TSV,
@@ -569,13 +570,15 @@ children: [
     &UOP, &UOS, &UOT,
 
     // CAD & 3D modeling
-    &AUTODESK_123D, &FUSION_360,
+    &AUTODESK_123D, &FUSION_360, &THREEDXML,
 
     // Other specialized formats
     &XPI, &XAP, &MXL, &FBZ
 ]);
 
 mimetype!(RAR, APPLICATION_X_RAR_COMPRESSED, ".rar", b"Rar!\x1a\x07\x00" | b"Rar!\x1a\x07\x01\x00", name: "RAR Archive", kind: ARCHIVE, aliases: [APPLICATION_X_RAR]);
+
+mimetype!(PAR2, APPLICATION_X_PAR2, ".par2", b"PAR2\x00PKT", name: "Par2 Recovery File", kind: ARCHIVE);
 
 mimetype!(GZIP, APPLICATION_GZIP, ".gz", b"\x1f\x8b", name: "GNU Zip", kind: ARCHIVE,
     aliases: [APPLICATION_X_GZIP, APPLICATION_X_GUNZIP, APPLICATION_GZIPPED,
@@ -604,6 +607,9 @@ mimetype!(XZ, APPLICATION_X_XZ, ".xz", b"\xfd7zXZ\x00", name: "XZ Compressed Arc
 
 static ZSTD: MimeType = MimeType::new(APPLICATION_ZSTD, "Zstandard Compression", ".zst", zstd, &[])
     .with_kind(MimeKind::ARCHIVE);
+
+static ZLIB: MimeType =
+    MimeType::new(APPLICATION_ZLIB, "ZLIB Compression", "", zlib, &[]).with_kind(MimeKind::ARCHIVE);
 
 mimetype!(LZIP, APPLICATION_LZIP, ".lz", b"LZIP", name: "Lzip Compressed Archive", kind: ARCHIVE, aliases: [APPLICATION_X_LZIP]);
 
@@ -1238,7 +1244,53 @@ mimetype!(DJVU, IMAGE_VND_DJVU, ".djvu", offset: (12, b"DJVU", prefix: (0, b"AT&
 mimetype!(DDS, IMAGE_VND_MS_DDS, ".dds", b"DDS ", name: "DirectDraw Surface", kind: IMAGE);
 
 // PC Paintbrush - Classic bitmap format
-mimetype!(PCX, IMAGE_X_PCX, ".pcx", [0x0A], name: "PC Paintbrush", kind: IMAGE);
+static PCX: MimeType =
+    MimeType::new(IMAGE_X_PCX, "PC Paintbrush", ".pcx", pcx, &[]).with_kind(MimeKind::IMAGE);
+
+fn pcx(input: &[u8]) -> bool {
+    // PCX header is 128 bytes minimum
+    if input.len() < 128 {
+        return false;
+    }
+
+    // Byte 0: Manufacturer (must be 0x0A for ZSoft)
+    // Byte 1: Version (0-5 are valid)
+    // Byte 2: Encoding (1 = RLE compression, 0 = uncompressed - though rare)
+    if input[0] != 0x0A || input[1] > 5 || input[2] > 1 {
+        return false;
+    }
+
+    // Byte 3: Bits per pixel per plane (1, 2, 4, or 8)
+    let bits_per_pixel = input[3];
+    if bits_per_pixel != 1 && bits_per_pixel != 2 && bits_per_pixel != 4 && bits_per_pixel != 8 {
+        return false;
+    }
+
+    // Byte 64: Reserved (should be 0 in most valid PCX files)
+    // This is a soft check - we don't fail on it but it helps with accuracy
+    if input[64] != 0 {
+        // Allow non-zero but check other constraints more strictly
+        // Window coordinates should be reasonable (xMax > xMin, yMax > yMin)
+        let x_min = u16::from_le_bytes([input[4], input[5]]);
+        let y_min = u16::from_le_bytes([input[6], input[7]]);
+        let x_max = u16::from_le_bytes([input[8], input[9]]);
+        let y_max = u16::from_le_bytes([input[10], input[11]]);
+
+        if x_max <= x_min || y_max <= y_min {
+            return false;
+        }
+    }
+
+    // Byte 65: Number of color planes (0-256]
+
+    // Bytes 66-67: Bytes per line (little-endian u16, must be even and > 0)
+    let bytes_per_line = u16::from_le_bytes([input[66], input[67]]);
+    if bytes_per_line == 0 || bytes_per_line % 2 != 0 {
+        return false;
+    }
+
+    true
+}
 
 // PICtor/PC Paint - DOS graphics format
 mimetype!(PICTOR, IMAGE_X_PICTOR, ".pic", [0x34, 0x12], name: "PICtor PC Paint", kind: IMAGE);
@@ -1563,7 +1615,7 @@ mimetype!(MQV, VIDEO_QUICKTIME, ".mqv", offset: (8, b"mqt ", prefix: (4, b"ftyp"
 
 mimetype!(FLV, VIDEO_X_FLV, ".flv", b"FLV", name: "Flash Video", kind: VIDEO);
 
-mimetype!(ASF, VIDEO_X_MS_ASF, ".asf", b"\x30\x26\xb2\x75\x8e\x66\xcf\x11\xa6\xd9\x00\xaa\x00\x62\xce\x6c", name: "Advanced Systems Format", kind: VIDEO, aliases: [VIDEO_ASF, VIDEO_X_MS_WMV], ext_aliases: [".asx", ".dvr-ms", ".wma", ".wmv"], children: [&WMA, &WMV, &DVR_MS, &ASX]);
+mimetype!(ASF, VIDEO_X_MS_ASF, ".asf", b"\x30\x26\xb2\x75\x8e\x66\xcf\x11\xa6\xd9\x00\xaa\x00\x62\xce\x6c", name: "Advanced Systems Format", kind: VIDEO, aliases: [VIDEO_ASF, VIDEO_X_MS_WMV], ext_aliases: [".dvr-ms", ".wma", ".wmv"], children: [&WMA, &WMV, &DVR_MS ]);
 
 static DVR_MS: MimeType = MimeType::new(
     VIDEO_X_MS_DVR,
@@ -1582,8 +1634,7 @@ static ASX: MimeType = MimeType::new(
     asx,
     &[],
 )
-.with_kind(MimeKind::VIDEO)
-.with_parent(&ASF);
+.with_kind(MimeKind::VIDEO);
 
 static WMA: MimeType = MimeType::new(AUDIO_X_MS_WMA, "Windows Media Audio", ".wma", wma, &[])
     .with_kind(MimeKind::AUDIO)
@@ -3144,6 +3195,16 @@ mimetype!(FASOO, APPLICATION_X_FASOO, "", offset: (512, b"FASOO   "), name: "Fas
 // Adobe InDesign Document - Professional desktop publishing software
 mimetype!(INDESIGN, APPLICATION_X_INDESIGN, ".indd", [0x06, 0x06, 0xED, 0xF5, 0xD8, 0x1D, 0x46, 0xE5], name: "Adobe InDesign Document", kind: DOCUMENT);
 
+// Adobe FrameMaker - Technical documentation and publishing
+static FRAMEMAKER: MimeType = MimeType::new(
+    APPLICATION_VND_FRAMEMAKER,
+    "Adobe FrameMaker",
+    ".fm",
+    framemaker,
+    &[],
+)
+.with_kind(MimeKind::DOCUMENT);
+
 // Meta Information Encapsulation - Phil Harvey's metadata container format
 mimetype!(MIE, APPLICATION_X_MIE, ".mie", [0x7E, 0x10, 0xD4, 0x40, 0x5E, 0x78], name: "Meta Information Encapsulation", kind: APPLICATION);
 
@@ -3799,6 +3860,15 @@ static SSV: MimeType = MimeType::new(
 )
 .with_parent(&UTF8);
 
+static TOML: MimeType = MimeType::new(
+    APPLICATION_TOML,
+    "TOML Configuration File",
+    ".toml",
+    toml,
+    &[],
+)
+.with_parent(&UTF8);
+
 mimetype!(RTF, TEXT_RTF, ".rtf", b"{\\rtf", name: "Rich Text Format", kind: DOCUMENT, aliases: [APPLICATION_RTF], parent: &UTF8);
 
 static SRT: MimeType = MimeType::new(APPLICATION_X_SUBRIP, "SubRip", ".srt", srt, &[])
@@ -3944,6 +4014,15 @@ mimetype!(HDF, APPLICATION_X_HDF, ".hdf", b"\x89HDF\r\n\x1a\n" | b"\x0e\x03\x13\
 // GRIB weather data format (used by meteorology services)
 mimetype!(GRIB, APPLICATION_X_GRIB, ".grib", b"GRIB", name: "GRIB Weather Data", kind: APPLICATION);
 
+static BUFR: MimeType = MimeType::new(
+    APPLICATION_X_BUFR,
+    "BUFR Meteorological Data",
+    ".bufr",
+    bufr,
+    &[],
+)
+.with_kind(MimeKind::APPLICATION);
+
 mimetype!(CBOR_FORMAT, APPLICATION_CBOR, ".cbor", b"\xd9\xd9\xf7", name: "CBOR Data Format", kind: APPLICATION);
 
 mimetype!(PARQUET, APPLICATION_VND_APACHE_PARQUET, ".parquet", b"PAR1", name: "Apache Parquet", kind: DATABASE, aliases: [APPLICATION_X_PARQUET]);
@@ -3952,6 +4031,12 @@ mimetype!(LNK, APPLICATION_X_MS_SHORTCUT, ".lnk", b"L\x00\x00\x00\x01\x14\x02\x0
 
 // Windows Help format
 mimetype!(HLP, APPLICATION_WINHELP, ".hlp", b"\x3F\x5F\x03\x00", name: "Windows Help", kind: APPLICATION);
+
+// OS/2 Help file
+mimetype!(OS2_HLP, APPLICATION_X_OS2_HLP, ".hlp", b"HSP\x10\x9b\x00", name: "OS/2 Help", kind: APPLICATION);
+
+// OS/2 INF file
+mimetype!(OS2_INF, APPLICATION_X_OS2_INF, ".inf", b"HSP\x01\x9b\x00", name: "OS/2 INF", kind: APPLICATION);
 
 // Windows Event Log
 mimetype!(EVT, APPLICATION_X_MS_EVT, ".evt", b"\x30\x00\x00\x00\x4C\x66\x4C\x65", name: "Windows Event Log", kind: APPLICATION);
@@ -4108,6 +4193,23 @@ mimetype!(MODEL3D_BINARY, MODEL_X_3D_BINARY, ".3d", b"MD30", name: "Model3D Bina
 
 // SketchUp - Trimble SketchUp 3D model format
 mimetype!(SKETCHUP, APPLICATION_VND_SKETCHUP_SKP, ".skp", [0xFF, 0xFE, 0xFF, 0x0E, 0x53, 0x00, 0x6B, 0x00], name: "SketchUp", kind: MODEL);
+
+// Alembic - Animation geometry cache format
+mimetype!(ALEMBIC, APPLICATION_X_ALEMBIC, ".abc", b"Ogawa", name: "Alembic", kind: MODEL);
+
+// OpenFlight - Real-time visualization format
+static OPENFLIGHT: MimeType =
+    MimeType::new(MODEL_VND_OPENFLIGHT, "OpenFlight", ".flt", openflight, &[])
+        .with_kind(MimeKind::MODEL);
+
+// OpenGEX - Game engine scene transfer format
+static OPENGEX: MimeType =
+    MimeType::new(MODEL_VND_OPENGEX, "OpenGEX", ".ogex", opengex, &[]).with_kind(MimeKind::MODEL);
+
+// 3DXML - Dassault CAD/visualization format (ZIP-based)
+static THREEDXML: MimeType = MimeType::new(MODEL_VND_3DXML, "3DXML", ".3dxml", threedxml, &[])
+    .with_kind(MimeKind::MODEL)
+    .with_parent(&ZIP);
 
 // ============================================================================
 // VIRTUAL MACHINE & DISK IMAGE FORMATS
@@ -5244,243 +5346,293 @@ fn wpm(_input: &[u8]) -> bool {
 fn uop(input: &[u8]) -> bool {
     // Uniform Office Format Presentation - Chinese office format
     // UOF files are ZIP-based with XML content, check for UOF namespace
-    let s = String::from_utf8_lossy(input);
-    s.contains("uof:UOF") && s.contains("演示") // "演示" = presentation in Chinese
+    contains_bytes(input, b"uof:UOF") && contains_bytes(input, "演示".as_bytes())
+    // "演示" = presentation in Chinese
 }
 
 fn uos(input: &[u8]) -> bool {
     // Uniform Office Format Spreadsheet - Chinese office format
     // UOF files are ZIP-based with XML content, check for UOF namespace
-    let s = String::from_utf8_lossy(input);
-    s.contains("uof:UOF") && s.contains("电子表格") // "电子表格" = spreadsheet in Chinese
+    contains_bytes(input, b"uof:UOF") && contains_bytes(input, "电子表格".as_bytes())
+    // "电子表格" = spreadsheet in Chinese
 }
 
 fn uot(input: &[u8]) -> bool {
     // Uniform Office Format Text - Chinese office format
     // UOF files are ZIP-based with XML content, check for UOF namespace
-    let s = String::from_utf8_lossy(input);
-    s.contains("uof:UOF") && s.contains("文字处理") // "文字处理" = word processing in Chinese
+    contains_bytes(input, b"uof:UOF") && contains_bytes(input, "文字处理".as_bytes())
+    // "文字处理" = word processing in Chinese
 }
 
 fn usdz(input: &[u8]) -> bool {
     // Universal Scene Description ZIP - Pixar's USD format in ZIP container
     // USDZ files contain .usda or .usdc files, look for USD-specific content
-    let s = String::from_utf8_lossy(input);
-    s.contains(".usda") || s.contains(".usdc") || s.contains("#usda")
+    contains_bytes(input, b".usda")
+        || contains_bytes(input, b".usdc")
+        || contains_bytes(input, b"#usda")
 }
 
 fn sketch(input: &[u8]) -> bool {
     // Sketch - Design tool by Bohemian Coding
     // Sketch 43+ files contain document.json or meta.json with _class identifiers
-    let s = String::from_utf8_lossy(input);
-    (s.contains("document.json") || s.contains("meta.json")) && s.contains("\"_class\"")
+    (contains_bytes(input, b"document.json") || contains_bytes(input, b"meta.json"))
+        && contains_bytes(input, b"\"_class\"")
 }
 
 fn sldasm(input: &[u8]) -> bool {
     // SolidWorks Assembly - OLE-based CAD file
     // Contains "SolidWorks" string and assembly-specific metadata
-    let s = String::from_utf8_lossy(input);
-    s.contains("SolidWorks") && (s.contains("Assembly") || s.contains("SLDASM"))
+    contains_bytes(input, b"SolidWorks")
+        && (contains_bytes(input, b"Assembly") || contains_bytes(input, b"SLDASM"))
 }
 
 fn slddrw(input: &[u8]) -> bool {
     // SolidWorks Drawing - OLE-based CAD file
     // Contains "SolidWorks" string and drawing-specific metadata
-    let s = String::from_utf8_lossy(input);
-    s.contains("SolidWorks") && (s.contains("Drawing") || s.contains("SLDDRW"))
+    contains_bytes(input, b"SolidWorks")
+        && (contains_bytes(input, b"Drawing") || contains_bytes(input, b"SLDDRW"))
 }
 
 fn sldprt(input: &[u8]) -> bool {
     // SolidWorks Part - OLE-based CAD file
     // Contains "SolidWorks" string and part-specific metadata
-    let s = String::from_utf8_lossy(input);
-    s.contains("SolidWorks") && (s.contains("Part") || s.contains("SLDPRT"))
+    contains_bytes(input, b"SolidWorks")
+        && (contains_bytes(input, b"Part") || contains_bytes(input, b"SLDPRT"))
 }
 
 fn iam(input: &[u8]) -> bool {
     // Autodesk Inventor Assembly - OLE-based CAD file
     // Contains "Inventor" string and assembly-specific metadata
-    let s = String::from_utf8_lossy(input);
-    s.contains("Inventor") && (s.contains("Assembly") || s.contains(".iam"))
+    contains_bytes(input, b"Inventor")
+        && (contains_bytes(input, b"Assembly") || contains_bytes(input, b".iam"))
 }
 
 fn idw(input: &[u8]) -> bool {
     // Autodesk Inventor Drawing - OLE-based CAD file
     // Contains "Inventor" string and drawing-specific metadata
-    let s = String::from_utf8_lossy(input);
-    s.contains("Inventor") && (s.contains("Drawing") || s.contains(".idw"))
+    contains_bytes(input, b"Inventor")
+        && (contains_bytes(input, b"Drawing") || contains_bytes(input, b".idw"))
 }
 
 fn ipn(input: &[u8]) -> bool {
     // Autodesk Inventor Presentation - OLE-based CAD file
     // Contains "Inventor" string and presentation-specific metadata
-    let s = String::from_utf8_lossy(input);
-    s.contains("Inventor") && (s.contains("Presentation") || s.contains(".ipn"))
+    contains_bytes(input, b"Inventor")
+        && (contains_bytes(input, b"Presentation") || contains_bytes(input, b".ipn"))
 }
 
 fn ipt(input: &[u8]) -> bool {
     // Autodesk Inventor Part - OLE-based CAD file
     // Contains "Inventor" string and part-specific metadata
-    let s = String::from_utf8_lossy(input);
-    s.contains("Inventor") && (s.contains("Part") || s.contains(".ipt"))
+    contains_bytes(input, b"Inventor")
+        && (contains_bytes(input, b"Part") || contains_bytes(input, b".ipt"))
 }
 
 fn scdoc(input: &[u8]) -> bool {
     // SpaceClaim Document - OLE-based CAD file
     // Contains "SpaceClaim" string or specific metadata
-    let s = String::from_utf8_lossy(input);
-    s.contains("SpaceClaim") || s.contains("scdoc")
+    contains_bytes(input, b"SpaceClaim") || contains_bytes(input, b"scdoc")
 }
 
 fn autodesk_max(input: &[u8]) -> bool {
     // Autodesk 3D Studio Max - OLE-based project file
     // Contains "3dsmax" or "3D Studio Max" strings in metadata
-    let s = String::from_utf8_lossy(input);
-    s.contains("3dsmax") || s.contains("3D Studio Max") || s.contains(".max")
+    contains_bytes(input, b"3dsmax")
+        || contains_bytes(input, b"3D Studio Max")
+        || contains_bytes(input, b".max")
 }
 
 fn autodesk_123d(input: &[u8]) -> bool {
     // Autodesk 123D - ZIP-based 3D modeling format
     // Contains specific 123D project files or metadata
-    let s = String::from_utf8_lossy(input);
-    s.contains("123D") || s.contains("Autodesk.123D")
+    contains_bytes(input, b"123D") || contains_bytes(input, b"Autodesk.123D")
 }
 
 fn fusion_360(input: &[u8]) -> bool {
     // Fusion 360 - ZIP-based CAD format
     // Contains Fusion 360 specific metadata
-    let s = String::from_utf8_lossy(input);
-    s.contains("Fusion360") || s.contains("fusion360") || s.contains("Autodesk Fusion")
+    contains_bytes(input, b"Fusion360")
+        || contains_bytes(input, b"fusion360")
+        || contains_bytes(input, b"Autodesk Fusion")
 }
 
 fn drawio(input: &[u8]) -> bool {
     // draw.io - XML-based diagramming format
     // Contains mxfile or mxGraphModel elements
-    let s = String::from_utf8_lossy(input);
-    s.contains("<mxfile") || s.contains("<mxGraphModel")
+    contains_bytes(input, b"<mxfile") || contains_bytes(input, b"<mxGraphModel")
 }
 
 fn xspf(input: &[u8]) -> bool {
     // XSPF - XML Shareable Playlist Format
     // Contains playlist element with XSPF namespace
-    let s = String::from_utf8_lossy(input);
-    s.contains("<playlist") && s.contains("xspf")
+    contains_bytes(input, b"<playlist") && contains_bytes(input, b"xspf")
 }
 
 fn xsl(input: &[u8]) -> bool {
     // XSLT - Extensible Stylesheet Language Transformations
     // Contains stylesheet element with XSLT namespace
-    let s = String::from_utf8_lossy(input);
-    (s.contains("<xsl:stylesheet") || s.contains("<xsl:transform"))
-        && s.contains("http://www.w3.org/1999/XSL/Transform")
+    (contains_bytes(input, b"<xsl:stylesheet") || contains_bytes(input, b"<xsl:transform"))
+        && contains_bytes(input, b"http://www.w3.org/1999/XSL/Transform")
 }
 
 fn figma(input: &[u8]) -> bool {
     // Figma - ZIP-based design format
     // Contains Figma-specific metadata or canvas data
-    let s = String::from_utf8_lossy(input);
-    s.contains("figma") || s.contains("\"document\":{\"id\"") || s.contains("\"canvas\"")
+    contains_bytes(input, b"figma")
+        || contains_bytes(input, b"\"document\":{\"id\"")
+        || contains_bytes(input, b"\"canvas\"")
 }
 
 fn mathml(input: &[u8]) -> bool {
     // MathML - Mathematical Markup Language
     // Contains math or MathML elements with MathML namespace
-    let s = String::from_utf8_lossy(input);
-    (s.contains("<math") || s.contains("<MathML"))
-        && s.contains("http://www.w3.org/1998/Math/MathML")
+    (contains_bytes(input, b"<math") || contains_bytes(input, b"<MathML"))
+        && contains_bytes(input, b"http://www.w3.org/1998/Math/MathML")
 }
 
 fn musicxml(input: &[u8]) -> bool {
     // MusicXML - Music notation format
     // Contains score-partwise or score-timewise root elements
-    let s = String::from_utf8_lossy(input);
-    s.contains("<score-partwise") || s.contains("<score-timewise")
+    contains_bytes(input, b"<score-partwise") || contains_bytes(input, b"<score-timewise")
 }
 
 fn ttml(input: &[u8]) -> bool {
     // TTML - Timed Text Markup Language
     // Contains tt element with TTML namespace
-    let s = String::from_utf8_lossy(input);
-    s.contains("<tt ") && s.contains("http://www.w3.org/ns/ttml")
+    contains_bytes(input, b"<tt ") && contains_bytes(input, b"http://www.w3.org/ns/ttml")
 }
 
 fn soap(input: &[u8]) -> bool {
     // SOAP - Simple Object Access Protocol
     // Contains Envelope element with SOAP namespace
-    let s = String::from_utf8_lossy(input);
-    (s.contains("<Envelope") || s.contains("<soap:Envelope") || s.contains("<SOAP-ENV:Envelope"))
-        && (s.contains("http://schemas.xmlsoap.org/soap/envelope")
-            || s.contains("http://www.w3.org/2003/05/soap-envelope"))
+    (contains_bytes(input, b"<Envelope")
+        || contains_bytes(input, b"<soap:Envelope")
+        || contains_bytes(input, b"<SOAP-ENV:Envelope"))
+        && (contains_bytes(input, b"http://schemas.xmlsoap.org/soap/envelope")
+            || contains_bytes(input, b"http://www.w3.org/2003/05/soap-envelope"))
 }
 
 fn tmx(input: &[u8]) -> bool {
     // TMX - Tiled Map XML
     // Game development map format, contains <map> element
-    let s = String::from_utf8_lossy(input);
-    s.contains("<map ") && (s.contains("version=") || s.contains("orientation="))
+    contains_bytes(input, b"<map ")
+        && (contains_bytes(input, b"version=") || contains_bytes(input, b"orientation="))
 }
 
 fn tsx(input: &[u8]) -> bool {
     // TSX - Tiled Tileset XML
     // Game development tileset format, contains <tileset> element
-    let s = String::from_utf8_lossy(input);
-    s.contains("<tileset ") && (s.contains("version=") || s.contains("tilewidth="))
+    contains_bytes(input, b"<tileset ")
+        && (contains_bytes(input, b"version=") || contains_bytes(input, b"tilewidth="))
 }
 
 fn mpd(input: &[u8]) -> bool {
     // MPD - MPEG-DASH Media Presentation Description
     // Streaming manifest, contains <MPD> element with DASH namespace
-    let s = String::from_utf8_lossy(input);
-    s.contains("<MPD ") && s.contains("urn:mpeg:dash:schema:mpd:")
+    contains_bytes(input, b"<MPD ") && contains_bytes(input, b"urn:mpeg:dash:schema:mpd:")
 }
 
 fn mxl(input: &[u8]) -> bool {
     // MXL - MusicXML ZIP
     // Compressed MusicXML format (ZIP-based)
     // Contains .musicxml or META-INF/container.xml files
-    let s = String::from_utf8_lossy(input);
-    s.contains(".musicxml") || (s.contains("META-INF") && s.contains("container.xml"))
+    contains_bytes(input, b".musicxml")
+        || (contains_bytes(input, b"META-INF") && contains_bytes(input, b"container.xml"))
 }
 
 fn cddx(input: &[u8]) -> bool {
     // CDDX - Circuit Diagram Document
     // Electronic circuit diagram format (XML)
-    let s = String::from_utf8_lossy(input);
-    s.contains("<circuit") || (s.contains("<CircuitDocument") && s.contains("circuitdiagram"))
+    contains_bytes(input, b"<circuit")
+        || (contains_bytes(input, b"<CircuitDocument") && contains_bytes(input, b"circuitdiagram"))
 }
 
 fn dwfx(input: &[u8]) -> bool {
     // DWFX - Design Web Format XPS
     // Autodesk CAD exchange format (XML/XPS based)
-    let s = String::from_utf8_lossy(input);
-    s.contains("<DWFDocument") || (s.contains("dwf") && s.contains(".dwfx"))
+    contains_bytes(input, b"<DWFDocument")
+        || (contains_bytes(input, b"dwf") && contains_bytes(input, b".dwfx"))
 }
 
 fn fbz(input: &[u8]) -> bool {
     // FBZ - FictionBook ZIP
     // Compressed FictionBook e-book (ZIP-based, contains .fb2 files)
-    let s = String::from_utf8_lossy(input);
-    s.contains(".fb2")
-        || (s.contains("FictionBook") && s.contains("http://www.gribuser.ru/xml/fictionbook"))
+    contains_bytes(input, b".fb2")
+        || (contains_bytes(input, b"FictionBook")
+            && contains_bytes(input, b"http://www.gribuser.ru/xml/fictionbook"))
 }
 
 fn asx(input: &[u8]) -> bool {
     // ASX (Advanced Stream Redirector) - XML playlist for Windows Media
-    // Contains <asx version= or <ASX version=
-    let s = String::from_utf8_lossy(input);
-    s.contains("<asx ") || s.contains("<ASX ")
+    // https://en.wikipedia.org/wiki/Advanced_Stream_Redirector
+
+    const MIN_ASX_HEADER_SIZE: usize = 30;
+    if input.len() < MIN_ASX_HEADER_SIZE {
+        return false;
+    }
+
+    // Search for ASX XML markers within the Header Object bounds
+    input[..MIN_ASX_HEADER_SIZE]
+        .windows(5)
+        .any(|w| w == b"<asx " || w == b"<ASX ")
 }
 
-fn wma(_input: &[u8]) -> bool {
+fn wma(input: &[u8]) -> bool {
     // Windows Media Audio - ASF-based, parent already verified signature
-    // Rely on extension for distinction from video variants
-    false
+    // Look for Audio Stream GUID: F8699E40-5B4D-11CF-A8FD-00805F5C442B
+    // Stored as: 40 9E 69 F8 5B 4D 11 CF A8 FD 00 80 5F 5C 44 2B
+    // https://en.wikipedia.org/wiki/Windows_Media_Audio
+    // https://en.wikipedia.org/wiki/Advanced_Systems_Format
+    const AUDIO_STREAM_GUID: &[u8] =
+        b"\x40\x9E\x69\xF8\x5B\x4D\x11\xCF\xA8\xFD\x00\x80\x5F\x5C\x44\x2B";
+    const MIN_ASF_HEADER_SIZE: usize = 30;
+
+    // Read Header Object size from offset 16-23 (u64 little-endian)
+    if input.len() < MIN_ASF_HEADER_SIZE {
+        return false;
+    }
+
+    // Parse header size (bytes 16-23)
+    let header_size = u64::from_le_bytes([
+        input[16], input[17], input[18], input[19], input[20], input[21], input[22], input[23],
+    ]) as usize;
+
+    // Limit search to available data
+    let search_end = header_size.min(input.len());
+
+    // Search ONLY within the Header Object bounds (starting after the header structure)
+    input[MIN_ASF_HEADER_SIZE..search_end]
+        .windows(AUDIO_STREAM_GUID.len())
+        .any(|w| w == AUDIO_STREAM_GUID)
 }
 
-fn wmv(_input: &[u8]) -> bool {
+fn wmv(input: &[u8]) -> bool {
     // Windows Media Video - ASF-based, parent already verified signature
-    // Rely on extension for distinction from audio variants
-    false
+    // Look for Video Stream GUID: BC19EFC0-5B4D-11CF-A8FD-00805F5C442B
+    // Stored as: C0 EF 19 BC 5B 4D 11 CF A8 FD 00 80 5F 5C 44 2B
+    // https://en.wikipedia.org/wiki/Windows_Media_Video
+    // https://en.wikipedia.org/wiki/Advanced_Systems_Format
+    const VIDEO_STREAM_GUID: &[u8] =
+        b"\xC0\xEF\x19\xBC\x5B\x4D\x11\xCF\xA8\xFD\x00\x80\x5F\x5C\x44\x2B";
+    const MIN_ASF_HEADER_SIZE: usize = 30;
+
+    // Read Header Object size from offset 16-23 (u64 little-endian)
+    if input.len() < MIN_ASF_HEADER_SIZE {
+        return false;
+    }
+
+    // Parse header size (bytes 16-23)
+    let header_size = u64::from_le_bytes([
+        input[16], input[17], input[18], input[19], input[20], input[21], input[22], input[23],
+    ]) as usize;
+
+    // Limit search to available data
+    let search_end = header_size.min(input.len());
+
+    // Search ONLY within the Header Object bounds (starting after the header structure)
+    input[MIN_ASF_HEADER_SIZE..search_end]
+        .windows(VIDEO_STREAM_GUID.len())
+        .any(|w| w == VIDEO_STREAM_GUID)
 }
 
 fn air(input: &[u8]) -> bool {
@@ -5508,16 +5660,34 @@ fn ai(input: &[u8]) -> bool {
     // Adobe Illustrator - PDF-based format
     // AI files are PDF files with additional Adobe-specific metadata
     // Check for %AI or Adobe_Illustrator markers in the file
-    let s = String::from_utf8_lossy(input);
-    s.contains("%AI") || s.contains("Adobe_Illustrator") || s.contains("Adobe Illustrator")
+    contains_bytes(input, b"%AI")
+        || contains_bytes(input, b"Adobe_Illustrator")
+        || contains_bytes(input, b"Adobe Illustrator")
 }
 
-fn dvr_ms(_input: &[u8]) -> bool {
+fn dvr_ms(input: &[u8]) -> bool {
     // Microsoft Digital Video Recording - ASF-based format
-    // DVR-MS files are ASF files, so any ASF file could be DVR-MS
-    // We can check for specific DVR-MS metadata or just return false to use parent ASF
-    // For now, return false to keep it as generic ASF unless we find specific markers
-    false
+    // DVR-MS files contain "DVR File Version" in Extended Content Description
+    // https://en.wikipedia.org/wiki/DVR-MS
+    const MIN_ASF_HEADER_SIZE: usize = 30;
+
+    // Read Header Object size from offset 16-23 (u64 little-endian)
+    if input.len() < MIN_ASF_HEADER_SIZE {
+        return false;
+    }
+
+    // Parse header size (bytes 16-23)
+    let header_size = u64::from_le_bytes([
+        input[16], input[17], input[18], input[19], input[20], input[21], input[22], input[23],
+    ]) as usize;
+
+    // Limit search to available data
+    let search_end = header_size.min(input.len());
+
+    // Search for "DVR File Version" ONLY within the Header Object bounds
+    input[MIN_ASF_HEADER_SIZE..search_end]
+        .windows(16)
+        .any(|w| w == b"DVR File Version")
 }
 
 fn abw(input: &[u8]) -> bool {
@@ -5529,8 +5699,7 @@ fn abw(input: &[u8]) -> bool {
     }
     // For now, we'll check for common patterns after gzip decompression
     // This is a simplified check - a full implementation would decompress
-    let s = String::from_utf8_lossy(input);
-    s.contains("abiword") || s.contains("AbiWord")
+    contains_bytes(input, b"abiword") || contains_bytes(input, b"AbiWord")
 }
 
 // ============================================================================
@@ -7349,6 +7518,16 @@ where
     match_ratio >= 0.8
 }
 
+/// Check if input contains the given byte pattern
+/// More efficient than from_utf8_lossy().contains() for ASCII-only searches
+#[inline]
+fn contains_bytes(input: &[u8], pattern: &[u8]) -> bool {
+    if input.len() < pattern.len() {
+        return false;
+    }
+    input.windows(pattern.len()).any(|w| w == pattern)
+}
+
 /// Check if ZIP archive contains any files matching the given entries
 fn zip_has(input: &[u8], search_for: &[(&[u8], bool)], stop_after: usize) -> bool {
     let mut iter = ZipIterator::new(input);
@@ -7693,4 +7872,321 @@ fn riff_cda(input: &[u8]) -> bool {
 
 fn riff_mtv(input: &[u8]) -> bool {
     riff_child(input, b"MTV")
+}
+
+fn zlib(input: &[u8]) -> bool {
+    // https://www.ietf.org/rfc/rfc6713.txt
+    // ZLIB header: CMF (Compression Method and Flags) + FLG (Flags)
+    //
+    // CMF byte breakdown:
+    //   - bits 0-3: CM (Compression Method) - must be 8 for deflate
+    //   - bits 4-7: CINFO (window size) - 0-7 for deflate (window = 2^(CINFO+8))
+    //
+    // FLG byte breakdown:
+    //   - bits 0-4: FCHECK (makes header divisible by 31)
+    //   - bit 5: FDICT (preset dictionary flag)
+    //   - bits 6-7: FLEVEL (compression level indicator)
+    //
+    // Note: "x " (0x78 0x20) passes the checksum but is text. We must validate more.
+
+    if input.len() < 6 {
+        return false;
+    }
+
+    let cmf = input[0];
+    let flg = input[1];
+
+    // Validate CMF: compression method must be deflate (8)
+    let cm = cmf & 0x0F;
+    if cm != 8 {
+        return false;
+    }
+
+    // Validate CINFO: window size must be <= 7 for deflate
+    let cinfo = (cmf >> 4) & 0x0F;
+    if cinfo > 7 {
+        return false;
+    }
+
+    // Validate header checksum
+    let header = u16::from_be_bytes([cmf, flg]);
+    if header % 31 != 0 {
+        return false;
+    }
+
+    // Common valid ZLIB headers (most frequent first):
+    // 0x7801 = no compression, no dict
+    // 0x785E = fast compression, no dict (less common: 0x789C)
+    // 0x789C = default compression, no dict
+    // 0x78DA = best compression, no dict
+    // With dictionary (FDICT=1): 0x78xx where bit 5 of FLG is set
+    //
+    // Explicitly allow known valid combinations
+    let flevel = (flg >> 6) & 0x03;
+    let fdict = (flg >> 5) & 0x01;
+
+    // For typical ZLIB streams without preset dictionary, validate compression level
+    if fdict == 0 && flevel > 3 {
+        // No dictionary - most common case
+        // FLEVEL 0-3 are all valid
+        return false;
+    }
+
+    // Require binary content in the data portion (after first 2 bytes)
+    // ZLIB compressed data almost always contains binary control characters
+    // Use WHATWG algorithm but require at least 2 binary bytes in a larger sample
+    let mut binary_count = 0;
+    for &byte in input.iter().skip(2).take(1024) {
+        match byte {
+            0x00..=0x08 | 0x0B | 0x0E..=0x1A | 0x1C..=0x1F => {
+                binary_count += 1;
+                // Require at least 2 binary bytes to confirm it's not text
+                if binary_count >= 2 {
+                    return true;
+                }
+            }
+            _ => {}
+        }
+    }
+
+    // Single binary byte might be coincidence, so also check for high entropy
+    // Valid ZLIB should have varied byte distribution
+    if binary_count == 1 && input.len() >= 64 {
+        // Check if there's enough variety in the data
+        let mut seen = [false; 256];
+        let mut unique_count = 0;
+        for &byte in input.iter().skip(2).take(256) {
+            if !seen[byte as usize] {
+                seen[byte as usize] = true;
+                unique_count += 1;
+            }
+        }
+        // Compressed data typically has high entropy
+        return unique_count >= 32;
+    }
+
+    false // Looks like text, so probably not ZLIB
+}
+
+fn bufr(input: &[u8]) -> bool {
+    // BUFR (Binary Universal Form for the Representation of meteorological data)
+    // https://www.nco.ncep.noaa.gov/pmb/docs/on388/
+    input.len() > 7 && input.starts_with(b"BUFR") && (input[7] == 0x03 || input[7] == 0x04)
+}
+
+fn framemaker(input: &[u8]) -> bool {
+    // Adobe FrameMaker document
+    let has_marker = input.starts_with(b"<MakerFile")
+        || input.starts_with(b"<MakerDictionary")
+        || input
+            .windows(10)
+            .any(|w| w.eq_ignore_ascii_case(b"<BOOKFILE"));
+
+    if !has_marker {
+        return false;
+    }
+
+    // To avoid plain text false positives, check for null byte in first 512 bytes
+    let limit = input.len().min(512);
+    input[..limit].contains(&0x00)
+}
+
+fn toml(input: &[u8]) -> bool {
+    let check_len = input.len().min(1024);
+    if std::str::from_utf8(&input[..check_len]).is_err() {
+        return false;
+    }
+
+    // Skip comments and empty lines to find meaningful content
+    let mut has_section = 0;
+    let mut has_key_value = 0;
+    for line in input.split(|&b| b == b'\n').take(20) {
+        if has_section > 1 && has_key_value > 5 {
+            return true;
+        }
+
+        let trimmed = line.trim_ascii();
+        if trimmed.is_empty() || trimmed.starts_with(b"#") {
+            continue;
+        }
+
+        // Check for [section] or [[array]] - must be a valid TOML section header
+        if trimmed.starts_with(b"[") && trimmed.ends_with(b"]") {
+            let (section_content, is_array) =
+                if trimmed.starts_with(b"[[") && trimmed.ends_with(b"]]") {
+                    (&trimmed[2..trimmed.len() - 2], true) // Remove [[...]]
+                } else {
+                    (&trimmed[1..trimmed.len() - 1], false) // Remove [...]
+                };
+
+            if !section_content.is_empty()
+                && section_content
+                    .iter()
+                    .all(|&b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-' || b == b'.')
+            {
+                has_section += 1;
+                if is_array {
+                    has_section += 1; // Array TOML-specific
+                }
+                continue;
+            } else {
+                return false;
+            }
+        }
+
+        if let Some(eq_pos) = trimmed.iter().position(|&b| b == b'=') {
+            if eq_pos == 0 {
+                return false;
+            }
+
+            // Extract and validate the key name (trim trailing whitespace before '=')
+            let key_part = &trimmed[..eq_pos];
+            let key_trimmed = key_part.trim_ascii_end();
+
+            if key_trimmed.is_empty() {
+                return false;
+            }
+
+            let is_valid_key = key_trimmed
+                .iter()
+                .all(|&b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-' || b == b'.');
+
+            if is_valid_key {
+                has_key_value += 1;
+                // If key contains dots (dotted keys like "key.subkey"), it's very TOML-specific
+                continue;
+            }
+        }
+    }
+
+    has_section >= 1 && has_key_value >= 5
+}
+
+fn openflight(input: &[u8]) -> bool {
+    // OpenFlight files have specific binary structure
+    // Header record is 4 bytes of record type/length
+    // Common patterns include 'db' prefix in some versions
+    if input.len() < 128 {
+        return false;
+    }
+
+    // Check for OpenFlight header patterns
+    // Record type 1 (header) with length indication
+    // First 2 bytes are record opcode (usually 0x00 0x01 for header)
+    // OpenFlight header opcode is typically 1
+    let opcode = u16::from_be_bytes([input[0], input[1]]);
+    if opcode == 1 {
+        // Validate record length is reasonable (usually >= 100 for header)
+        let length = u16::from_be_bytes([input[2], input[3]]);
+        return length >= 100;
+    }
+
+    false
+}
+
+fn opengex(input: &[u8]) -> bool {
+    // OpenGEX uses OpenDDL (Open Data Description Language) text format
+    //
+    // OpenGEX files have specific structure:
+    // - Metric declarations: Metric (key = "value") { float { value } }
+    // - Node types: GeometryNode, GeometryObject, LightNode, CameraNode, BoneNode
+    // - Structure: Name { ... } or Name (attribs) { ... }
+    //
+    // To prevent false positives with general text, we require:
+    // 1. Strong OpenGEX-specific patterns (// OpenGEX comment)
+    // 2. Or multiple OpenDDL-style declarations with braces
+
+    if input.len() < 16 {
+        return false;
+    }
+
+    // Check for UTF-8 validity
+    let check_len = input.len().min(512);
+    if std::str::from_utf8(&input[..check_len]).is_err() {
+        return false;
+    }
+
+    // Strong indicator: explicit OpenGEX comment
+    if input.starts_with(b"// OpenGEX") || input.starts_with(b"//OpenGEX") {
+        return true;
+    }
+
+    // Strong indicator: Metric with OpenDDL structure (key = "value") { }
+    // Example: Metric (key = "distance") { float { 1.0 } }
+    if input.starts_with(b"Metric") {
+        // Must have the OpenDDL structure pattern
+        let search_len = input.len().min(128);
+        if input[..search_len].windows(3).any(|w| w == b") {")
+            || input[..search_len]
+                .windows(2)
+                .any(|w| w == b"{\n" || w == b"{ ")
+        {
+            return true;
+        }
+        return false;
+    }
+
+    // OpenGEX-specific node types with structure
+    const OPENGEX_NODES: &[&[u8]] = &[
+        b"GeometryNode",
+        b"GeometryObject",
+        b"LightNode",
+        b"LightObject",
+        b"CameraNode",
+        b"CameraObject",
+        b"BoneNode",
+        b"Skeleton",
+        b"Material",
+        b"Transform",
+        b"Mesh",
+    ];
+
+    for node in OPENGEX_NODES {
+        if input.starts_with(node) {
+            // Must be followed by OpenDDL structure (space or newline then parameters/braces)
+            let node_len = node.len();
+            if input.len() > node_len {
+                let next_char = input[node_len];
+                if next_char == b' '
+                    || next_char == b'\n'
+                    || next_char == b'\t'
+                    || next_char == b'('
+                    || next_char == b'{'
+                {
+                    // Look for brace structure
+                    let search_len = input.len().min(256);
+                    if input[..search_len].contains(&b'{') {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    // Check for OpenGEX patterns after initial content (comments/whitespace)
+    let search_len = input.len().min(512);
+    let has_metric = input[..search_len].windows(9).any(|w| w == b"\nMetric (");
+    let has_geometry = input[..search_len]
+        .windows(13)
+        .any(|w| w == b"\nGeometryNode" || w == b"\nGeometryObje");
+    let has_structure = input[..search_len].windows(3).any(|w| w == b"{ ");
+
+    // Require at least metric or geometry keyword with structure
+    (has_metric || has_geometry) && has_structure
+}
+
+fn threedxml(input: &[u8]) -> bool {
+    // 3DXML is ZIP-based, check for specific manifest
+    if !input.starts_with(b"PK\x03\x04") {
+        return false;
+    }
+
+    // Look for 3DXML-specific files in ZIP
+    // Common files: Manifest.xml, *.3dxml files
+    input.windows(12).any(|w| w == b"Manifest.xml")
+        || input.windows(6).any(|w| w == b".3dxml")
+        || input.windows(20).any(|w| w == b"3DXML")
+        || input
+            .windows(30)
+            .any(|w| w.windows(6).any(|x| x == b"Model_"))
 }

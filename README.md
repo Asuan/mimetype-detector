@@ -4,7 +4,7 @@
 [![Crates.io](https://img.shields.io/crates/v/mimetype-detector.svg)](https://crates.io/crates/mimetype-detector)
 [![Documentation](https://docs.rs/mimetype-detector/badge.svg)](https://docs.rs/mimetype-detector)
 
-Fast MIME type detection for ~450 file formats with zero dependencies.
+Fast MIME type detection for ~550 file formats with zero dependencies.
 
 ## Features
 
@@ -23,7 +23,7 @@ Fast MIME type detection for ~450 file formats with zero dependencies.
 
 ```toml
 [dependencies]
-mimetype-detector = "0.3.5"
+mimetype-detector = "0.3.6"
 ```
 
 ## Usage
@@ -77,7 +77,7 @@ println!("MIME aliases: {:?}", pdf.aliases()); // &["application/x-pdf"]
 println!("Extension aliases: {:?}", pdf.extension_aliases()); // &[".ai"]
 ```
 
-## Supported Formats (527)
+## Supported Formats (~500)
 
 ### Common Formats
 
@@ -105,7 +105,7 @@ println!("Extension aliases: {:?}", pdf.extension_aliases()); // &[".ai"]
 ### Development & System
 
 - **Programming**: JavaScript, Python, PHP, Ruby, Perl, Lua, Shell, Batch, LaTeX
-- **Data**: JSON, XML, CSV, TSV, PSV, SSV, YAML, TOML
+- **Data**: JSON, XML, CSV, TSV, PSV, SSV, TOML
 - **Executables**: ELF, PE/EXE/DLL, Mach-O, WASM, Java Class/JAR, Android APK/AAB
 - **Fonts**: TTF, OTF, WOFF, WOFF2, EOT
 
