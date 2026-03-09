@@ -1,6 +1,6 @@
 [package]
 name = "mimetype-detector"
-version = "0.3.6"
+version = "0.3.7"
 edition = "2021"
 description = "Fast, accurate, and thread-safe MIME type detection for ~500 file formats with zero dependencies"
 license = "MIT OR Apache-2.0"
@@ -12,7 +12,7 @@ readme = "README.md"
 keywords = ["mime", "mimetype", "file-detection","file-type"]
 categories = ["filesystem", "parsing", "web-programming"]
 rust-version = "1.80.0"
-exclude = ["/.github", "/benches", "/examples", "/tests", ".gitignore", "target/", "*.tmp", "/test-data", "LICENSE-MIT", "LICENSE-APACHE", "CHANGELOG.md", "SUPPORTED_FORMATS.md"]
+exclude = ["/.github", "/benches", "/examples", "/doc", "/tests", ".gitignore", "target/", "*.tmp", "/test-data", "LICENSE-MIT", "LICENSE-APACHE", "CHANGELOG.md", "SUPPORTED_FORMATS.md"]
 
 [features]
 default = []
@@ -29,3 +29,4 @@ criterion = { version = "0.8", features = ["html_reports"] }
 [[bench]]
 name = "detection_bench"
 harness = false
+

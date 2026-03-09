@@ -1243,8 +1243,11 @@ pub const APPLICATION_RSS_XML: &str = "application/rss+xml";
 /// RSS Feed (alias)
 pub const TEXT_RSS: &str = "text/rss";
 
-/// Atom Feed  
+/// Atom Feed
 pub const APPLICATION_ATOM_XML: &str = "application/atom+xml";
+
+/// XML Schema Definition
+pub const APPLICATION_XSD_XML: &str = APPLICATION_XML;
 
 /// X3D 3D Graphics
 pub const MODEL_X3D_XML: &str = "model/x3d+xml";
@@ -1528,11 +1531,14 @@ pub const APPLICATION_PLY: &str = "application/ply";
 // MISCELLANEOUS FORMATS
 // ============================================================================
 
-/// Hierarchical Data Format
-pub const APPLICATION_X_HDF: &str = "application/x-hdf";
-
 /// CBOR Binary Data
 pub const APPLICATION_CBOR: &str = "application/cbor";
+
+/// Brotli Compressed
+pub const APPLICATION_BROTLI: &str = "application/brotli";
+
+/// Network Common Data Form
+pub const APPLICATION_X_NETCDF: &str = "application/x-netcdf";
 
 /// Apache Parquet
 pub const APPLICATION_VND_APACHE_PARQUET: &str = "application/vnd.apache.parquet";
@@ -1916,6 +1922,9 @@ pub const AUDIO_X_AVR: &str = "audio/x-avr";
 // ============================================================================
 // SCIENTIFIC DATA FORMATS
 // ============================================================================
+
+/// Hierarchical Data Format
+pub const APPLICATION_X_HDF: &str = "application/x-hdf";
 
 /// HDF5 Hierarchical Data Format
 pub const APPLICATION_X_HDF5: &str = "application/x-hdf5";

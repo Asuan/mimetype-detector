@@ -1,6 +1,6 @@
 # Supported File Formats
 
-This document provides a comprehensive listing of all 543 file formats supported by the mimetype-detector library.
+This document provides a comprehensive listing of all 546 file formats supported by the mimetype-detector library.
 
 ## All Supported Formats (Alphabetical)
 
@@ -64,6 +64,7 @@ This document provides a comprehensive listing of all 543 file formats supported
 | BMFont Binary | BMFont Binary | `application/x-angelcode-bmfont` | `.fnt` | | AngelCode bitmap font generator binary format |
 | BMP | Bitmap Image File | `image/bmp` | `.bmp`, `.dib` | `image/x-bmp`, `image/x-ms-bmp` | |
 | BPG | Better Portable Graphics | `image/bpg` | `.bpg` | | Better Portable Graphics |
+| Brotli | Brotli Compressed | `application/brotli` | `.br` | | Brotli v3 framing format with magic bytes (ce b2 cf 81) |
 | BUFR | BUFR Meteorological Data | `application/x-bufr` | `.bufr` | | Binary Universal Form for meteorological data (WMO standard) |
 | BroadBand eBook | BroadBand eBook | `application/x-lrf` | `.lrf` | | Sony Reader format |
 | BZIP | Bzip Archive | `application/x-bzip` | `.bz` | | Legacy BZIP compression (BZ0) |
@@ -274,6 +275,8 @@ This document provides a comprehensive listing of all 543 file formats supported
 | MXF | Material Exchange Format | `application/mxf` | `.mxf` | | Material Exchange Format (SMPTE standard) |
 | MXL | MusicXML | `application/vnd.recordare.musicxml` | `.mxl` | | MusicXML ZIP (compressed music notation, ZIP-based) |
 | NDJSON | Ndjson | `application/x-ndjson` | `.ndjson` | | Newline Delimited JSON |
+| NetCDF Classic | Network Common Data Form | `application/x-netcdf` | `.nc` | | Network Common Data Form classic format (scientific data) |
+| NetCDF-4 | Network Common Data Form 4 | `application/x-netcdf` | `.nc4` | | NetCDF version 4 (HDF5-based scientific data format) |
 | Nintendo NES ROM | Nintendo NES ROM | `application/vnd.nintendo.snes.rom` | `.nes` | | |
 | Nintendo Switch ROM | Nintendo Switch ROM | `application/x-nintendo-switch-rom` | `.xci` | | Nintendo Switch XCI - NX Card Image |
 | ODC | ODF Chart | `application/vnd.oasis.opendocument.chart` | `.odc` | `application/x-vnd.oasis.opendocument.chart` | OpenDocument Chart |
@@ -501,7 +504,7 @@ This document provides a comprehensive listing of all 543 file formats supported
 | XFDF | XFDF | `application/vnd.adobe.xfdf` | `.xfdf` | | Adobe XFDF |
 | XHTML | XHTML | `application/xhtml+xml` | `.html` | | XHTML |
 | XLIFF | XLIFF | `application/x-xliff+xml` | `.xlf` | | Translation format |
-| XML | Extensible Markup Language | `text/xml; charset=utf-8` | `.xml` | `application/xml` | |
+| XML | Extensible Markup Language | `text/xml; charset=utf-8` | `.xml`, `.xsd` | `application/xml` | XSD (XML Schema Definition) uses .xsd extension |
 | XML (UTF-16) | Extensible Markup Language (UTF-16 LE) | `text/xml; charset=utf-16` | `.xml` | `application/xml; charset=utf-16` | UTF-16 BE/LE variants |
 | XSLT | Xslt XML | `application/xslt+xml` | `.xsl` | | Extensible Stylesheet Language Transformations |
 | XSPF | Xspf XML | `application/xspf+xml` | `.xspf` | | XML Shareable Playlist Format |
