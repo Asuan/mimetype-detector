@@ -1243,8 +1243,11 @@ pub const APPLICATION_RSS_XML: &str = "application/rss+xml";
 /// RSS Feed (alias)
 pub const TEXT_RSS: &str = "text/rss";
 
-/// Atom Feed  
+/// Atom Feed
 pub const APPLICATION_ATOM_XML: &str = "application/atom+xml";
+
+/// XML Schema Definition
+pub const APPLICATION_XSD_XML: &str = APPLICATION_XML;
 
 /// X3D 3D Graphics
 pub const MODEL_X3D_XML: &str = "model/x3d+xml";

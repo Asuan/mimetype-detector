@@ -46,7 +46,7 @@ build_prefix_vec! {
         0x11 => [&FLI] as __PV_11,
         0x12 => [&FLC] as __PV_12,
         0x13 => [&ASTC] as __PV_13,
-        0x1a => [&LOTUS_NOTES, &WEBM, &MKV] as __PV_1A,  // Lotus Notes, Matroska containers
+        0x1a => [&LOTUS_NOTES, &EBML] as __PV_1A,  // Lotus Notes, EBML (parent of WEBM/MKV)
         0x1b => [&LUA_BYTECODE] as __PV_1B,  // Lua bytecode
         0x1f => [&GZIP, &UNIX_COMPRESS] as __PV_1F,  // GZIP (0x1F 0x8B), Unix compress (0x1F 0x9D)
         0x21 => [&PST, &AR] as __PV_21,  // PST ('!BDN'), AR ('!<arch>')
@@ -63,7 +63,7 @@ build_prefix_vec! {
         0x33 => [&M3D, &A3D, &OPENNURBS] as __PV_33,  // Model 3D Binary ('3DMO'), Model 3D ASCII ('3DGeometry'), OpenNURBS/Rhino 3DM ('3D Geometry')
         0x34 => [&PICTOR] as __PV_34,  // PICtor/PC Paint DOS graphics
         0x37 => [&N64_ROM, &SEVEN_Z, &ZPAQ] as __PV_37,  // N64 ROM (V64 byte-swapped), 7-Zip, ZPAQ
-        0x3c => [&ASX, &WPL, &DRAWIO, &XSPF, &XSL, &MATHML, &MUSICXML, &TTML, &SOAP, &TMX, &TSX, &MPD, &CDDX, &DWFX, &FRAMEMAKER] as __PV_3C,  // XML formats: WPL, draw.io, XSPF, XSLT, MathML, MusicXML, TTML, SOAP, TMX, TSX, MPD, CDDX, DWFX, FrameMaker
+        0x3c => [&ASX, &WPL, &XML, &FRAMEMAKER] as __PV_3C,  // XML and non-XML formats starting with '<'
         0x40 => [&N64_ROM] as __PV_40,  // N64 ROM (N64 little-endian)
         0x3f => [&HLP] as __PV_3F,  // Windows Help
         0x38 => [&PSD] as __PV_38,
@@ -163,9 +163,7 @@ pub static ROOT: MimeType = MimeType::new(
     &[
         // Complex formats that require offset or pattern checking
         // (Simple formats with clear first-byte signatures are in PREFIX_VEC)
-        &JP2,                 // Offset 4-8 check
-        &JPX,                 // Offset 4-8 check
-        &JPM,                 // Offset 4-8 check
+        &JP2,                 // Offset 4-8 check (children JPX/JPM detected through parent)
         &TAR,                 // No magic number
         &LOTUS123,            // Offset 4-7 check (parent; children WK1/WK3/WK4 refine version)
         &MP3,                 // Multiple first bytes (conflict)
@@ -193,14 +191,12 @@ pub static ROOT: MimeType = MimeType::new(
         &EMF,                 // Offset 40 check
         &WMF,                 // Multiple signatures
         &VDI,                 // VirtualBox VDI - offset 64 check
-        &OGG_OPUS,            // Offset 28 check
         &FIT,                 // FIT format - offset 8 check
         &MPEG2TS,             // Pattern at offset 188
         &ACE,                 // Offset 7 check
         &ISO9660,             // Large offset checks
         &ID3V2,               // Multiple signatures
         &ICC,                 // Offset 36 check
-        &EBML,                // Variable-length encoding
         &GBA_ROM,             // GameBoy Advance ROM - offset 4
         &GB_ROM,              // GameBoy ROM - offset 260 (parent to GBC_ROM)
         &MSO,                 // ActiveMime - offset 0x32 check
@@ -254,7 +250,8 @@ static XML: MimeType = MimeType::new(
     xml,
     &[
         &RSS, &ATOM, &X3D, &KML, &XLIFF, &COLLADA, &GML, &GPX, &TCX, &AMF, &THREEMF, &XFDF, &OWL2,
-        &XHTML, &FB2, &USF,
+        &XHTML, &FB2, &USF, &DRAWIO, &XSPF, &XSL, &MATHML, &MUSICXML, &TTML, &SOAP, &TMX, &TSX,
+        &MPD, &DWFX, &CDDX, &SVG, &XSD,
     ],
 )
 .with_aliases(&[APPLICATION_XML])
@@ -262,8 +259,9 @@ static XML: MimeType = MimeType::new(
 
 mimetype!(UTF8_BOM, TEXT_UTF8_BOM, ".txt", b"\xEF\xBB\xBF", name: "UTF-8 with BOM", kind: TEXT, children: [
     &HTML_UTF8_BOM,
-    &XML_UTF8_BOM,
     &SVG_UTF8_BOM,
+    &XSD_UTF8_BOM,
+    &XML_UTF8_BOM,
     &RTF_UTF8_BOM, // RTF must come before JSON (both start with {, RTF has more specific pattern)
     &JSON_UTF8_BOM,
     &CSV_UTF8_BOM,
@@ -279,8 +277,9 @@ mimetype!(UTF8_BOM, TEXT_UTF8_BOM, ".txt", b"\xEF\xBB\xBF", name: "UTF-8 with BO
 
 mimetype!(UTF16_BE, TEXT_UTF16_BE, ".txt", b"\xFE\xFF", name: "UTF-16 Big Endian", kind: TEXT, children: [
     &HTML_UTF16_BE,
-    &XML_UTF16_BE,
     &SVG_UTF16_BE,
+    &XSD_UTF16_BE,
+    &XML_UTF16_BE,
     &JSON_UTF16_BE,
     &CSV_UTF16_BE,
     &TSV_UTF16_BE,
@@ -295,8 +294,9 @@ mimetype!(UTF16_BE, TEXT_UTF16_BE, ".txt", b"\xFE\xFF", name: "UTF-16 Big Endian
 
 mimetype!(UTF16_LE, TEXT_UTF16_LE, ".txt", b"\xFF\xFE", name: "UTF-16 Little Endian", kind: TEXT, children: [
     &HTML_UTF16_LE,
-    &XML_UTF16_LE,
     &SVG_UTF16_LE,
+    &XSD_UTF16_LE,
+    &XML_UTF16_LE,
     &JSON_UTF16_LE,
     &CSV_UTF16_LE,
     &TSV_UTF16_LE,
@@ -688,24 +688,69 @@ mimetype!(STUFFITX, APPLICATION_X_STUFFITX, ".sitx", b"StuffIt ", name: "StuffIt
 mimetype!(WARC, APPLICATION_WARC, ".warc", b"WARC/1.0" | b"WARC/1.1", name: "Web Archive", kind: ARCHIVE, parent: &UTF8);
 
 /// Email message (RFC822)
-static EMAIL: MimeType = MimeType::new(
-    MESSAGE_RFC822,
-    "Email Message",
-    ".eml",
-    |input| {
-        // Email messages typically start with "From " or "From: " or other RFC822 headers
-        input.len() >= 5
-            && (input.starts_with(b"From ")
-                || input.starts_with(b"From:")
-                || input.starts_with(b"Date:")
-                || input.starts_with(b"Subject:")
-                || input.starts_with(b"To:")
-                || input.starts_with(b"Received:"))
-    },
-    &[],
-)
-.with_kind(MimeKind::TEXT)
-.with_parent(&UTF8);
+static EMAIL: MimeType = MimeType::new(MESSAGE_RFC822, "Email Message", ".eml", eml, &[])
+    .with_kind(MimeKind::TEXT)
+    .with_parent(&UTF8);
+
+/// Check if a line starts with an RFC822 email header
+#[inline]
+fn is_email_header(line: &[u8]) -> bool {
+    line.starts_with(b"From: ")
+        || line.starts_with(b"Date: ")
+        || line.starts_with(b"Subject: ")
+        || line.starts_with(b"To: ")
+        || line.starts_with(b"Cc: ")
+        || line.starts_with(b"Bcc: ")
+        || line.starts_with(b"Reply-To: ")
+        || line.starts_with(b"Received: ")
+        || line.starts_with(b"MIME-Version: ")
+        || line.starts_with(b"Content-Type: ")
+        || line.starts_with(b"Return-Path: ")
+        || line.starts_with(b"Delivered-To: ")
+}
+
+/// Detect EML (email) format by checking first few lines for RFC822 headers
+fn eml(input: &[u8]) -> bool {
+    if input.len() < 20 {
+        return false;
+    }
+
+    let mut pos = 0;
+    let mut header_count = 0;
+    let max_lines = 5;
+    let mut lines_checked = 0;
+
+    while pos < input.len() && lines_checked < max_lines {
+        // Find end of current line
+        let line_end = input[pos..]
+            .iter()
+            .position(|&b| b == b'\n')
+            .map(|i| pos + i)
+            .unwrap_or(input.len());
+
+        let line = if line_end > pos && input[line_end - 1] == b'\r' {
+            &input[pos..line_end - 1]
+        } else {
+            &input[pos..line_end]
+        };
+
+        if line.is_empty() {
+            break;
+        }
+
+        // Check if this line is an email header
+        if is_email_header(line) {
+            header_count += 1;
+            if header_count >= 3 {
+                return true;
+            }
+        }
+
+        lines_checked += 1;
+        pos = line_end + 1;
+    }
+    false
+}
 
 // ============================================================================
 // UTF-16 TEXT FORMAT VARIANTS
@@ -769,6 +814,26 @@ static SVG_UTF16_LE: MimeType = MimeType::new(
     "Scalable Vector Graphics (UTF-16 LE)",
     ".svg",
     svg_utf16_le,
+    &[],
+)
+.with_parent(&UTF16_LE);
+
+/// XSD format for UTF-16 Big Endian
+static XSD_UTF16_BE: MimeType = MimeType::new(
+    APPLICATION_XSD_XML,
+    "XML Schema (UTF-16 BE)",
+    ".xsd",
+    xsd_utf16_be,
+    &[],
+)
+.with_parent(&UTF16_BE);
+
+/// XSD format for UTF-16 Little Endian
+static XSD_UTF16_LE: MimeType = MimeType::new(
+    APPLICATION_XSD_XML,
+    "XML Schema (UTF-16 LE)",
+    ".xsd",
+    xsd_utf16_le,
     &[],
 )
 .with_parent(&UTF16_LE);
@@ -1004,6 +1069,16 @@ static SVG_UTF8_BOM: MimeType = MimeType::new(
 )
 .with_parent(&UTF8_BOM);
 
+/// XSD format for UTF-8 with BOM
+static XSD_UTF8_BOM: MimeType = MimeType::new(
+    APPLICATION_XSD_XML,
+    "XML Schema (UTF-8 BOM)",
+    ".xsd",
+    xsd_utf8_bom,
+    &[],
+)
+.with_parent(&UTF8_BOM);
+
 /// JSON format for UTF-8 with BOM
 static JSON_UTF8_BOM: MimeType = MimeType::new(
     APPLICATION_JSON,
@@ -1116,14 +1191,16 @@ mimetype!(JNG, IMAGE_X_JNG, ".jng", [0x8B, 0x4A, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0
 
 mimetype!(JPG, IMAGE_JPEG, ".jpg", b"\xff\xd8\xff", name: "Joint Photographic Experts Group", kind: IMAGE, ext_aliases: [".jpeg", ".jpe", ".jif", ".jfif", ".jfi"]);
 
-static JP2: MimeType =
-    MimeType::new(IMAGE_JP2, "JPEG 2000 Image", ".jp2", jp2, &[]).with_kind(MimeKind::IMAGE);
-
+// JPEG 2000 children defined first for forward reference
 static JPX: MimeType =
     MimeType::new(IMAGE_JPX, "JPEG 2000 Extended", ".jpx", jpx, &[]).with_kind(MimeKind::IMAGE);
 
 static JPM: MimeType = MimeType::new(IMAGE_JPM, "JPEG 2000 Part 6", ".jpm", jpm, &[])
     .with_aliases(&[VIDEO_JPM])
+    .with_kind(MimeKind::IMAGE);
+
+// JPEG 2000 parent with children - detection flows: JP2 matches -> check JPX/JPM
+static JP2: MimeType = MimeType::new(IMAGE_JP2, "JPEG 2000 Image", ".jp2", jp2, &[&JPX, &JPM])
     .with_kind(MimeKind::IMAGE);
 
 // JPEG 2000 Codestream - Raw codestream without JP2 container
@@ -1440,7 +1517,7 @@ mimetype!(AIFF, AUDIO_AIFF, ".aiff", offset: (8, b"AIFF", prefix: (0, b"FORM")),
 
 mimetype!(MIDI, AUDIO_MIDI, ".midi", b"MThd", name: "Musical Instrument Digital Interface", kind: AUDIO, aliases: [AUDIO_MID], ext_aliases: [".mid"]);
 
-mimetype!(OGG, APPLICATION_OGG, ".ogg", b"OggS", name: "Ogg Container Format", kind: AUDIO, aliases: [APPLICATION_X_OGG], children: [&OGG_AUDIO, &OGG_MEDIA, &OGG_VIDEO, &OGG_MULTIPLEXED, &SPX]);
+mimetype!(OGG, APPLICATION_OGG, ".ogg", b"OggS", name: "Ogg Container Format", kind: AUDIO, aliases: [APPLICATION_X_OGG], children: [&OGG_AUDIO, &OGG_MEDIA, &OGG_VIDEO, &OGG_MULTIPLEXED, &SPX, &OGG_OPUS]);
 
 static OGG_AUDIO: MimeType = MimeType::new(AUDIO_OGG, "Ogg Audio", ".oga", ogg_audio, &[])
     .with_extension_aliases(&[".opus"])
@@ -1571,13 +1648,16 @@ static MP4: MimeType = MimeType::new(
 .with_aliases(&[AUDIO_MP4, AUDIO_X_M4A, AUDIO_X_MP4A])
 .with_kind(MimeKind::AUDIO.union(MimeKind::VIDEO));
 
+// WEBM and MKV defined before EBML for forward reference (they are EBML children)
 static WEBM: MimeType = MimeType::new(VIDEO_WEBM, "WebM", ".webm", webm, &[])
     .with_aliases(&[AUDIO_WEBM])
-    .with_kind(MimeKind::VIDEO);
+    .with_kind(MimeKind::VIDEO)
+    .with_parent(&EBML);
 
 static MKV: MimeType = MimeType::new(VIDEO_X_MATROSKA, "Matroska", ".mkv", mkv, &[])
     .with_extension_aliases(&[".mk3d", ".mka", ".mks"])
-    .with_kind(MimeKind::VIDEO);
+    .with_kind(MimeKind::VIDEO)
+    .with_parent(&EBML);
 
 // MPEG Video (.mpg) - 00 00 01 B3
 static MPEG_VIDEO: MimeType = MimeType::new(
@@ -2178,15 +2258,18 @@ static DRAWIO: MimeType = MimeType::new(
     drawio,
     &[],
 )
-.with_kind(MimeKind::DOCUMENT);
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&XML);
 
 // XML Shareable Playlist Format - XML-based playlist
 static XSPF: MimeType = MimeType::new(APPLICATION_XSPF_XML, "Xspf XML", ".xspf", xspf, &[])
-    .with_kind(MimeKind::DOCUMENT);
+    .with_kind(MimeKind::DOCUMENT)
+    .with_parent(&XML);
 
 // XSLT - Extensible Stylesheet Language Transformations
-static XSL: MimeType =
-    MimeType::new(APPLICATION_XSLT_XML, "Xslt XML", ".xsl", xsl, &[]).with_kind(MimeKind::DOCUMENT);
+static XSL: MimeType = MimeType::new(APPLICATION_XSLT_XML, "Xslt XML", ".xsl", xsl, &[])
+    .with_kind(MimeKind::DOCUMENT)
+    .with_parent(&XML);
 
 // Figma - ZIP-based design format
 static FIGMA: MimeType = MimeType::new(IMAGE_X_FIGMA, "Figma", ".fig", figma, &[])
@@ -2196,7 +2279,8 @@ static FIGMA: MimeType = MimeType::new(IMAGE_X_FIGMA, "Figma", ".fig", figma, &[
 // MathML - Mathematical Markup Language
 static MATHML: MimeType =
     MimeType::new(APPLICATION_MATHML_XML, "Mathml XML", ".mathml", mathml, &[])
-        .with_kind(MimeKind::DOCUMENT);
+        .with_kind(MimeKind::DOCUMENT)
+        .with_parent(&XML);
 
 // MusicXML - Music notation format
 static MUSICXML: MimeType = MimeType::new(
@@ -2206,27 +2290,33 @@ static MUSICXML: MimeType = MimeType::new(
     musicxml,
     &[],
 )
-.with_kind(MimeKind::DOCUMENT);
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&XML);
 
 // TTML - Timed Text Markup Language (subtitles)
 static TTML: MimeType = MimeType::new(APPLICATION_TTML_XML, "Ttml XML", ".ttml", ttml, &[])
-    .with_kind(MimeKind::DOCUMENT);
+    .with_kind(MimeKind::DOCUMENT)
+    .with_parent(&XML);
 
 // SOAP - Simple Object Access Protocol
 static SOAP: MimeType = MimeType::new(APPLICATION_SOAP_XML, "Soap XML", ".soap", soap, &[])
-    .with_kind(MimeKind::DOCUMENT);
+    .with_kind(MimeKind::DOCUMENT)
+    .with_parent(&XML);
 
 // TMX - Tiled Map XML (game development)
-static TMX: MimeType =
-    MimeType::new(APPLICATION_X_TMX_XML, "Tmx XML", ".tmx", tmx, &[]).with_kind(MimeKind::DOCUMENT);
+static TMX: MimeType = MimeType::new(APPLICATION_X_TMX_XML, "Tmx XML", ".tmx", tmx, &[])
+    .with_kind(MimeKind::DOCUMENT)
+    .with_parent(&XML);
 
 // TSX - Tiled Tileset XML (game development)
-static TSX: MimeType =
-    MimeType::new(APPLICATION_X_TSX_XML, "Tsx XML", ".tsx", tsx, &[]).with_kind(MimeKind::DOCUMENT);
+static TSX: MimeType = MimeType::new(APPLICATION_X_TSX_XML, "Tsx XML", ".tsx", tsx, &[])
+    .with_kind(MimeKind::DOCUMENT)
+    .with_parent(&XML);
 
 // MPD - MPEG-DASH Media Presentation Description
-static MPD: MimeType =
-    MimeType::new(APPLICATION_DASH_XML, "Dash XML", ".mpd", mpd, &[]).with_kind(MimeKind::DOCUMENT);
+static MPD: MimeType = MimeType::new(APPLICATION_DASH_XML, "Dash XML", ".mpd", mpd, &[])
+    .with_kind(MimeKind::DOCUMENT)
+    .with_parent(&XML);
 
 // MXL - MusicXML ZIP (compressed music notation)
 static MXL: MimeType = MimeType::new(
@@ -2247,11 +2337,13 @@ static CDDX: MimeType = MimeType::new(
     cddx,
     &[],
 )
-.with_kind(MimeKind::DOCUMENT);
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&XML);
 
 // DWFX - Design Web Format XPS (XML)
-static DWFX: MimeType =
-    MimeType::new(MODEL_VND_DWFX_XPS, "Dwfx Xps", ".dwfx", dwfx, &[]).with_kind(MimeKind::DOCUMENT);
+static DWFX: MimeType = MimeType::new(MODEL_VND_DWFX_XPS, "Dwfx Xps", ".dwfx", dwfx, &[])
+    .with_kind(MimeKind::DOCUMENT)
+    .with_parent(&XML);
 
 // FBZ - FictionBook ZIP (compressed e-book)
 static FBZ: MimeType = MimeType::new(APPLICATION_X_FBZ, "FictionBook ZIP", ".fbz", fbz, &[])
@@ -2413,19 +2505,17 @@ mimetype!(PEM, APPLICATION_X_PEM_FILE, ".pem",
 mimetype!(AGE, APPLICATION_X_AGE_ENCRYPTION, ".age", b"age-encryption.org/v1\n", name: "Age Encryption", kind: DOCUMENT);
 
 // EBML - Extensible Binary Meta Language, base for Matroska/WebM.
+// WEBM and MKV are children - detection flows: EBML matches magic -> check WEBM/MKV doctype
 static EBML: MimeType = MimeType::new(
     APPLICATION_X_EBML,
     "EBML",
     ".ebml",
     |input| {
         // EBML magic number: 0x1A45DFA3
-        // WebM and MKV are specific EBML formats but defined later
-        // They remain in ROOT children for detection priority
+        // Children (WEBM, MKV) will be checked first to detect specific formats
         input.starts_with(b"\x1A\x45\xDF\xA3")
-            && !is_matroska_file_type(input, b"webm")
-            && !is_matroska_file_type(input, b"matroska")
     },
-    &[],
+    &[&WEBM, &MKV],
 )
 .with_kind(MimeKind::APPLICATION);
 
@@ -3887,6 +3977,10 @@ static SVG: MimeType = MimeType::new(IMAGE_SVG_XML, "SVG", ".svg", svg, &[])
     .with_kind(MimeKind::IMAGE)
     .with_parent(&XML);
 
+static XSD: MimeType = MimeType::new(APPLICATION_XSD_XML, "XML Schema", ".xsd", xsd, &[])
+    .with_kind(MimeKind::TEXT)
+    .with_parent(&XML);
+
 // ============================================================================
 // XML-BASED FORMATS
 // ============================================================================
@@ -4464,7 +4558,20 @@ fn html(input: &[u8]) -> bool {
 }
 
 fn xml(input: &[u8]) -> bool {
-    input.trim_ascii_start().starts_with(b"<?xml")
+    if input.starts_with(b"<?xml") {
+        return true;
+    }
+
+    let limit = input.len().min(128);
+    let mut i = 0;
+    while i < limit {
+        match input[i] {
+            b' ' | b'\t' | b'\n' | b'\r' | 0x0C => i += 1,
+            _ => break,
+        }
+    }
+
+    i > 0 && input[i..].starts_with(b"<?xml")
 }
 
 fn mp4_precise(input: &[u8]) -> bool {
@@ -4554,30 +4661,25 @@ fn cpio(input: &[u8]) -> bool {
     input.starts_with(b"070701") || input.starts_with(b"070702") || input.starts_with(b"070707")
 }
 
-// Additional image format detectors from new Go implementation
+// JPEG 2000 format detectors
+// JP2 is the parent that validates signature at offset 4-8
+// It matches ANY JPEG 2000 file, children (JPX, JPM) refine by brand
 fn jp2(input: &[u8]) -> bool {
-    jpeg2k(input, b"jp2 ")
+    if input.len() < 12 {
+        return false;
+    }
+    // Check for JPEG 2000 signature box at offset 4-8
+    &input[4..8] == b"jP  " || &input[4..8] == b"jP2 "
 }
 
+// JPX and JPM are children of JP2 - parent already validated signature
+// They check the brand at offset 20-24
 fn jpx(input: &[u8]) -> bool {
-    jpeg2k(input, b"jpx ")
+    input.len() >= 24 && &input[20..24] == b"jpx "
 }
 
 fn jpm(input: &[u8]) -> bool {
-    jpeg2k(input, b"jpm ")
-}
-
-fn jpeg2k(input: &[u8], sig: &[u8]) -> bool {
-    if input.len() < 24 {
-        return false;
-    }
-
-    // Check for JPEG 2000 signature box
-    if &input[4..8] != b"jP  " && &input[4..8] != b"jP2 " {
-        return false;
-    }
-
-    &input[20..24] == sig
+    input.len() >= 24 && &input[20..24] == b"jpm "
 }
 
 // Enhanced DWG detection with more versions
@@ -4652,18 +4754,13 @@ fn mp2(input: &[u8]) -> bool {
     sync && layer == 0x02 // Layer II = 10 binary = 2 decimal
 }
 
-// Additional video format detectors
+// WEBM and MKV are children of EBML - parent already validated magic bytes
+// They only check the doctype
 fn webm(input: &[u8]) -> bool {
-    if !input.starts_with(b"\x1A\x45\xDF\xA3") {
-        return false;
-    }
     is_matroska_file_type(input, b"webm")
 }
 
 fn mkv(input: &[u8]) -> bool {
-    if !input.starts_with(b"\x1A\x45\xDF\xA3") {
-        return false;
-    }
     is_matroska_file_type(input, b"matroska")
 }
 
@@ -6484,47 +6581,9 @@ fn vb(input: &[u8]) -> bool {
 }
 
 fn php(input: &[u8]) -> bool {
-    if shebang_is(input, &[b"php"]) {
-        return true;
-    }
-
-    let sample = &input[..input.len().min(1024)];
-
-    // PHP must have opening tag
-    let has_php_tag = sample.starts_with(b"<?php")
-        || sample.starts_with(b"<?\n")
-        || sample.starts_with(b"<?\r")
-        || sample.windows(5).any(|w| w == b"<?php")
-        || sample.windows(3).any(|w| w == b"<?\n" || w == b"<?\r");
-
-    if !has_php_tag {
-        return false;
-    }
-
-    // PHP patterns with weights
-    let patterns = [
-        LangPattern::new(b"namespace ", 3), // PHP-specific
-        LangPattern::new(b"function ", 2),
-        LangPattern::new(b"echo ", 2),
-        LangPattern::new(b"$_", 3), // PHP superglobals
-        LangPattern::new(b"->", 2), // Object method call
-        LangPattern::new(b"class ", 2),
-        LangPattern::new(b"require ", 2),
-        LangPattern::new(b"include ", 2),
-        LangPattern::new(b"isset(", 2),
-        LangPattern::new(b"empty(", 2),
-        LangPattern::simple(b"use "),
-        LangPattern::simple(b"public "),
-        LangPattern::simple(b"private "),
-        LangPattern::simple(b"protected "),
-    ];
-
-    // Check for $ variable sigil (very PHP-specific)
-    let has_dollar = sample.contains(&b'$');
-
-    let score = SinglePassMatcher::new(sample, &patterns).scan().1;
-
-    (score >= 1) || has_dollar
+    // PHP scripts are detected via shebang
+    // Web PHP files (<?php)
+    shebang_is(input, &[b"php"]) || input.starts_with(b"<?php")
 }
 
 fn python(input: &[u8]) -> bool {
@@ -6941,15 +7000,22 @@ fn vcalendar(input: &[u8]) -> bool {
 
 fn svg(input: &[u8]) -> bool {
     let trimmed = input.trim_ascii_start();
-    if trimmed.starts_with(b"<?xml") {
-        // Look for SVG namespace in XML
-        trimmed.windows(4).any(|w| w == b"<svg")
-            || trimmed
-                .windows(26)
-                .any(|w| w == b"http://www.w3.org/2000/svg")
-    } else {
-        trimmed.starts_with(b"<svg")
-    }
+    // Look for SVG namespace in XML
+    trimmed.windows(4).any(|w| w == b"<svg")
+        || trimmed
+            .windows(26)
+            .any(|w| w == b"http://www.w3.org/2000/svg")
+}
+
+fn xsd(input: &[u8]) -> bool {
+    let trimmed = input.trim_ascii_start();
+    // Look for XML Schema namespace or schema root element
+    trimmed
+        .windows(7)
+        .any(|w| w == b"<schema" || w == b"<xs:sch" || w == b"<xsd:sc")
+        || trimmed
+            .windows(33)
+            .any(|w| w == b"http://www.w3.org/2001/XMLSchema")
 }
 
 // ============================================================================
@@ -7083,6 +7149,16 @@ fn svg_utf16_le(input: &[u8]) -> bool {
     detect_utf16_format(input, false, detect_svg_content)
 }
 
+/// XSD detection for UTF-16 Big Endian
+fn xsd_utf16_be(input: &[u8]) -> bool {
+    detect_utf16_format(input, true, detect_xsd_content)
+}
+
+/// XSD detection for UTF-16 Little Endian
+fn xsd_utf16_le(input: &[u8]) -> bool {
+    detect_utf16_format(input, false, detect_xsd_content)
+}
+
 /// JSON detection for UTF-16 Big Endian
 fn json_utf16_be(input: &[u8]) -> bool {
     detect_utf16_format(input, true, detect_json_content)
@@ -7198,6 +7274,11 @@ fn svg_utf8_bom(input: &[u8]) -> bool {
     detect_utf8_bom_format(input, detect_svg_content)
 }
 
+/// XSD detection for UTF-8 with BOM
+fn xsd_utf8_bom(input: &[u8]) -> bool {
+    detect_utf8_bom_format(input, detect_xsd_content)
+}
+
 /// JSON detection for UTF-8 with BOM
 fn json_utf8_bom(input: &[u8]) -> bool {
     detect_utf8_bom_format(input, detect_json_content)
@@ -7302,12 +7383,18 @@ fn detect_xml_content(text: &str) -> bool {
 /// Shared SVG content detection that works with any encoding after normalization
 fn detect_svg_content(text: &str) -> bool {
     let trimmed = text.trim_start();
-    if trimmed.starts_with("<?xml") {
-        // Look for SVG namespace in XML
-        trimmed.contains("<svg") || trimmed.contains("http://www.w3.org/2000/svg")
-    } else {
-        trimmed.starts_with("<svg")
-    }
+    // Look for SVG namespace in XML
+    trimmed.contains("<svg") || trimmed.contains("http://www.w3.org/2000/svg")
+}
+
+/// Shared XSD content detection that works with any encoding after normalization
+fn detect_xsd_content(text: &str) -> bool {
+    let trimmed = text.trim_start();
+    // Look for XML Schema namespace or schema root element
+    trimmed.contains("<schema")
+        || trimmed.contains("<xs:schema")
+        || trimmed.contains("<xsd:schema")
+        || trimmed.contains("http://www.w3.org/2001/XMLSchema")
 }
 
 /// Shared JSON content detection that works with any encoding after normalization
@@ -7584,7 +7671,7 @@ fn msoxml(input: &[u8], search_for: &[(&[u8], bool)], stop_after: usize) -> bool
     false
 }
 
-/// ZIP iterator for parsing ZIP file entries
+/// ZIP iterator for parsing ZIP file entries.
 struct ZipIterator<'a> {
     data: &'a [u8],
     pos: usize,
@@ -7596,57 +7683,98 @@ impl<'a> ZipIterator<'a> {
     }
 
     fn next(&mut self) -> Option<&'a [u8]> {
-        // Look for ZIP local file header signature "PK\x03\x04"
-        let pk_signature = b"PK\x03\x04";
+        // ZIP signatures
+        const LOCAL_HEADER: [u8; 4] = [b'P', b'K', 0x03, 0x04];
+        const CENTRAL_DIR: [u8; 4] = [b'P', b'K', 0x01, 0x02];
+        const END_OF_DIR: [u8; 4] = [b'P', b'K', 0x05, 0x06];
 
-        if self.pos + 4 >= self.data.len() {
+        // Need at least 30 bytes for local file header
+        if self.pos + 30 > self.data.len() {
             return None;
         }
 
-        if let Some(pk_pos) = self.data[self.pos..]
-            .windows(4)
-            .position(|w| w == pk_signature)
-        {
-            let header_start = self.pos + pk_pos;
+        let sig = &self.data[self.pos..self.pos + 4];
 
-            // Parse ZIP local file header
-            // Structure: signature(4) + version(2) + flags(2) + method(2) +
-            //           time(2) + date(2) + crc32(4) + compressed_size(4) +
-            //           uncompressed_size(4) + filename_length(2) + extra_length(2)
-
-            if header_start + 30 > self.data.len() {
-                return None;
-            }
-
-            // Skip to filename length field (at offset 26 from signature)
-            let filename_len_pos = header_start + 26;
-            if filename_len_pos + 4 > self.data.len() {
-                return None;
-            }
-
-            let filename_length =
-                u16::from_le_bytes([self.data[filename_len_pos], self.data[filename_len_pos + 1]])
-                    as usize;
-
-            let extra_length = u16::from_le_bytes([
-                self.data[filename_len_pos + 2],
-                self.data[filename_len_pos + 3],
-            ]) as usize;
-
-            // Extract filename
-            let filename_start = header_start + 30; // Fixed header size
-            if filename_start + filename_length > self.data.len() {
-                return None;
-            }
-
-            let filename = &self.data[filename_start..filename_start + filename_length];
-
-            // Move position past this entry
-            self.pos = filename_start + filename_length + extra_length;
-
-            return Some(filename);
+        // Early termination at Central Directory or End of Central Directory
+        if sig == CENTRAL_DIR || sig == END_OF_DIR {
+            return None;
         }
 
+        // Find header start - either at current position or search for it
+        let header_start = if sig == LOCAL_HEADER {
+            self.pos
+        } else {
+            self.find_local_header()?
+        };
+
+        if header_start + 30 > self.data.len() {
+            return None;
+        }
+
+        // Read header fields from single slice (better cache locality)
+        // ZIP local file header structure:
+        //   0-3:   signature (PK\x03\x04)
+        //   4-5:   version needed
+        //   6-7:   general purpose bit flag (bit 3 = data descriptor follows)
+        //   8-9:   compression method
+        //   10-13: last mod time/date
+        //   14-17: CRC-32
+        //   18-21: compressed size
+        //   22-25: uncompressed size
+        //   26-27: filename length
+        //   28-29: extra field length
+        let header = &self.data[header_start..header_start + 30];
+
+        let flags = u16::from_le_bytes([header[6], header[7]]);
+        let compressed_size =
+            u32::from_le_bytes([header[18], header[19], header[20], header[21]]) as usize;
+        let filename_length = u16::from_le_bytes([header[26], header[27]]) as usize;
+        let extra_length = u16::from_le_bytes([header[28], header[29]]) as usize;
+
+        // Bounds check for filename
+        let filename_start = header_start + 30;
+        let filename_end = filename_start + filename_length;
+        if filename_end > self.data.len() {
+            return None;
+        }
+
+        let filename = &self.data[filename_start..filename_end];
+
+        // Calculate next position using compressed_size when available
+        // Bit 3 of flags indicates data descriptor follows the compressed data
+        let has_data_descriptor = (flags & 0x08) != 0;
+
+        if has_data_descriptor || compressed_size == 0 {
+            // Data descriptor present or streaming: position after filename + extra
+            // Next iteration will scan for the next PK signature
+            self.pos = filename_end + extra_length;
+        } else {
+            // Fast path: jump directly to next entry using compressed_size
+            self.pos = filename_end + extra_length + compressed_size;
+        }
+
+        Some(filename)
+    }
+
+    /// Fast search for PK\x03\x04 local file header signature.
+    /// Also terminates early on Central Directory signatures.
+    #[inline]
+    fn find_local_header(&self) -> Option<usize> {
+        let data = self.data;
+        let mut i = self.pos;
+        let end = data.len().saturating_sub(3);
+
+        while i < end {
+            // Fast single-byte scan for 'P'
+            if data[i] == b'P' && data[i + 1] == b'K' {
+                match data[i + 2] {
+                    0x03 if data[i + 3] == 0x04 => return Some(i), // Local file header
+                    0x01 | 0x05 => return None, // Central Dir or End - stop searching
+                    _ => {}
+                }
+            }
+            i += 1;
+        }
         None
     }
 }

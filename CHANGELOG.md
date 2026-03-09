@@ -10,7 +10,14 @@ Used prefixes:
 
 ## Unreleased
 
-## 0.3.5 - 2026.02.09
+* Updated: EML (.eml) email detection stronger rules check
+* Added: XSD (.xsd) - XML Schema Definition format (`application/xml`) with support for UTF-8, UTF-8 BOM, UTF-16 BE, and UTF-16 LE encodings
+* Updated: JPEG 2000 family detection - JPX and JPM are now children of JP2 with optimized detection (parent validates signature, children only check brand)
+* Updated: EBML/Matroska family detection - WEBM and MKV are now children of EBML with optimized detection (parent validates magic bytes, children only check doctype)
+* Updated: added XML as parent to XML-based formats (DRAWIO, XSPF, XSL, MATHML, MUSICXML, TTML, SOAP, TMX, TSX, MPD, CDDX, DWFX)
+* Updated: speed up ZIP child check
+
+## 0.3.6 - 2026.02.09
 
 * Updated: improved PCX (.pcx) detection accuracy to prevent false positives with text files
 * Updated: improved performance: removed to string conversion for simple cases in favor byte search

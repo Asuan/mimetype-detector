@@ -476,6 +476,194 @@ fn test_detect_warc() {
 }
 
 #[test]
+fn test_detect_email() {
+    struct EmailTest {
+        name: &'static str,
+        data: &'static [u8],
+    }
+
+    let test_cases = vec![
+        EmailTest {
+            name: "Email with From: header",
+            data: b"From: sender@example.com\r\nTo: recipient@example.com\r\nSubject: Test\r\n\r\nBody",
+        },
+        EmailTest {
+            name: "Email with MIME-Version header (Gmail example)",
+            data: b"MIME-Version: 1.0\r\nx-no-auto-attachment: 1\r\nReceived: by 2002:a05:7508:33c8:b0:7a:86cf:9f89; Wed, 11 Sep 2024 07:44:20\r\n -0700 (PDT)\r\nDate: Wed, 11 Sep 2024 07:44:20 -0700\r\nMessage-ID: <CALPop38f_LF5cF-+-ThssQOuf8h=kQ-TftXHknJQ9xChZcFgaA@mail.gmail.com>\r\nSubject: Tips for using your new inbox\r\nFrom: Gmail Team <mail-noreply@google.com>\r\nTo: A A <a@dev.afi.ai>\r\nContent-Type: multipart/alternative; boundary=\"0000000000007cc7f30621d906f1\"\r\n",
+        },
+        EmailTest {
+            name: "Email with Received: header",
+            data: b"Received: from mail.example.com\r\nDate: Mon, 1 Jan 2024 12:00:00 +0000\r\nSubject: Test\r\n\r\nBody",
+        },
+        EmailTest {
+            name: "Email with Content-Type: header",
+            data: b"Content-Type: text/plain; charset=utf-8\r\nFrom: sender@example.com\r\nSubject: Test\r\n\r\nBody",
+        },
+        EmailTest {
+            name: "Email with Return-Path: header",
+            data: b"Return-Path: <bounce@example.com>\r\nFrom: sender@example.com\r\nSubject: Test\r\n\r\nBody",
+        },
+        EmailTest {
+            name: "Email with Delivered-To: header",
+            data: b"Delivered-To: recipient@example.com\r\nFrom: sender@example.com\r\nSubject: Test\r\n\r\nBody",
+        },
+        EmailTest {
+            name: "Email with Date: header",
+            data: b"Date: Mon, 1 Jan 2024 12:00:00 +0000\r\nFrom: sender@example.com\r\nSubject: Test\r\n\r\nBody",
+        },
+        EmailTest {
+            name: "Email with Subject: header",
+            data: b"Subject: Test Email\r\nFrom: sender@example.com\r\nDate: Mon, 1 Jan 2024 12:00:00 +0000\r\n\r\nBody",
+        },
+        EmailTest {
+            name: "Email with To: header",
+            data: b"To: recipient@example.com\r\nFrom: sender@example.com\r\nSubject: Test\r\n\r\nBody",
+        },
+    ];
+
+    for test_case in test_cases {
+        let mime_type = detect(test_case.data);
+        assert_eq!(
+            mime_type.mime(),
+            MESSAGE_RFC822,
+            "Test '{}' failed: expected {}, got {}",
+            test_case.name,
+            MESSAGE_RFC822,
+            mime_type.mime()
+        );
+        assert_eq!(
+            mime_type.extension(),
+            ".eml",
+            "Test '{}' failed: expected .eml, got {}",
+            test_case.name,
+            mime_type.extension()
+        );
+        assert!(
+            mime_type.kind().is_text(),
+            "Test '{}' failed: expected text kind",
+            test_case.name
+        );
+        assert!(
+            !mime_type.name().is_empty(),
+            "Test '{}' failed: name should not be empty",
+            test_case.name
+        );
+    }
+}
+
+#[test]
+fn test_xsd_detection() {
+    struct XsdTest {
+        name: &'static str,
+        data: &'static [u8],
+    }
+
+    let test_cases = vec![
+        XsdTest {
+            name: "XSD with xs: namespace prefix",
+            data: b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">
+  <xs:element name=\"person\">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name=\"name\" type=\"xs:string\"/>
+        <xs:element name=\"age\" type=\"xs:integer\"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>",
+        },
+        XsdTest {
+            name: "XSD with xsd: namespace prefix",
+            data: b"<?xml version=\"1.0\"?>
+<xsd:schema xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">
+  <xsd:element name=\"note\">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name=\"to\" type=\"xsd:string\"/>
+        <xsd:element name=\"from\" type=\"xsd:string\"/>
+        <xsd:element name=\"heading\" type=\"xsd:string\"/>
+        <xsd:element name=\"body\" type=\"xsd:string\"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+</xsd:schema>",
+        },
+        XsdTest {
+            name: "XSD without namespace prefix (default namespace)",
+            data: b"<?xml version=\"1.0\"?>
+<schema xmlns=\"http://www.w3.org/2001/XMLSchema\">
+  <element name=\"shiporder\">
+    <complexType>
+      <sequence>
+        <element name=\"orderperson\" type=\"string\"/>
+        <element name=\"shipto\">
+          <complexType>
+            <sequence>
+              <element name=\"name\" type=\"string\"/>
+              <element name=\"address\" type=\"string\"/>
+              <element name=\"city\" type=\"string\"/>
+              <element name=\"country\" type=\"string\"/>
+            </sequence>
+          </complexType>
+        </element>
+      </sequence>
+    </complexType>
+  </element>
+</schema>",
+        },
+        XsdTest {
+            name: "XSD minimal schema",
+            data: b"<?xml version=\"1.0\"?>
+<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">
+</xs:schema>",
+        },
+        XsdTest {
+            name: "XSD with UTF-8 BOM",
+            data: b"\xEF\xBB\xBF<?xml version=\"1.0\"?>
+<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">
+  <xs:element name=\"test\" type=\"xs:string\"/>
+</xs:schema>",
+        },
+        XsdTest {
+            name: "XSD with targetNamespace",
+            data: b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"
+           targetNamespace=\"http://www.example.com/myschema\"
+           xmlns=\"http://www.example.com/myschema\"
+           elementFormDefault=\"qualified\">
+  <xs:element name=\"root\">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name=\"child\" type=\"xs:string\"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>",
+        },
+    ];
+
+    for test_case in test_cases {
+        let mime = detect(test_case.data);
+        assert_eq!(
+            mime.mime(),
+            APPLICATION_XSD_XML,
+            "Test '{}' failed: expected {}, got {}",
+            test_case.name,
+            APPLICATION_XSD_XML,
+            mime.mime()
+        );
+        assert_eq!(
+            mime.extension(),
+            ".xsd",
+            "Test '{}' failed: expected .xsd, got {}",
+            test_case.name,
+            mime.extension()
+        );
+    }
+}
+
+#[test]
 fn test_detect_lz4() {
     let data = b"\x04\x22\x4D\x18\x00\x00\x00\x00";
     let mime_type = detect(data);
@@ -6185,6 +6373,7 @@ fn test_detect_drawio() {
     assert!(mime_type.is(APPLICATION_VND_JGRAPH_MXFILE));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_document());
+    assert!(mime_type.kind().is_text()); // Inherits from XML
     assert!(!mime_type.name().is_empty());
 }
 
@@ -6199,6 +6388,7 @@ fn test_detect_xspf() {
     assert!(mime_type.is(APPLICATION_XSPF_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_document());
+    assert!(mime_type.kind().is_text()); // Inherits from XML
     assert!(!mime_type.name().is_empty());
 }
 
@@ -6213,6 +6403,7 @@ fn test_detect_xsl() {
     assert!(mime_type.is(APPLICATION_XSLT_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_document());
+    assert!(mime_type.kind().is_text()); // Inherits from XML
     assert!(!mime_type.name().is_empty());
 }
 
@@ -6245,6 +6436,7 @@ fn test_detect_mathml() {
     assert!(mime_type.is(APPLICATION_MATHML_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_document());
+    assert!(mime_type.kind().is_text()); // Inherits from XML
     assert!(!mime_type.name().is_empty());
 }
 
@@ -6259,6 +6451,7 @@ fn test_detect_musicxml() {
     assert!(mime_type.is(APPLICATION_VND_RECORDARE_MUSICXML_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_document());
+    assert!(mime_type.kind().is_text()); // Inherits from XML
     assert!(!mime_type.name().is_empty());
 }
 
@@ -6273,6 +6466,7 @@ fn test_detect_ttml() {
     assert!(mime_type.is(APPLICATION_TTML_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_document());
+    assert!(mime_type.kind().is_text()); // Inherits from XML
     assert!(!mime_type.name().is_empty());
 }
 
@@ -6287,6 +6481,7 @@ fn test_detect_soap() {
     assert!(mime_type.is(APPLICATION_SOAP_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_document());
+    assert!(mime_type.kind().is_text()); // Inherits from XML
     assert!(!mime_type.name().is_empty());
 }
 
@@ -6301,6 +6496,7 @@ fn test_detect_tmx() {
     assert!(mime_type.is(APPLICATION_X_TMX_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_document());
+    assert!(mime_type.kind().is_text()); // Inherits from XML
     assert!(!mime_type.name().is_empty());
 }
 
@@ -6315,6 +6511,7 @@ fn test_detect_tsx() {
     assert!(mime_type.is(APPLICATION_X_TSX_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_document());
+    assert!(mime_type.kind().is_text()); // Inherits from XML
     assert!(!mime_type.name().is_empty());
 }
 
@@ -6329,6 +6526,7 @@ fn test_detect_mpd() {
     assert!(mime_type.is(APPLICATION_DASH_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_document());
+    assert!(mime_type.kind().is_text()); // Inherits from XML
     assert!(!mime_type.name().is_empty());
 }
 
@@ -6373,6 +6571,7 @@ fn test_detect_cddx() {
     assert!(mime_type.is(APPLICATION_VND_CIRCUITDIAGRAM_DOCUMENT_MAIN_XML));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_document());
+    assert!(mime_type.kind().is_text()); // Inherits from XML
     assert!(!mime_type.name().is_empty());
 }
 
@@ -6387,6 +6586,7 @@ fn test_detect_dwfx() {
     assert!(mime_type.is(MODEL_VND_DWFX_XPS));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_document());
+    assert!(mime_type.kind().is_text()); // Inherits from XML
     assert!(!mime_type.name().is_empty());
 }
 
