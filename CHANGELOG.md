@@ -10,6 +10,18 @@ Used prefixes:
 
 ## Unreleased
 
+## 0.3.8 - 2026.04.07
+
+* Added: UDF (.udf) - Universal Disk Format (ISO/IEC 13346 filesystem) (`application/x-udf`)
+* Added: EROFS (.erofs) - Enhanced Read-Only File System (Android/Linux) (`application/x-erofs`)
+* Added: Parallels HDD (.hdd) - Parallels Desktop virtual disk image (`application/x-parallels-hdd`)
+* Added: QED (.qed) - QEMU Enhanced Disk legacy format (`application/x-qemu-disk`)
+* Updated: Squashfs classification changed from DOCUMENT to ARCHIVE (consistency with other filesystems)
+* Updated: WIM (Windows Imaging Format) classification changed from DOCUMENT to ARCHIVE (like another ISO9660)
+* Updated: Go language detection - reworked to strong format check
+* Updated: C language detection - reworked to strong format check
+* Updated: MOBI detection - fixed incorrect slice bounds
+
 ## 0.3.7 - 2026.03.17
 
 * Updated: EML (.eml) email detection stronger rules check

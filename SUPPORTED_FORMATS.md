@@ -118,6 +118,7 @@ This document provides a comprehensive listing of all 546 file formats supported
 | Empty File | Empty File | `application/x-empty` | `.empty` | | Zero-length file detection |
 | Encapsulated PostScript | Encapsulated PostScript | `application/eps` | `.eps` | | Binary EPS with TIFF/WMF preview |
 | Enhanced Metafile | Enhanced Metafile | `image/emf` | `.emf` | | Windows vector format |
+| Enhanced Read-Only File System | EROFS | `application/x-erofs` | `.erofs` | | Enhanced Read-Only File System (Android/Linux) |
 | Enterprise Application Archive | Enterprise Archive | `application/x-ear` | `.ear` | | Java EE application archive |
 | EOT | Embedded OpenType Font | `application/vnd.ms-fontobject` | `.eot` | | Embedded OpenType |
 | EPUB | EPUB | `application/epub+zip` | `.epub` | | Electronic Publication |
@@ -315,6 +316,7 @@ This document provides a comprehensive listing of all 546 file formats supported
 | OS/2 INF | OS/2 INF | `application/x-os2-inf` | `.inf` | | OS/2 binary information file format |
 | PAK | PAK Archive | `application/x-pak` | `.pak` | | PAK Archive (games) |
 | Par2 | Par2 Recovery File | `application/x-par2` | `.par2` | | Parchive 2 recovery file |
+| Parallels Desktop Disk Image | Parallels HDD | `application/x-parallels-hdd` | `.hdd` | | Parallels Desktop virtual machine disk image |
 | PCAP | Packet Capture | `application/vnd.tcpdump.pcap` | `.pcap` | | Packet Capture (libpcap) |
 | PCAPNG | Next Generation Packet Capture | `application/x-pcapng` | `.pcapng` | | Next Generation PCAP |
 | PCX | PC Paintbrush | `image/x-pcx` | `.pcx` | | Picture Exchange / PC Paintbrush |
@@ -353,6 +355,7 @@ This document provides a comprehensive listing of all 546 file formats supported
 | Python Pickle | Python Pickle | `application/x-pickle` | `.pkl`, `.pickle` | | Serialization format (protocols 2-5) |
 | QCOW | QEMU Copy-on-Write 2 | `application/x-qemu-disk` | `.qcow` | | QEMU Copy-on-Write v1 disk image |
 | QCOW2 | QEMU Copy-on-Write 2 | `application/x-qemu-disk` | `.qcow2` | | QEMU Copy-on-Write v2 disk image |
+| QED | QEMU Enhanced Disk | `application/x-qemu-disk` | `.qed` | | QEMU Enhanced Disk (legacy format, superseded by QCOW2) |
 | QOI (Quite OK Image) | Quite OK Image Format | `image/x-qoi` | `.qoi` | | Quite OK Image format |
 | Qualcomm PureVoice | Qualcomm PureVoice Audio | `audio/qcelp` | `.qcp` | | |
 | Quark Express | Quark Express Document | `application/vnd.quark.quarkxpress` | `.qxd` | | Professional publishing software |
@@ -436,6 +439,7 @@ This document provides a comprehensive listing of all 546 file formats supported
 | Uniform Office Format Presentation | UOF Presentation | `application/vnd.uof.presentation` | `.uop` | | Chinese office format (ZIP-based, detects via "uof:UOF" namespace and Chinese text) |
 | Uniform Office Format Spreadsheet | UOF Spreadsheet | `application/vnd.uof.spreadsheet` | `.uos` | | Chinese office format (ZIP-based, detects via "uof:UOF" namespace and Chinese text) |
 | Uniform Office Format Text | UOF Text | `application/vnd.uof.text` | `.uot` | | Chinese office format (ZIP-based, detects via "uof:UOF" namespace and Chinese text) |
+| Universal Disk Format | UDF | `application/x-udf` | `.udf` | | Universal Disk Format (ISO/IEC 13346) filesystem |
 | Universal 3D | Universal 3D | `model/u3d` | `.u3d` | | PDF 3D embedding |
 | Universal Scene Description ASCII | Universal Scene Description ASCII | `model/x-usd-ascii` | `.usda` | | Pixar USD text format |
 | Universal Scene Description Binary | Universal Scene Description Binary | `model/x-usd` | `.usd` | | Pixar USD format |

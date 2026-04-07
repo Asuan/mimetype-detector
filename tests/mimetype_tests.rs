@@ -2087,8 +2087,8 @@ fn test_detect_mobi() {
     let mut data = vec![0; 68];
     data[60..68].copy_from_slice(b"BOOKMOBI");
     let mime_type = detect(&data);
-    assert_eq!(mime_type.mime(), APPLICATION_OCTET_STREAM);
-    assert_eq!(mime_type.extension(), "");
+    assert_eq!(mime_type.mime(), APPLICATION_X_MOBIPOCKET_EBOOK);
+    assert_eq!(mime_type.extension(), ".mobi");
     assert!(!mime_type.name().is_empty());
 }
 
@@ -2785,17 +2785,112 @@ fn test_detect_typescript() {
 #[test]
 fn test_detect_c() {
     let test_cases = [
+        // Basic C features
         (
-            b"#include <stdio.h>\n\nint main() {\n    printf(\"Hello World\\n\");\n    return 0;\n}" as &[u8],
-            "include with printf"
+            b"#include <stdio.h>\n#include <stdlib.h>\n\nint main(void) {\n    printf(\"Hello World\\n\");\n    return 0;\n}" as &[u8],
+            "basic C with stdio.h"
         ),
         (
-            b"#include <stdlib.h>\n\ntypedef struct {\n    int x;\n    int y;\n} Point;\n\nvoid* allocate(size_t size) {\n    return malloc(size);\n}",
-            "typedef struct with malloc"
+            b"typedef struct {\n    int x;\n    int y;\n} Point;\n\nvoid process(Point* p) {\n    p->x = 0;\n}",
+            "C struct with typedef"
         ),
         (
-            b"#include <string.h>\n#define MAX 100\n\nvoid process(void) {\n    char buf[MAX];\n}",
-            "include with define"
+            b"#ifndef MYHEADER_H\n#define MYHEADER_H\n\nvoid my_function(int x);\n\n#endif",
+            "C header with include guards"
+        ),
+        (
+            b"#include <stdlib.h>\n\nint main() {\n    int* ptr = (int*)malloc(sizeof(int) * 10);\n    free(ptr);\n    return 0;\n}",
+            "C with malloc/free"
+        ),
+        (
+            b"typedef enum {\n    RED,\n    GREEN,\n    BLUE\n} Color;\n\nColor get_color() {\n    return RED;\n}",
+            "C with typedef enum"
+        ),
+        (
+            b"typedef union {\n    int i;\n    float f;\n} Number;\n\nvoid use_number(Number n) {\n    printf(\"%d\", n.i);\n}",
+            "C with typedef union"
+        ),
+        (
+            b"#pragma once\n\nint add(int a, int b);\nint subtract(int a, int b);\nvoid print_result(int result);",
+            "C header with pragma once"
+        ),
+        (
+            b"#ifndef MYLIB_H\n#define MYLIB_H\n\nvoid init();\nvoid cleanup();\nint process(int x);\n\n#endif",
+            "C header with function declarations"
+        ),
+        // Edge cases
+        (
+            b"/* Multi-line comment\n   before code */\n#include <stdio.h>\n\nint main() {\n    printf(\"test\");\n    return 0;\n}",
+            "C with multi-line comment"
+        ),
+        (
+            b"// This is a C file\n#include <stdio.h>\n// Main function\nint main() {\n    // Print message\n    printf(\"Hello\");\n    return 0;\n}",
+            "C with single-line comments"
+        ),
+        (
+            b"#include <stdio.h>\r\n\r\nint main(void) {\r\n    printf(\"Hello\");\r\n    return 0;\r\n}",
+            "C with Windows CRLF line endings"
+        ),
+        (
+            b"#include <stdio.h>\n\nstatic int helper(int x) {\n    return x * 2;\n}\n\nint main() {\n    return helper(5);\n}",
+            "C with static function"
+        ),
+        (
+            b"#include <stdio.h>\n\nextern int global_var;\n\nint main() {\n    printf(\"%d\", global_var);\n    return 0;\n}",
+            "C with extern declaration"
+        ),
+        (
+            b"#include <stdio.h>\n\nconst int MAX = 100;\n\nint main() {\n    printf(\"%d\", MAX);\n    return 0;\n}",
+            "C with const declaration"
+        ),
+        (
+            b"#ifndef CONFIG_H\n#define CONFIG_H\n\n#define VERSION \"1.0.0\"\n#define MAX_BUFFER 1024\n\ntypedef struct {\n    int x;\n    int y;\n} Point;\n\n#endif",
+            "C header with include guards, defines, and typedef"
+        ),
+        (
+            b"#pragma once\n\n#ifdef __cplusplus\nextern \"C\" {\n#endif\n\nvoid c_function(int x);\n\n#ifdef __cplusplus\n}\n#endif",
+            "C header with extern C for C++ compatibility"
+        ),
+        (
+            b"#ifndef TYPES_H\n#define TYPES_H\n\ntypedef unsigned char uint8_t;\ntypedef unsigned short uint16_t;\ntypedef unsigned int uint32_t;\n\n#endif",
+            "C header with only typedefs"
+        ),
+        (
+            b"#pragma once\n\nextern int global_counter;\nextern char* app_name;\n\nvoid init_globals();",
+            "C header with extern declarations"
+        ),
+        (
+            b"#ifndef API_H\n#define API_H\n\n#include <stdint.h>\n\nstruct Device;\n\nint device_open(struct Device* dev);\nint device_close(struct Device* dev);\n\n#endif",
+            "C header with forward declaration and function pointers"
+        ),
+        // Minimal/tricky cases
+        (
+            b"#include <stdio.h>\nint main() { return 0; }",
+            "minimal C file"
+        ),
+        (
+            b"#ifndef CONFIG_H\n#define CONFIG_H\n#define MAX_SIZE 1024\n#define MIN_SIZE 10\n#endif",
+            "C header with only preprocessor directives"
+        ),
+        (
+            b"typedef int (*callback_t)(int, int);\n\nint add(int a, int b) { return a + b; }\n\nint main() {\n    callback_t cb = add;\n    return cb(1, 2);\n}",
+            "C with function pointer typedef"
+        ),
+        (
+            b"#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <math.h>\n\nint main() { return 0; }",
+            "C with multiple system includes"
+        ),
+        (
+            b"#pragma once\n#include <stdio.h>\n\nvoid helper() {\n    printf(\"helper\");\n}",
+            "C with #pragma once in implementation"
+        ),
+        (
+            b"#ifdef DEBUG\n#define LOG(x) printf(x)\n#else\n#define LOG(x)\n#endif\n\nint main() { LOG(\"test\"); }",
+            "C with #ifdef/#else/#endif"
+        ),
+        (
+            b"  #include <stdio.h>\n  #define MAX 100\n\nint main() {\n    return 0;\n}",
+            "C with indented preprocessor directives"
         ),
     ];
 
@@ -2811,17 +2906,47 @@ fn test_detect_c() {
 #[test]
 fn test_detect_cpp() {
     let test_cases = [
+        // Basic C++ features
         (
-            b"#include <iostream>\n\nnamespace example {\n    class Greeter {\n    public:\n        void greet() {\n            std::cout << \"Hello World\" << std::endl;\n        }\n    };\n}" as &[u8],
-            "namespace with class and cout"
+            b"#include <iostream>\n#include <string>\n\nint main() {\n    std::cout << \"Hello World\" << std::endl;\n    return 0;\n}" as &[u8],
+            "C++ with iostream"
         ),
         (
-            b"#include <vector>\n\ntemplate<typename T>\nclass Container {\nprivate:\n    std::vector<T> items;\npublic:\n    void add(T item) { items.push_back(item); }\n};",
-            "template class with vector"
+            b"class Point {\nprivate:\n    int x, y;\npublic:\n    Point(int x, int y) : x(x), y(y) {}\n};",
+            "C++ class with constructor"
+        ),
+        (
+            b"#include <vector>\n\ntemplate<typename T>\nT max(T a, T b) {\n    return a > b ? a : b;\n}",
+            "C++ template"
+        ),
+        (
+            b"#include <iostream>\n\nnamespace MyApp {\n    void run() {\n        std::cout << \"Running\" << std::endl;\n    }\n}",
+            "C++ with namespace"
+        ),
+        (
+            b"class Calculator {\npublic:\n    int add(int a, int b) { return a + b; }\n    int subtract(int a, int b) { return a - b; }\n};",
+            "C++ with class methods"
         ),
         (
             b"using namespace std;\n\nint main() {\n    cout << \"Hello\" << endl;\n}",
-            "using namespace std"
+            "C++ using namespace std"
+        ),
+        // Edge cases
+        (
+            b"class Base {\nprotected:\n    int x;\nprivate:\n    int y;\npublic:\n    Base() : x(0), y(0) {}\n};",
+            "C++ with protected/private members"
+        ),
+        (
+            b"#include <iostream>\n\nint main() {\n    std::string name = \"test\";\n    std::cout << name;\n}",
+            "C++ with std:: usage"
+        ),
+        (
+            b"#include <vector>\n\nint main() {\n    std::vector<int> v = {1, 2, 3};\n    for (auto x : v) {\n        // process\n    }\n}",
+            "C++ with auto keyword and range-based for"
+        ),
+        (
+            b"extern \"C\" {\n    void c_function(int x);\n}\n\nint main() {\n    c_function(42);\n}",
+            "C++ with extern C block"
         ),
     ];
 
@@ -2846,12 +2971,45 @@ fn test_detect_go() {
             "channels with defer"
         ),
         (
+            b"package main\n\nfunc main() {\n    fmt.Println(\"Hello\")\n}",
+            "minimal func main without import"
+        ),
+        (
             b"package utils\n\nfunc Add(a, b int) int {\n    result := a + b\n    return result\n}",
             "short variable declaration"
         ),
         (
             b"package models\n\ntype User struct {\n    ID int\n    Name string\n    Email string\n}\n\ntype Repository interface {\n    Save(u *User) error\n    Find(id int) (*User, error)\n}",
             "struct and interface definitions"
+        ),
+        (
+            b"package service\n\ntype Handler interface {\n    Handle() error\n}",
+            "interface declaration"
+        ),
+        // Comment handling tests
+        (
+            b"// This is a Go file\npackage main\n\nimport \"fmt\"\n",
+            "single-line comment before package"
+        ),
+        (
+            b"// Copyright 2024\n// License: MIT\npackage main\n\nimport \"fmt\"\n",
+            "multiple single-line comments before package"
+        ),
+        (
+            b"/* Multi-line\n   comment */\npackage main\n\nimport \"fmt\"\n",
+            "multi-line comment before package"
+        ),
+        (
+            b"/*\n * Block comment\n * with asterisks\n */\npackage main\n\nimport \"fmt\"\n",
+            "block comment with asterisks before package"
+        ),
+        (
+            b"package main\n\n// Import section\nimport \"fmt\"\n",
+            "comment between package and import"
+        ),
+        (
+            b"package main\n\n/* Block comment\nbetween package and import */\nimport \"fmt\"\n",
+            "multi-line comment between package and import"
         ),
     ];
 
@@ -3132,11 +3290,6 @@ fn test_language_disambiguation() {
             "TypeScript not detected as Java"
         ),
         (
-            b"package main\n\nfunc main() {\n    fmt.Println(\"Hello\")\n}",
-            TEXT_X_GO,
-            "Go not detected as Java"
-        ),
-        (
             b"def greet(name):\n    print(f\"Hello {name}\")\n\nclass Person:\n    def __init__(self, name):\n        self.name = name",
             TEXT_X_PYTHON,
             "Python not detected as Ruby"
@@ -3407,47 +3560,6 @@ fn test_typescript_vs_java_vs_javascript() {
             b"type Point = { x: number; y: number };\ntype Line = { start: Point; end: Point };\nexport { Point, Line };",
             TEXT_X_TYPESCRIPT,
             "TypeScript type aliases not detected as Java/JavaScript"
-        ),
-    ];
-
-    for (data, expected_mime, description) in test_cases {
-        let mime_type = detect(data);
-        assert_eq!(
-            mime_type.mime(),
-            expected_mime,
-            "Failed for: {}",
-            description
-        );
-    }
-}
-
-#[test]
-fn test_c_vs_cpp_disambiguation() {
-    let test_cases = [
-        (
-            b"#include <stdio.h>\n#include <stdlib.h>\n\nint main(void) {\n    printf(\"Hello\\n\");\n    return 0;\n}" as &[u8],
-            TEXT_X_C,
-            "C with stdio.h not detected as C++"
-        ),
-        (
-            b"#include <iostream>\n#include <string>\n\nint main() {\n    std::cout << \"Hello\" << std::endl;\n    return 0;\n}",
-            TEXT_X_CPP,
-            "C++ with iostream not detected as C"
-        ),
-        (
-            b"typedef struct {\n    int x;\n    int y;\n} Point;\n\nvoid process(Point* p) {\n    p->x = 0;\n}",
-            TEXT_X_C,
-            "C struct with typedef not detected as C++"
-        ),
-        (
-            b"class Point {\nprivate:\n    int x, y;\npublic:\n    Point(int x, int y) : x(x), y(y) {}\n};",
-            TEXT_X_CPP,
-            "C++ class with constructor not detected as C"
-        ),
-        (
-            b"#include <vector>\n\ntemplate<typename T>\nT max(T a, T b) {\n    return a > b ? a : b;\n}",
-            TEXT_X_CPP,
-            "C++ template not detected as C"
         ),
     ];
 
@@ -5486,6 +5598,18 @@ fn test_detect_qcow() {
 }
 
 #[test]
+fn test_detect_qed() {
+    // QEMU Enhanced Disk - legacy format
+    let data = b"QED\x00\x00\x00\x00\x00";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_QEMU_DISK);
+    assert_eq!(mime_type.extension(), ".qed");
+    assert!(mime_type.is(APPLICATION_X_QEMU_DISK));
+    assert!(mime_type.kind().is_document());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
 fn test_detect_wma() {
     // Windows Media Audio - ASF-based format with Audio Stream GUID
     // Create proper ASF header structure with Audio Stream GUID
@@ -6955,5 +7079,60 @@ fn test_detect_threedxml() {
     assert_eq!(mime_type.extension(), ".3dxml");
     assert!(mime_type.is(MODEL_VND_3DXML));
     assert!(mime_type.kind().is_model());
+    assert!(!mime_type.name().is_empty());
+}
+
+// ============================================================================
+// FILESYSTEM FORMATS
+// ============================================================================
+
+#[test]
+fn test_detect_udf() {
+    // Universal Disk Format - Beginning Extended Area Descriptor at offset 32769 (0x8001)
+    // Note: Requires detect_with_limit() as magic is beyond default 3KB read limit
+    let mut data = vec![0u8; 32774];
+    data[32769..32774].copy_from_slice(b"BEA01");
+    let mime_type = mimetype_detector::detect_with_limit(&data, 40000);
+    assert_eq!(mime_type.mime(), APPLICATION_X_UDF);
+    assert_eq!(mime_type.extension(), ".udf");
+    assert!(mime_type.is(APPLICATION_X_UDF));
+    assert!(mime_type.kind().is_archive());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_erofs() {
+    // Enhanced Read-Only File System - magic 0xE0F5E1E2 at offset 1024
+    let mut data = vec![0u8; 1028];
+    data[1024..1028].copy_from_slice(b"\xE2\xE1\xF5\xE0"); // little-endian
+    let mime_type = detect(&data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_EROFS);
+    assert_eq!(mime_type.extension(), ".erofs");
+    assert!(mime_type.is(APPLICATION_X_EROFS));
+    assert!(mime_type.kind().is_archive());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_parallels_hdd() {
+    // Parallels Desktop Disk Image - "WithoutFreeSpace" at offset 0
+    let data = b"WithoutFreeSpace\x00\x00\x00\x00";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_PARALLELS_HDD);
+    assert_eq!(mime_type.extension(), ".hdd");
+    assert!(mime_type.is(APPLICATION_X_PARALLELS_HDD));
+    assert!(mime_type.kind().is_document());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_parallels_hdd_ext() {
+    // Parallels Desktop Disk Image Extended - "WithouFreSpacExt" at offset 0
+    let data = b"WithouFreSpacExt\x00\x00\x00\x00";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_PARALLELS_HDD);
+    assert_eq!(mime_type.extension(), ".hdd");
+    assert!(mime_type.is(APPLICATION_X_PARALLELS_HDD));
+    assert!(mime_type.kind().is_document());
     assert!(!mime_type.name().is_empty());
 }

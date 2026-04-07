@@ -1494,6 +1494,15 @@ pub const APPLICATION_X_MS_WIM: &str = "application/x-ms-wim";
 /// Squashfs compressed filesystem
 pub const APPLICATION_X_SQUASHFS: &str = "application/x-squashfs";
 
+/// Universal Disk Format (UDF)
+pub const APPLICATION_X_UDF: &str = "application/x-udf";
+
+/// Enhanced Read-Only File System (Android)
+pub const APPLICATION_X_EROFS: &str = "application/x-erofs";
+
+/// Parallels Desktop Disk Image
+pub const APPLICATION_X_PARALLELS_HDD: &str = "application/x-parallels-hdd";
+
 // ============================================================================
 // NINTENDO & GAMING FORMATS
 // ============================================================================

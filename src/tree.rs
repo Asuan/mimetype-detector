@@ -83,13 +83,13 @@ build_prefix_vec! {
         0x4e => [&NINTENDO_SWITCH_NSO, &NES] as __PV_4E,  // Nintendo Switch NSO, NES ROM
         0x4f => [&OTF, &OGG, &ALEMBIC, &AVRO] as __PV_4F,  // OTF, OGG, Alembic, Apache Avro
         0x50 => [&USD_BINARY, &PFM, &NINTENDO_SWITCH_NSP, &PAR2, &PARQUET, &ZIP, &PBM, &PGM, &PPM, &PAM, &PAK] as __PV_50,  // USD Binary ('PXR-USDC'), PFM, Nintendo Switch NSP, Par2, Parquet, ZIP, Portable formats, PAK
-        0x51 => [&QCOW2, &QCOW, &CINEMA4D] as __PV_51,  // QEMU Copy-on-Write v2 ('QFI\xFB'), v1 ('QFI'), Cinema4D ('QC4DC4D6')
+        0x51 => [&QCOW2, &QCOW, &QED, &CINEMA4D] as __PV_51,  // QEMU Copy-on-Write v2 ('QFI\xFB'), v1 ('QFI'), QED ('QED\x00'), Cinema4D ('QC4DC4D6')
         0x52 => [&WINDOWS_REG, &RAR, &RIFF, &RZIP] as __PV_52,  // Windows Registry, RAR, RIFF container (children: WAV, AVI, WEBP, etc.), RZIP
         0x53 => [&FITS, &SQLITE3, &STUFFIT, &STUFFITX, &SEQBOX, &DPX] as __PV_53,  // FITS, SQLite3, StuffIt, StuffItX, SeqBox, DPX (SDPX)
         0x54 => [&TTA, &TZIF] as __PV_54,
         0x55 => [&U3D] as __PV_55,
         0x56 => [&VOX] as __PV_56,  // MagicaVoxel ('VOX ')
-        0x57 => [&AUTODESK_ALIAS] as __PV_57,  // Autodesk Alias ('WIRE')
+        0x57 => [&AUTODESK_ALIAS, &PARALLELS_HDD] as __PV_57,  // Autodesk Alias ('WIRE'), Parallels HDD ('WithoutFreeSpace'/'WithouFreSpacExt')
         0x58 => [&DPX, &XBE, &XEX] as __PV_58,  // DPX (XPDS little-endian), Xbox XBE (XBEH), Xbox 360 XEX (XEX1/XEX2)
         0x59 => [&SUN_RASTER] as __PV_59,
         0x5a => [&SWF, &ZOO, &TASTY] as __PV_5A,  // SWF ('ZWS'), Zoo archive, Tasty format
@@ -195,6 +195,8 @@ pub static ROOT: MimeType = MimeType::new(
         &MPEG2TS,             // Pattern at offset 188
         &ACE,                 // Offset 7 check
         &ISO9660,             // Large offset checks
+        &UDF,                 // UDF - offset 32769 check
+        &EROFS,               // EROFS - offset 1024 check
         &ID3V2,               // Multiple signatures
         &ICC,                 // Offset 36 check
         &GBA_ROM,             // GameBoy Advance ROM - offset 4
@@ -322,14 +324,15 @@ static UTF8: MimeType = MimeType::new(
         &LATEX,
         &CLOJURE,
         &PHP,
+        &CPP, // C++ before C (more specific patterns), before TS (preprocessor is distinctive)
+        &C_LANG,
+        &GO_LANG,    // Go before TS/Java (package declaration is distinctive)
         &TYPESCRIPT, // TypeScript must come before JavaScript (TS is more specific)
         &JAVASCRIPT,
-        &GO_LANG, // Go must come before Java (both use "package")
-        &PERL,    // Perl must come before Java (both use "package")
-        &CSHARP,  // C# must come before Java (both use "public class/interface")
-        &VB,      // Visual Basic .NET language
+        &PERL,   // Perl must come before Java (both use "package")
+        &CSHARP, // C# must come before Java (both use "public class/interface")
+        &VB,     // Visual Basic .NET language
         &JAVA,
-        &C_LANG, // C++ is a child of C (detects C++ features in .c/.h files)
         &RUST_LANG,
         &RUBY, // Ruby must come before Python (both use class/def, but Ruby has "end")
         &PYTHON,
@@ -1377,7 +1380,7 @@ fn pcx(input: &[u8]) -> bool {
 mimetype!(PICTOR, IMAGE_X_PICTOR, ".pic", [0x34, 0x12], name: "PICtor PC Paint", kind: IMAGE);
 
 // Khronos Texture - OpenGL/Vulkan textures
-mimetype!(KTX, IMAGE_KTX, ".ktx", [0xAB, 0x4B, 0x54, 0x58, 0x20], name: "Khronos Texture", kind: IMAGE);
+mimetype!(KTX, IMAGE_KTX, ".ktx", b"\xabKTX ", name: "Khronos Texture", kind: IMAGE);
 
 // ARM Texture Compression - Mobile GPU textures
 mimetype!(ASTC, IMAGE_X_ASTC, ".astc", [0x13, 0xAB, 0xA1, 0x5C], name: "Adaptive Scalable Texture Compression", kind: IMAGE);
@@ -2602,7 +2605,7 @@ static GB_ROM: MimeType = MimeType::new(
 //   N64 (little-endian): 0x40 0x12 0x37 0x80  [PREFIX_VEC 0x40] - Doctor V64 format
 //   V64 (byte-swapped):  0x37 0x80 0x40 0x12  [PREFIX_VEC 0x37] - Mr. Backup Z64 format
 // All represent the same ROM data, just in different byte orders.
-mimetype!(N64_ROM, APPLICATION_X_N64_ROM, ".n64", [0x80, 0x37, 0x12, 0x40] | [0x40, 0x12, 0x37, 0x80] | [0x37, 0x80, 0x40, 0x12], name: "Nintendo 64 ROM", ext_aliases: [".z64", ".v64"], kind: APPLICATION);
+mimetype!(N64_ROM, APPLICATION_X_N64_ROM, ".n64", [0x80, 0x37, 0x12, 0x40] | [0x40, 0x12, 0x37, 0x80] | [0x37, 0x80, 0x40, 0x12], name: "Nintendo 64 ROM", kind: APPLICATION, ext_aliases: [".z64", ".v64"]);
 
 // ============================================================================
 // NINTENDO DS ROM
@@ -3080,7 +3083,7 @@ mimetype!(SEQBOX, APPLICATION_X_SBX, ".sbx", b"SBx", name: "SeqBox Container", k
 mimetype!(SNAPPY_FRAMED, APPLICATION_X_SNAPPY_FRAMED, ".sz", [0xFF, 0x06, 0x00, 0x00, 0x73, 0x4E, 0x61, 0x50, 0x70, 0x59], name: "Snappy Framed Compression", kind: APPLICATION);
 
 // Tasty format - Tasty files have magic bytes 0x5A 0x54 at the start ("ZT" in ASCII)
-mimetype!(TASTY, APPLICATION_X_TASTY, ".tasty", [0x5A, 0x54], name: "TASTY Format", kind: APPLICATION);
+mimetype!(TASTY, APPLICATION_X_TASTY, ".tasty", b"ZT", name: "TASTY Format", kind: APPLICATION);
 
 // ============================================================================
 // ADDITIONAL ARCHIVE FORMATS
@@ -3195,13 +3198,13 @@ static HASSELBLAD_3FR: MimeType = MimeType::new(
 .with_parent(&TIFF);
 
 // Minolta MRW Raw format
-mimetype!(MRW, IMAGE_X_MINOLTA_MRW, ".mrw", [0x00, 0x4D, 0x52, 0x4D], name: "Minolta Raw Image", kind: IMAGE);
+mimetype!(MRW, IMAGE_X_MINOLTA_MRW, ".mrw", b"\x00MRM", name: "Minolta Raw Image", kind: IMAGE);
 
 // Kodak KDC Raw format
-mimetype!(KODAK_KDC, IMAGE_X_KODAK_KDC, ".kdc", [0x49, 0x49, 0x42, 0x00], name: "Kodak KDC Raw Image", kind: IMAGE);
+mimetype!(KODAK_KDC, IMAGE_X_KODAK_KDC, ".kdc", b"IIB\x00", name: "Kodak KDC Raw Image", kind: IMAGE);
 
 // Kodak DCR Raw format
-mimetype!(KODAK_DCR, IMAGE_X_KODAK_DCR, ".dcr", [0x49, 0x49, 0x55, 0x00], name: "Kodak DCR Raw Image", kind: IMAGE);
+mimetype!(KODAK_DCR, IMAGE_X_KODAK_DCR, ".dcr", b"IIU\x00", name: "Kodak DCR Raw Image", kind: IMAGE);
 
 // ============================================================================
 // CINEMA FORMATS
@@ -3847,9 +3850,9 @@ static TYPESCRIPT: MimeType = MimeType::new(
 static CPP: MimeType = MimeType::new(TEXT_X_CPP, "C++ Source Code", ".cpp", cpp, &[])
     .with_aliases(&[TEXT_X_CXX, TEXT_X_CPPSRC])
     .with_extension_aliases(&[".cc", ".cxx", ".hpp", ".hxx", ".h++"])
-    .with_parent(&C_LANG);
+    .with_parent(&UTF8);
 
-static C_LANG: MimeType = MimeType::new(TEXT_X_C, "C Source Code", ".c", c_lang, &[&CPP])
+static C_LANG: MimeType = MimeType::new(TEXT_X_C, "C Source Code", ".c", c_lang, &[])
     .with_aliases(&[TEXT_X_CSRC])
     .with_extension_aliases(&[".h"])
     .with_parent(&UTF8);
@@ -4319,7 +4322,7 @@ static THREEDXML: MimeType = MimeType::new(MODEL_VND_3DXML, "3DXML", ".3dxml", t
     .with_parent(&ZIP);
 
 // ============================================================================
-// VIRTUAL MACHINE & DISK IMAGE FORMATS
+// VIRTUAL MACHINE & DISK IMAGE FORMATS & FILE SYSTEM
 // ============================================================================
 
 // QCOW - QEMU Copy-on-Write version 1 disk image
@@ -4327,6 +4330,9 @@ mimetype!(QCOW, APPLICATION_X_QEMU_DISK, ".qcow", b"QFI", name: "QEMU Copy-on-Wr
 
 // QCOW2 - QEMU Copy-on-Write version 2 disk image
 mimetype!(QCOW2, APPLICATION_X_QEMU_DISK, ".qcow2", b"QFI\xFB", name: "QEMU Copy-on-Write 2", kind: DOCUMENT);
+
+// QED - QEMU Enhanced Disk (legacy format, superseded by QCOW2)
+mimetype!(QED, APPLICATION_X_QEMU_DISK, ".qed", b"QED\x00", name: "QEMU Enhanced Disk", kind: DOCUMENT);
 
 // VHD - Microsoft Virtual Hard Disk (legacy format)
 // VHD files have "conectix" magic either at the beginning (dynamic) or at offset from end (fixed)
@@ -4347,15 +4353,23 @@ mimetype!(VMDK, APPLICATION_X_VMDK, ".vmdk", b"KDMV" | b"COWD" | b"# Disk Descri
 mimetype!(VDI, APPLICATION_X_VIRTUALBOX_VDI, ".vdi", offset: (64, b"\x7F\x10\xDA\xBE"), name: "VirtualBox Virtual Disk Image", kind: DOCUMENT);
 
 // WIM - Windows Imaging Format
-mimetype!(WIM, APPLICATION_X_MS_WIM, ".wim", b"MSWIM\x00\x00\x00", name: "Windows Imaging Format", kind: DOCUMENT);
-
-// ============================================================================
-// FILESYSTEM FORMATS
-// ============================================================================
+mimetype!(WIM, APPLICATION_X_MS_WIM, ".wim", b"MSWIM\x00\x00\x00", name: "Windows Imaging Format", kind: ARCHIVE);
 
 // Squashfs - Compressed read-only filesystem used in embedded systems and live CDs.
 // Squashfs can be big-endian 'sqsh' or little-endian 'hsqs'
-mimetype!(SQUASHFS, APPLICATION_X_SQUASHFS, ".squashfs", b"sqsh" | b"hsqs", name: "Squashfs", kind: DOCUMENT);
+mimetype!(SQUASHFS, APPLICATION_X_SQUASHFS, ".squashfs", b"sqsh" | b"hsqs", name: "Squashfs", kind: ARCHIVE);
+
+// UDF (Universal Disk Format) - ISO/IEC 13346 and ECMA-167 standard filesystem
+// Magic: "BEA01" at offset 32769 (0x8001) - Beginning Extended Area Descriptor
+mimetype!(UDF, APPLICATION_X_UDF, ".udf", offset: (32769, b"BEA01"), name: "Universal Disk Format", kind: ARCHIVE);
+
+// EROFS (Enhanced Read-Only File System) - Linux compressed filesystem for Android
+// Magic: 0xE0F5E1E2 (little-endian) at offset 1024
+mimetype!(EROFS, APPLICATION_X_EROFS, ".erofs", offset: (1024, b"\xE2\xE1\xF5\xE0"), name: "Enhanced Read-Only File System", kind: ARCHIVE);
+
+// Parallels Desktop Disk Image - Virtual machine disk format
+// Magic: "WithoutFreeSpace" or "WithouFreSpacExt" at offset 0
+mimetype!(PARALLELS_HDD, APPLICATION_X_PARALLELS_HDD, ".hdd", b"WithoutFreeSpace" | b"WithouFreSpacExt", name: "Parallels Desktop Disk Image", kind: DOCUMENT);
 
 // ============================================================================
 // XML FORMAT DETECTION FUNCTIONS
@@ -4645,7 +4659,7 @@ fn ogg_multiplexed(_input: &[u8]) -> bool {
 }
 
 fn mobi(input: &[u8]) -> bool {
-    input.len() >= 68 && &input[60..64] == b"BOOKMOBI"
+    input.len() >= 68 && &input[60..68] == b"BOOKMOBI"
 }
 
 fn heic(input: &[u8]) -> bool {
@@ -6132,29 +6146,20 @@ fn typescript(input: &[u8]) -> bool {
 
     let sample = &input[..input.len().min(1024)];
 
-    // Anti-patterns (Java, C++, C# false positives) - check FIRST
+    // Anti-patterns (Java, C# false positives) - check FIRST
+    // Note: C/C++/Go are detected before TypeScript, so no need for those anti-patterns
     let anti_patterns = [
         LangPattern::new(b"using System", 10),  // C#
         LangPattern::new(b"{ get; set; }", 10), // C# property
         LangPattern::new(b"Task<", 8),          // C# async
-        LangPattern::new(b"public class ", 10),
-        LangPattern::new(b"package ", 10),
-        LangPattern::new(b"import java.", 10),
-        LangPattern::new(b"import javax.", 10),
-        LangPattern::new(b"System.out", 10),
-        LangPattern::new(b"std::", 10),
-        LangPattern::new(b"iostream", 10),
-        LangPattern::new(b"#include", 10),
-        LangPattern::new(b"template<", 10),
-        LangPattern::new(b"extern \"C\"", 10),
-        LangPattern::new(b"cout", 8),
-        LangPattern::new(b"cin", 8),
-        LangPattern::new(b"public:", 8),
-        LangPattern::new(b"private:", 8),
-        LangPattern::new(b"protected:", 8),
-        LangPattern::new(b"@Override", 5),
-        LangPattern::new(b"import com.", 5),
-        LangPattern::new(b"import org.", 5),
+        LangPattern::new(b"public class ", 10), // Java, C#
+        LangPattern::new(b"package ", 10),      // Java
+        LangPattern::new(b"import java.", 10),  // Java
+        LangPattern::new(b"import javax.", 10), // Java
+        LangPattern::new(b"System.out", 10),    // Java
+        LangPattern::new(b"@Override", 5),      // Java
+        LangPattern::new(b"import com.", 5),    // Java
+        LangPattern::new(b"import org.", 5),    // Java
     ];
 
     // Check antipatterns FIRST - early stop if exceed threshold of 5
@@ -6230,100 +6235,239 @@ fn typescript(input: &[u8]) -> bool {
     has_custom_type_annotation || score >= 3
 }
 
+// Helper functions for C-style comment skipping (used by c_lang, go_lang, etc.)
+fn skip_to_next_line(sample: &[u8], mut pos: usize) -> usize {
+    while pos < sample.len() && sample[pos] != b'\n' {
+        pos += 1;
+    }
+    (pos + 1).min(sample.len())
+}
+
+fn skip_c_comment(sample: &[u8], mut pos: usize) -> Option<usize> {
+    if sample.get(pos + 1) == Some(&b'/') {
+        // Single-line comment - skip to end of line
+        Some(skip_to_next_line(sample, pos))
+    } else if sample.get(pos + 1) == Some(&b'*') {
+        // Multi-line comment - skip to */
+        pos += 2;
+        while pos + 1 < sample.len() {
+            if sample[pos] == b'*' && sample[pos + 1] == b'/' {
+                return Some(pos + 2);
+            }
+            pos += 1;
+        }
+        Some(pos)
+    } else {
+        None
+    }
+}
+
 fn c_lang(input: &[u8]) -> bool {
-    let sample = &input[..input.len().min(1024)];
+    const MIN_MEANINGFUL_LINE_LEN: usize = 6;
 
-    // Avoid Python/Ruby false positives (check for common patterns)
-    let has_def = sample.windows(4).any(|w| w == b"def ");
-    let has_end =
-        sample.windows(4).any(|w| w == b"end\n") || sample.windows(4).any(|w| w == b"end ");
-    let has_print = sample.windows(6).any(|w| w == b"print(");
-    let has_import = sample.windows(7).any(|w| w == b"import ");
+    let sample = &input[..input.len().min(2048)];
+    let mut pos = 0;
+    let mut score: u32 = 0;
 
-    // Python: def with print/import; Ruby: def with end keyword
-    if has_def && (has_end || has_print || has_import) {
-        return false;
+    // Track patterns across entire scan - focus on header items since we only see 2KB
+    let mut has_ifndef = false;
+    let mut has_define = false;
+    let mut has_endif = false;
+    let mut has_pragma_once = false;
+    let mut has_cplusplus_ifdef = false; // C header with C++ compatibility
+    let mut has_conditional_directive = false; // Track if we've seen #if/#ifdef/#ifndef
+
+    // Helper to advance position to next line
+    let advance_to_next_line = |pos: &mut usize, line_end: usize, sample: &[u8]| {
+        *pos = line_end;
+        if *pos < sample.len() && sample[*pos] == b'\r' {
+            *pos += 1;
+        }
+        if *pos < sample.len() && sample[*pos] == b'\n' {
+            *pos += 1;
+        }
+    };
+
+    'lines: while pos < sample.len() {
+        // Skip leading whitespace on the line
+        while pos < sample.len() && (sample[pos] == b' ' || sample[pos] == b'\t') {
+            pos += 1;
+        }
+
+        if pos >= sample.len() {
+            break;
+        }
+
+        // Handle comments
+        if sample[pos] == b'/' && pos + 1 < sample.len() {
+            if let Some(new_pos) = skip_c_comment(sample, pos) {
+                pos = new_pos;
+                continue;
+            }
+        }
+
+        let line_start = pos;
+
+        // Find end of line
+        let mut line_end = pos;
+        while line_end < sample.len() && sample[line_end] != b'\n' && sample[line_end] != b'\r' {
+            line_end += 1;
+        }
+
+        // Skip very short lines (includes empty lines) - can't contain meaningful patterns
+        if line_end - line_start < MIN_MEANINGFUL_LINE_LEN {
+            advance_to_next_line(&mut pos, line_end, sample);
+            continue 'lines;
+        }
+
+        let line = &sample[line_start..line_end];
+
+        if score >= 5 {
+            return true;
+        }
+        // Preprocessor directives - unique to C/C++, skip to next line after match
+        if line[0] == b'#' {
+            match line.get(1) {
+                Some(&b'i') => {
+                    // #include, #if, #ifdef, #ifndef
+                    if line.starts_with(b"#include") {
+                        if (line.contains(&b'<') && line.contains(&b'>'))
+                            || (line.contains(&b'"') && line.len() > 9 && line[9..].contains(&b'"'))
+                        {
+                            score += 4;
+                        }
+                    } else if line.starts_with(b"#ifdef") {
+                        has_conditional_directive = true;
+                        score += 2;
+                        if line.starts_with(b"#ifdef __cplusplus") {
+                            has_cplusplus_ifdef = true;
+                        }
+                    } else if line.starts_with(b"#ifndef") {
+                        if line.len() > 7 && line[7..].iter().any(|&b| b != b' ' && b != b'\t') {
+                            has_ifndef = true;
+                            has_conditional_directive = true;
+                            score += 3;
+                        }
+                    } else if line.starts_with(b"#if ") {
+                        has_conditional_directive = true;
+                        score += 2;
+                    }
+                }
+                Some(&b'p') => {
+                    // #pragma
+                    if line.starts_with(b"#pragma once") {
+                        has_pragma_once = true;
+                        score += 4;
+                    } else if line.starts_with(b"#pragma") {
+                        score += 3;
+                    }
+                }
+                Some(&b'd') if line.starts_with(b"#define") => {
+                    if line.len() > 8
+                        && line[8..]
+                            .iter()
+                            .any(|&b| b.is_ascii_alphanumeric() || b == b'_')
+                    {
+                        has_define = true;
+                        score += 3;
+                    }
+                }
+                Some(&b'e') => {
+                    // #endif, #elif, #else
+                    if has_conditional_directive {
+                        if line.starts_with(b"#endif") {
+                            has_endif = true;
+                            score += 2;
+                        } else if line.starts_with(b"#elif") || line.starts_with(b"#else") {
+                            score += 2;
+                        }
+                    }
+                }
+                Some(&b'u') => {
+                    // #undef
+                    if has_conditional_directive && line.starts_with(b"#undef") {
+                        score += 2;
+                    }
+                }
+                _ => {}
+            }
+            advance_to_next_line(&mut pos, line_end, sample);
+            continue 'lines;
+        }
+
+        // Line-start patterns - only one can match, skip to next line after
+        if line.starts_with(b"typedef ") {
+            score += 3;
+            if line.windows(7).any(|w| w == b"struct ")
+                || line.windows(5).any(|w| w == b"enum ")
+                || line.windows(6).any(|w| w == b"union ")
+            {
+                score += 2;
+            }
+        } else if line.starts_with(b"int main(") || line.starts_with(b"void main(") {
+            score += 3; // main() is strong C/C++ indicator
+        } else if line.starts_with(b"struct ")
+            || line.starts_with(b"enum ")
+            || line.starts_with(b"union ")
+        {
+            score += 1;
+        }
+
+        advance_to_next_line(&mut pos, line_end, sample);
     }
 
-    // C-specific patterns (also valid in C++)
-    let has_include = sample.windows(8).any(|w| w == b"#include");
-    let has_define = sample.windows(7).any(|w| w == b"#define");
-    let has_ifdef = sample.windows(6).any(|w| w == b"#ifdef");
-    let has_ifndef = sample.windows(7).any(|w| w == b"#ifndef");
-    let has_endif = sample.windows(6).any(|w| w == b"#endif");
-    let has_typedef = sample.windows(8).any(|w| w == b"typedef ");
-    let has_struct = sample.windows(7).any(|w| w == b"struct ");
-    let has_main = sample.windows(9).any(|w| w == b"int main(");
-    let has_void = sample.windows(5).any(|w| w == b"void ");
-    let has_printf = sample.windows(7).any(|w| w == b"printf(");
-    let has_malloc = sample.windows(7).any(|w| w == b"malloc(");
-    let has_sizeof = sample.windows(7).any(|w| w == b"sizeof(");
-    let has_return = sample.windows(7).any(|w| w == b"return ");
+    // Calculate header-specific bonus score
+    let mut header_score: u32 = score;
 
-    // Also match on C/C++ common patterns to ensure C++ child gets checked
-    let has_class = sample.windows(6).any(|w| w == b"class ");
-    let has_public = sample.windows(7).any(|w| w == b"public:");
-    let has_private = sample.windows(8).any(|w| w == b"private:");
-    let has_protected = sample.windows(10).any(|w| w == b"protected:");
-    let has_int = sample.windows(4).any(|w| w == b"int ");
-    let has_char = sample.windows(5).any(|w| w == b"char ");
-    let has_float = sample.windows(6).any(|w| w == b"float ");
-    let has_double = sample.windows(7).any(|w| w == b"double ");
-
-    // Strong C indicators - preprocessor directives are very C/C++ specific
-    let has_preprocessor = has_include || has_define || has_ifdef || has_ifndef || has_endif;
-
-    // C/C++ requires braces for code blocks
-    let has_braces = sample.contains(&b'{') && sample.contains(&b'}');
-    if !has_braces {
-        return false;
+    // Include guard pattern
+    if (has_ifndef && has_define && has_endif) || has_pragma_once {
+        header_score += 3;
     }
 
-    // Calculate confidence with weighted scoring
-    let c_score = (has_include as u8) * 2  // #include is strong indicator
-        + (has_define as u8)
-        + (has_ifdef as u8)
-        + (has_ifndef as u8)
-        + (has_endif as u8)
-        + (has_typedef as u8)
-        + (has_struct as u8)
-        + (has_main as u8) * 2  // main() is strong indicator
-        + (has_void as u8)
-        + (has_printf as u8)
-        + (has_malloc as u8)
-        + (has_sizeof as u8)
-        + (has_return as u8)
-        + (has_class as u8)
-        + (has_public as u8) * 2    // C++ access specifiers boost score
-        + (has_private as u8) * 2
-        + (has_protected as u8) * 2
-        + (has_int as u8)
-        + (has_char as u8)
-        + (has_float as u8)
-        + (has_double as u8);
+    // C header with C++ compatibility guard
+    if has_cplusplus_ifdef {
+        header_score += 2;
+    }
 
-    // Require either preprocessor directives OR multiple C indicators
-    // This is still permissive enough for C++ child to override
-    (has_preprocessor && c_score >= 2) || c_score >= 3
+    // Require a minimum score
+    // Single #include (4) is not enough, need at least 2 patterns (threshold: 5)
+    header_score >= 5
 }
 
 fn cpp(input: &[u8]) -> bool {
     let sample = &input[..input.len().min(1024)];
 
-    // Anti-patterns (Python, C#, Java, Go false positives)
+    // Anti-patterns (Python, C#, Java, Go, Rust false positives)
     let anti_patterns = [
-        LangPattern::new(b"import ", 10),       // Python, Java
-        LangPattern::new(b"from ", 10),         // Python
-        LangPattern::new(b"def __init__", 10),  // Python
-        LangPattern::new(b"using System", 10),  // C#
-        LangPattern::new(b"package ", 10),      // Java, Go
-        LangPattern::new(b"@Override", 10),     // Java
-        LangPattern::new(b"public class ", 10), // Java, C#
+        LangPattern::new(b"import ", 10),          // Python, Java
+        LangPattern::new(b"from ", 10),            // Python
+        LangPattern::new(b"def __init__", 10),     // Python
+        LangPattern::new(b"using System", 10),     // C#
+        LangPattern::new(b"{ get; set; }", 10),    // C# property
+        LangPattern::new(b"{ get; }", 10),         // C# readonly property
+        LangPattern::new(b"public interface", 10), // C# interface (C++ uses class)
+        LangPattern::new(b"Task<", 10),            // C# async Task
+        LangPattern::new(b"package ", 10),         // Java, Go
+        LangPattern::new(b"@Override", 10),        // Java
+        LangPattern::new(b"public class ", 10),    // Java, C#
+        LangPattern::new(b"fn ", 10),              // Rust
+        LangPattern::new(b"let ", 10),             // Rust
+        LangPattern::new(b"impl ", 10),            // Rust
+        LangPattern::new(b"trait ", 10),           // Rust
+        LangPattern::new(b"use std::", 10),        // Rust (std:: is shared but "use std::" is Rust)
+        LangPattern::new(b"println!", 10),         // Rust macro
     ];
 
     // Check antipatterns FIRST - early stop if exceeds threshold
     if SinglePassMatcher::new(sample, &anti_patterns).scan_early_stop(9) {
         return false;
+    }
+
+    // Special check: extern "C" wrapped in #ifdef __cplusplus is a C header, not C++
+    let has_extern_c = sample.windows(10).any(|w| w == b"extern \"C\"");
+    let has_cplusplus_ifdef = sample.windows(18).any(|w| w == b"#ifdef __cplusplus");
+    if has_extern_c && has_cplusplus_ifdef {
+        return false; // This is a C header with C++ compatibility
     }
 
     // C++ patterns with weights
@@ -6333,7 +6477,7 @@ fn cpp(input: &[u8]) -> bool {
         LangPattern::new(b"namespace ", 10),
         LangPattern::new(b"std::", 10),
         LangPattern::new(b"template<", 10),
-        LangPattern::new(b"extern \"C\"", 10),
+        LangPattern::new(b"extern \"C\"", 10), // Only if not wrapped in #ifdef __cplusplus (checked above)
         // Access specifiers
         LangPattern::new(b"public:", 5),
         LangPattern::new(b"private:", 5),
@@ -6369,66 +6513,96 @@ fn cpp(input: &[u8]) -> bool {
 }
 
 fn go_lang(input: &[u8]) -> bool {
-    let sample = &input[..input.len().min(1024)];
+    let sample = &input[..input.len().min(2048)];
+    let mut pos = 0;
 
-    // Anti-patterns (Java, C# false positives) - check FIRST
-    let anti_patterns = [
-        LangPattern::new(b"public class ", 10),
-        LangPattern::new(b"private class ", 10),
-        LangPattern::new(b"protected class ", 10),
-        LangPattern::new(b"@Override", 10),
-        LangPattern::new(b"System.out", 10),
-        LangPattern::new(b"using System", 10),  // C#
-        LangPattern::new(b"{ get; set; }", 10), // C#
-        LangPattern::new(b"class ", 5),
-        LangPattern::new(b"extends ", 5),
-        LangPattern::new(b"implements ", 5),
-    ];
+    // Step 1: Find package declaration
+    // Go files must start with: //, /*, package, or newline (no leading whitespace)
+    let mut found_package = false;
+    while pos + 8 < sample.len() {
+        match sample[pos] {
+            b'\n' | b'\r' => pos += 1,
+            b'/' => match skip_c_comment(sample, pos) {
+                Some(new_pos) => pos = new_pos,
+                None => return false,
+            },
+            b'p' if sample[pos..].starts_with(b"package ") => {
+                // Found package - skip to next line
+                pos = skip_to_next_line(sample, pos);
+                found_package = true;
+                break;
+            }
+            _ => return false,
+        }
+    }
 
-    // Check antipatterns FIRST - early stop on first Java/C# antipattern found
-    if SinglePassMatcher::new(sample, &anti_patterns).scan_early_stop(0) {
+    if !found_package {
         return false;
     }
 
-    // Go requires braces for code blocks
-    let has_braces = sample.contains(&b'{') && sample.contains(&b'}');
-    if !has_braces {
-        return false;
+    while pos + 8 < sample.len() {
+        let line_start = pos;
+
+        // Fast fail on unexpected first byte
+        match sample[pos] {
+            b'i' | b't' | b'f' | b'v' | b'c' => {
+                // Valid: import, type, func, var, const
+            }
+            b'/' => match skip_c_comment(sample, pos) {
+                Some(new_pos) => {
+                    pos = new_pos;
+                    continue;
+                }
+                None => return false,
+            },
+            b'\n' | b'\r' => {
+                pos += 1;
+                continue;
+            }
+            _ => {
+                // Unknown first byte - not valid Go
+                return false;
+            }
+        }
+
+        // Find end of line (excluding newline chars)
+        let mut line_end = pos;
+        while line_end < sample.len() && sample[line_end] != b'\n' && sample[line_end] != b'\r' {
+            line_end += 1;
+        }
+
+        pos = line_end;
+        if pos < sample.len() && sample[pos] == b'\r' {
+            pos += 1;
+        }
+        if pos < sample.len() && sample[pos] == b'\n' {
+            pos += 1;
+        }
+
+        // Skip empty or too short lines (minimum is 8 bytes for "import (")
+        let line_len = line_end - line_start;
+        if line_len < 8 {
+            continue;
+        }
+
+        let line = &sample[line_start..line_end];
+        if line == b"import (" || (line.starts_with(b"import \"") && line.ends_with(b"\"")) {
+            return true;
+        }
+
+        if line.starts_with(b"func ") && line.ends_with(b" {") {
+            return true;
+        }
+
+        // Check type ... struct { or type ... interface {
+        if line.starts_with(b"type ")
+            && (line.ends_with(b" struct {") || line.ends_with(b" interface {"))
+        {
+            return true;
+        }
     }
 
-    // Go patterns with weights
-    let patterns = [
-        LangPattern::new(b" := ", 3),       // Go-specific short declaration
-        LangPattern::new(b"defer ", 3),     // Go-specific
-        LangPattern::new(b"go ", 3),        // goroutine
-        LangPattern::new(b"chan ", 3),      // channel
-        LangPattern::new(b"select ", 3),    // select statement
-        LangPattern::new(b"err != nil", 3), // Go error handling idiom
-        LangPattern::new(b"func main()", 3),
-        LangPattern::new(b"recover()", 3),
-        LangPattern::new(b"package ", 2),
-        LangPattern::new(b"func ", 2),
-        LangPattern::new(b"import (", 2),
-        LangPattern::new(b"import \"", 2),
-        LangPattern::new(b"fmt.", 2),
-        LangPattern::new(b"struct {", 2),
-        LangPattern::new(b"interface {", 2),
-        LangPattern::new(b"interface{}", 2), // empty interface
-        LangPattern::new(b"range ", 2),
-        LangPattern::new(b"make(", 2),
-        LangPattern::new(b"append(", 2),
-        LangPattern::new(b"if err", 2),
-        LangPattern::new(b"return err", 2),
-        LangPattern::new(b"panic(", 2),
-        LangPattern::new(b"context.", 2),
-        LangPattern::new(b"http.", 2),
-        LangPattern::new(b"func (", 2), // method receiver
-        LangPattern::simple(b"type "),
-        LangPattern::simple(b"len("),
-        LangPattern::simple(b"nil"),
-    ];
-
-    SinglePassMatcher::new(sample, &patterns).scan().1 >= 3
+    false
 }
 
 fn rust_lang(input: &[u8]) -> bool {
@@ -8300,17 +8474,21 @@ fn opengex(input: &[u8]) -> bool {
 }
 
 fn threedxml(input: &[u8]) -> bool {
-    // 3DXML is ZIP-based, check for specific manifest
-    if !input.starts_with(b"PK\x03\x04") {
-        return false;
+    // Look for 3DXML-specific files using ZIP iterator
+    let mut iter = ZipIterator::new(input);
+    for _ in 0..100 {
+        if let Some(entry_name) = iter.next() {
+            // Check for common 3DXML files: Manifest.xml, *.3dxml, Model_*, or 3DXML directory
+            if entry_name == b"Manifest.xml"
+                || entry_name.ends_with(b".3dxml")
+                || entry_name.starts_with(b"Model_")
+                || entry_name.starts_with(b"3DXML")
+            {
+                return true;
+            }
+        } else {
+            break;
+        }
     }
-
-    // Look for 3DXML-specific files in ZIP
-    // Common files: Manifest.xml, *.3dxml files
-    input.windows(12).any(|w| w == b"Manifest.xml")
-        || input.windows(6).any(|w| w == b".3dxml")
-        || input.windows(20).any(|w| w == b"3DXML")
-        || input
-            .windows(30)
-            .any(|w| w.windows(6).any(|x| x == b"Model_"))
+    false
 }

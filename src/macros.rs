@@ -73,15 +73,6 @@ macro_rules! mimetype {
         };
     };
 
-    // Simple literal prefix
-    ($static_name:ident, $mime:expr, $ext:expr, $prefix:literal) => {
-        mimetype!(@build $static_name, $mime, "", $ext,
-            |input| input.starts_with($prefix),
-            &[],
-            None, None, None, None
-        );
-    };
-
     // Single literal prefix (unified pattern with optional parameters)
     // Note: Parameters must be in this order: name, kind, aliases, ext_aliases, children, parent
     ($static_name:ident, $mime:expr, $ext:expr, $prefix:literal,
@@ -114,39 +105,19 @@ macro_rules! mimetype {
         );
     };
 
-    // Multiple byte array alternatives with name and extension aliases
-    ($static_name:ident, $mime:expr, $ext:expr, [$($first_byte:expr),+ $(,)?] $(| [$($rest_byte:expr),+ $(,)?])+, name: $name:expr, ext_aliases: [$($ext_alias:literal),* $(,)?], kind: $kind:ident) => {
-        mimetype!(@build $static_name, $mime, $name, $ext,
-            |input| {
-                const FIRST: &[u8] = &[$($first_byte),+];
-                input.starts_with(FIRST) $(|| input.starts_with(&[$($rest_byte),+]))+
-            },
-            &[],
-            Some($crate::MimeKind::$kind), None, Some(&[$($ext_alias),*]), None
-        );
-    };
-
-    // Multiple byte array alternatives with optional name
-    ($static_name:ident, $mime:expr, $ext:expr, [$($first_byte:expr),+ $(,)?] $(| [$($rest_byte:expr),+ $(,)?])+, $(name: $name:expr,)? kind: $kind:ident) => {
+    // Multiple byte array alternatives (unified pattern with optional parameters)
+    ($static_name:ident, $mime:expr, $ext:expr, [$($first_byte:expr),+ $(,)?] $(| [$($rest_byte:expr),+ $(,)?])+,
+     $(name: $name:expr,)?
+     kind: $kind:ident
+     $(, ext_aliases: [$($ext_alias:expr),* $(,)?])?
+    ) => {
         mimetype!(@build $static_name, $mime, mimetype!(@opt_str $($name)?), $ext,
             |input| {
                 const FIRST: &[u8] = &[$($first_byte),+];
                 input.starts_with(FIRST) $(|| input.starts_with(&[$($rest_byte),+]))+
             },
             &[],
-            Some($crate::MimeKind::$kind), None, None, None
-        );
-    };
-
-    // Multiple byte array alternatives with extension aliases
-    ($static_name:ident, $mime:expr, $ext:expr, [$($first_byte:expr),+ $(,)?] $(| [$($rest_byte:expr),+ $(,)?])+, kind: $kind:ident, ext_aliases: [$($ext_alias:literal),* $(,)?]) => {
-        mimetype!(@build $static_name, $mime, "", $ext,
-            |input| {
-                const FIRST: &[u8] = &[$($first_byte),+];
-                input.starts_with(FIRST) $(|| input.starts_with(&[$($rest_byte),+]))+
-            },
-            &[],
-            Some($crate::MimeKind::$kind), None, Some(&[$($ext_alias),*]), None
+            Some($crate::MimeKind::$kind), None, mimetype!(@opt_slice $($($ext_alias),*)?), None
         );
     };
 
@@ -238,59 +209,6 @@ macro_rules! mimetype {
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn test_prefix_matching() {
-        let test_pdf = |input: &[u8]| input.starts_with(b"%PDF-");
-        assert!(test_pdf(b"%PDF-1.4"));
-        assert!(!test_pdf(b"not pdf"));
-        assert!(!test_pdf(b""));
-    }
-
-    #[test]
-    fn test_array_prefix_matching() {
-        let test_png =
-            |input: &[u8]| input.starts_with(&[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
-        assert!(test_png(b"\x89PNG\r\n\x1a\n"));
-        assert!(!test_png(b"not png"));
-    }
-
-    #[test]
-    fn test_multi_prefix_matching() {
-        let test_zip = |input: &[u8]| {
-            input.starts_with(b"PK\x03\x04")
-                || input.starts_with(b"PK\x05\x06")
-                || input.starts_with(b"PK\x07\x08")
-        };
-        assert!(test_zip(b"PK\x03\x04"));
-        assert!(test_zip(b"PK\x05\x06"));
-        assert!(test_zip(b"PK\x07\x08"));
-        assert!(!test_zip(b"PK\x01\x02"));
-    }
-
-    #[test]
-    fn test_offset_matching() {
-        let test_tar = |input: &[u8]| input.len() >= 262 && &input[257..262] == b"ustar";
-        let mut data = vec![0u8; 300];
-        data[257..262].copy_from_slice(b"ustar");
-        assert!(test_tar(&data));
-        assert!(!test_tar(b"too short"));
-    }
-
-    #[test]
-    fn test_offset_prefix_matching() {
-        let test_webp = |input: &[u8]| {
-            input.len() >= 12 && input.starts_with(b"RIFF") && &input[8..12] == b"WEBP"
-        };
-        let mut data = vec![0u8; 20];
-        data[0..4].copy_from_slice(b"RIFF");
-        data[8..12].copy_from_slice(b"WEBP");
-        assert!(test_webp(&data));
-
-        let mut bad_data = vec![0u8; 20];
-        bad_data[8..12].copy_from_slice(b"WEBP");
-        assert!(!test_webp(&bad_data));
-    }
-
     use crate::constants::*;
     use crate::MimeKind;
 
@@ -303,16 +221,6 @@ mod tests {
         assert_eq!(TEST_FLV.mime(), VIDEO_X_FLV);
         assert_eq!(TEST_FLV.extension(), ".flv");
         assert!(TEST_FLV.kind().contains(MimeKind::VIDEO));
-    }
-
-    mimetype!(TEST_CUSTOM, "application/x-test", ".test", b"TEST");
-
-    #[test]
-    fn test_mimetype_simple_no_kind() {
-        let data = b"TEST data";
-        assert!((TEST_CUSTOM.matcher)(data));
-        assert_eq!(TEST_CUSTOM.mime(), "application/x-test");
-        assert_eq!(TEST_CUSTOM.extension(), ".test");
     }
 
     mimetype!(TEST_MULTI, IMAGE_GIF, ".gif", b"GIF87a" | b"GIF89a", kind: IMAGE);
@@ -347,24 +255,6 @@ mod tests {
         assert!((TEST_WAV_FMT.matcher)(&data));
         assert_eq!(TEST_WAV_FMT.mime(), AUDIO_WAV);
         assert!(TEST_WAV_FMT.kind().contains(MimeKind::AUDIO));
-    }
-
-    static TEST_PDF_SEP: crate::MimeType = crate::MimeType::new(
-        APPLICATION_PDF,
-        "PDF",
-        ".pdf",
-        |input| input.starts_with(b"%PDF-"),
-        &[],
-    )
-    .with_kind(crate::MimeKind::DOCUMENT);
-
-    #[test]
-    fn test_manual_mimetype_creation() {
-        let test_separate_pdf = |input: &[u8]| input.starts_with(b"%PDF-");
-        assert!(test_separate_pdf(b"%PDF-1.4"));
-        assert_eq!(TEST_PDF_SEP.mime(), APPLICATION_PDF);
-        assert_eq!(TEST_PDF_SEP.extension(), ".pdf");
-        assert!(TEST_PDF_SEP.kind().contains(MimeKind::DOCUMENT));
     }
 
     mimetype!(TEST_PNG_ARR, IMAGE_PNG, ".png", [0x89, 0x50, 0x4E, 0x47], kind: IMAGE);
