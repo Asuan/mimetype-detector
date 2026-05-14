@@ -23,6 +23,15 @@ This document provides a comprehensive listing of all 546 file formats supported
 | Adobe DNG | Adobe DNG | `image/x-adobe-dng` | `.dng` | | Digital Negative (TIFF-based) |
 | Adobe Flash | Adobe Flash | `application/x-shockwave-flash` | `.swf` | | |
 | Adobe FrameMaker | Adobe FrameMaker | `application/vnd.framemaker` | `.fm` | | Technical documentation and publishing format |
+| Adobe Color Book | Adobe Color Book | `application/vnd.adobe.acb` | `.acb` | | Photoshop color book (`8BCB` magic) |
+| Adobe XMP Sidecar | Adobe XMP Sidecar | `application/x-xmp` | `.xmp` | | RDF/XML metadata (`<?xpacket` or `<x:xmpmeta>` markers) |
+| After Effects Project XML | After Effects Project XML | `application/vnd.adobe.aftereffects.project+xml` | `.aepx` | | XML root `<AfterEffectsProject>` |
+| Audition Session | Audition Session | `application/vnd.adobe.audition.sesx+xml` | `.sesx` | | XML root `<sesx>` |
+| Substance Archive | Substance Archive | `application/vnd.allegorithmic.sbsar` | `.sbsar` | | ZIP-based with `*.sbsasm` entries (Adobe Substance 3D) |
+| Substance Smart Material | Substance Smart Material | `application/vnd.allegorithmic.spsm` | `.spsm` | | ZIP-based Substance Painter material |
+| Adobe Swatch Exchange | Adobe Swatch Exchange | `application/vnd.adobe.ase` | `.ase` | | Color swatch interchange format (`ASEF` magic) |
+| After Effects Project | Adobe After Effects Project | `application/vnd.adobe.aftereffects.project` | `.aep`, `.aet` | | RIFX big-endian container with form type `Egg!` |
+| Photoshop Custom Shapes | Photoshop Custom Shapes | `application/vnd.adobe.photoshop.shapes` | `.csh` | | Custom shapes (`cust` magic) |
 | Age Encryption | Age Encryption | `application/x-age-encryption` | `.age` | | Modern file encryption format |
 | AIFF | Audio Interchange File Format | `audio/aiff` | `.aiff`, `.aif` | | |
 | Alembic | Alembic | `application/x-alembic` | `.abc` | | Animation geometry cache format |
@@ -335,6 +344,7 @@ This document provides a comprehensive listing of all 546 file formats supported
 | PGP Signature | PGP Signed Message | `application/pgp-signature` | `.sig` | | PGP signature |
 | PHP | PHP Source Code | `text/x-php` | `.php` | | |
 | Photoshop | Adobe Photoshop Document | `image/vnd.adobe.photoshop` | `.psd` | `image/x-psd`, `application/photoshop` | |
+| Photoshop Big | Adobe Photoshop Large Document | `application/x-photoshop-large` | `.psb` | | Large Document Format (>2GB or >30,000 px) - 8BPS magic with version word 0x0002 |
 | PICtor | PICtor PC Paint | `image/x-pictor` | `.pic` | | PICtor/PC Paint DOS graphics format |
 | PKCS#7 Signature | PKCS#7 Signature | `application/pkcs7-signature` | `.p7s` | | |
 | PLS | Shoutcast Playlist | `audio/x-scpls` | `.pls` | | Shoutcast Playlist |

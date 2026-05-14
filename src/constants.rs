@@ -295,6 +295,9 @@ pub const IMAGE_VND_ADOBE_PHOTOSHOP: &str = "image/vnd.adobe.photoshop";
 pub const IMAGE_X_PSD: &str = "image/x-psd";
 pub const APPLICATION_PHOTOSHOP: &str = "application/photoshop";
 
+/// Adobe Photoshop Large Document Format (PSB)
+pub const APPLICATION_X_PHOTOSHOP_LARGE: &str = "application/x-photoshop-large";
+
 /// High Efficiency Image Container
 pub const IMAGE_HEIC: &str = "image/heic";
 
@@ -790,6 +793,35 @@ pub const APPLICATION_VND_ADOBE_FLA: &str = "application/vnd.adobe.fla";
 
 /// Adobe FrameMaker
 pub const APPLICATION_VND_FRAMEMAKER: &str = "application/vnd.framemaker";
+
+/// Adobe Swatch Exchange
+pub const APPLICATION_VND_ADOBE_ASE: &str = "application/vnd.adobe.ase";
+
+/// Adobe After Effects Project (.aep / .aet)
+pub const APPLICATION_VND_ADOBE_AFTEREFFECTS_PROJECT: &str =
+    "application/vnd.adobe.aftereffects.project";
+
+/// Adobe Color Book (.acb)
+pub const APPLICATION_VND_ADOBE_ACB: &str = "application/vnd.adobe.acb";
+
+/// Photoshop Custom Shapes (.csh)
+pub const APPLICATION_VND_ADOBE_PHOTOSHOP_SHAPES: &str = "application/vnd.adobe.photoshop.shapes";
+
+/// Adobe After Effects Project XML (.aepx)
+pub const APPLICATION_VND_ADOBE_AFTEREFFECTS_PROJECT_XML: &str =
+    "application/vnd.adobe.aftereffects.project+xml";
+
+/// Adobe Audition Session XML (.sesx)
+pub const APPLICATION_VND_ADOBE_AUDITION_SESX_XML: &str = "application/vnd.adobe.audition.sesx+xml";
+
+/// Adobe XMP metadata sidecar (.xmp)
+pub const APPLICATION_X_XMP: &str = "application/x-xmp";
+
+/// Substance Archive (.sbsar)
+pub const APPLICATION_VND_ALLEGORITHMIC_SBSAR: &str = "application/vnd.allegorithmic.sbsar";
+
+/// Substance Painter Smart Material (.spsm)
+pub const APPLICATION_VND_ALLEGORITHMIC_SPSM: &str = "application/vnd.allegorithmic.spsm";
 
 /// Meta Information Encapsulation
 pub const APPLICATION_X_MIE: &str = "application/x-mie";

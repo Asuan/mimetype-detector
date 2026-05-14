@@ -987,6 +987,63 @@ fn test_detect_psd() {
 }
 
 #[test]
+fn test_detect_psb() {
+    // PSB (Photoshop Large Document Format): 8BPS + version word 0x00 0x02
+    let data = b"8BPS\x00\x02\x00\x00\x00\x00\x00\x00";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_PHOTOSHOP_LARGE);
+    assert_eq!(mime_type.extension(), ".psb");
+    assert!(mime_type.kind().is_image());
+}
+
+#[test]
+fn test_detect_psd_v1_explicit_version() {
+    // PSD has version word 0x00 0x01 - must not be misdetected as PSB
+    let data = b"8BPS\x00\x01\x00\x00\x00\x00\x00\x00";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), IMAGE_VND_ADOBE_PHOTOSHOP);
+    assert_eq!(mime_type.extension(), ".psd");
+}
+
+#[test]
+fn test_detect_ase() {
+    // Adobe Swatch Exchange: ASEF magic + version + block count
+    let data = b"ASEF\x00\x01\x00\x00\x00\x00\x00\x00";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_VND_ADOBE_ASE);
+    assert_eq!(mime_type.extension(), ".ase");
+}
+
+#[test]
+fn test_detect_aep() {
+    // Adobe After Effects Project: RIFX big-endian + form type 'Egg!' at offset 8
+    let mut data = vec![0u8; 16];
+    data[0..4].copy_from_slice(b"RIFX");
+    data[8..12].copy_from_slice(b"Egg!");
+    let mime_type = detect(&data);
+    assert_eq!(mime_type.mime(), APPLICATION_VND_ADOBE_AFTEREFFECTS_PROJECT);
+    assert_eq!(mime_type.extension(), ".aep");
+}
+
+#[test]
+fn test_detect_acb() {
+    // Adobe Color Book: 8BCB magic + version
+    let data = b"8BCB\x00\x01\x00\x00";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_VND_ADOBE_ACB);
+    assert_eq!(mime_type.extension(), ".acb");
+}
+
+#[test]
+fn test_detect_csh() {
+    // Photoshop Custom Shapes: 'cust' magic
+    let data = b"cust\x00\x00\x00\x02";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_VND_ADOBE_PHOTOSHOP_SHAPES);
+    assert_eq!(mime_type.extension(), ".csh");
+}
+
+#[test]
 fn test_detect_heic() {
     let mut data = vec![0; 16];
     data[0..4].copy_from_slice(&16u32.to_be_bytes());
@@ -2116,6 +2173,52 @@ fn test_detect_sqlite3() {
 }
 
 #[test]
+fn test_detect_aepx_after_effects_xml() {
+    let data =
+        b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<AfterEffectsProject></AfterEffectsProject>";
+    let mime_type = detect(data);
+    assert_eq!(
+        mime_type.mime(),
+        APPLICATION_VND_ADOBE_AFTEREFFECTS_PROJECT_XML
+    );
+    assert_eq!(mime_type.extension(), ".aepx");
+}
+
+#[test]
+fn test_detect_sesx_audition_session() {
+    let data = b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<sesx version=\"1.7\"></sesx>";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_VND_ADOBE_AUDITION_SESX_XML);
+    assert_eq!(mime_type.extension(), ".sesx");
+}
+
+#[test]
+fn test_detect_xmp_sidecar() {
+    let data = b"<?xpacket begin=\"\xef\xbb\xbf\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"></x:xmpmeta>";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_XMP);
+    assert_eq!(mime_type.extension(), ".xmp");
+}
+
+#[test]
+fn test_detect_sbsar() {
+    // Substance Archive: ZIP with .sbsasm entry
+    let data = create_zip_with_file(b"material.sbsasm");
+    let mime_type = detect(&data);
+    assert_eq!(mime_type.mime(), APPLICATION_VND_ALLEGORITHMIC_SBSAR);
+    assert_eq!(mime_type.extension(), ".sbsar");
+}
+
+#[test]
+fn test_detect_spsm() {
+    // Substance Painter Smart Material: ZIP with smart_material.json
+    let data = create_zip_with_file(b"smart_material.json");
+    let mime_type = detect(&data);
+    assert_eq!(mime_type.mime(), APPLICATION_VND_ALLEGORITHMIC_SPSM);
+    assert_eq!(mime_type.extension(), ".spsm");
+}
+
+#[test]
 fn test_detect_fasoo() {
     let mut data = vec![0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
     data.resize(520, 0);
@@ -2716,7 +2819,7 @@ fn test_detect_java() {
             "package with public class"
         ),
         (
-            b"import java.util.ArrayList;\nimport java.util.List;\n\nclass MyClass {\n    private List<String> items = new ArrayList<>();\n}",
+            b"package com.example;\n\nimport java.util.ArrayList;\nimport java.util.List;\n\nclass MyClass {\n    private List<String> items = new ArrayList<>();\n}",
             "import with class"
         ),
         (
@@ -2724,7 +2827,7 @@ fn test_detect_java() {
             "package with public enum"
         ),
         (
-            b"import javax.servlet.*;\n\npublic class Servlet extends HttpServlet {\n    public void doGet() {}\n}",
+            b"package com.example;\n\nimport javax.servlet.*;\n\npublic class Servlet extends HttpServlet {\n    public void doGet() {}\n}",
             "import javax with class"
         ),
     ];
@@ -3552,7 +3655,7 @@ fn test_typescript_vs_java_vs_javascript() {
             "JavaScript const without types not detected as TypeScript"
         ),
         (
-            b"import java.io.*;\n\npublic interface Comparable {\n    int compareTo(Object o);\n    boolean equals(Object obj);\n}",
+            b"package com.example;\n\nimport java.io.*;\n\npublic interface Comparable {\n    int compareTo(Object o);\n    boolean equals(Object obj);\n}",
             TEXT_X_JAVA,
             "Java interface with void methods not detected as TypeScript"
         ),

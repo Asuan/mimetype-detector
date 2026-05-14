@@ -10,6 +10,21 @@ Used prefixes:
 
 ## Unreleased
 
+## 0.3.9 - 2026.05.14
+
+* Added: Photoshop Big (.psb) - Adobe Photoshop Large Document Format (`application/x-photoshop-large`)
+* Added: Adobe Swatch Exchange (.ase) - color swatch interchange format (`application/vnd.adobe.ase`)
+* Added: Adobe Color Book (.acb) - Photoshop color book (`application/vnd.adobe.acb`)
+* Added: Photoshop Custom Shapes (.csh) - Photoshop custom shapes (`application/vnd.adobe.photoshop.shapes`)
+* Added: After Effects Project (.aep / .aet) - Adobe After Effects project (`application/vnd.adobe.aftereffects.project`)
+* Added: After Effects Project XML (.aepx) - XML form of After Effects project (`application/vnd.adobe.aftereffects.project+xml`)
+* Added: Audition Session (.sesx) - Adobe Audition session XML (`application/vnd.adobe.audition.sesx+xml`)
+* Added: Adobe XMP Sidecar (.xmp) - RDF/XML metadata (`application/x-xmp`)
+* Added: Substance Archive (.sbsar) - Adobe Substance 3D archive (`application/vnd.allegorithmic.sbsar`)
+* Added: Substance Smart Material (.spsm) - Substance Painter material (`application/vnd.allegorithmic.spsm`)
+* Updated: Java (.java) detection reworked to header-format style (mirrors C / Go detectors)
+* Updated: removed redundant Java/Go/C/C++ anti-pattern lists from another lang detectors
+
 ## 0.3.8 - 2026.04.07
 
 * Added: UDF (.udf) - Universal Disk Format (ISO/IEC 13346 filesystem) (`application/x-udf`)

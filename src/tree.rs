@@ -66,8 +66,8 @@ build_prefix_vec! {
         0x3c => [&ASX, &WPL, &XML, &FRAMEMAKER] as __PV_3C,  // XML and non-XML formats starting with '<'
         0x40 => [&N64_ROM] as __PV_40,  // N64 ROM (N64 little-endian)
         0x3f => [&HLP] as __PV_3F,  // Windows Help
-        0x38 => [&PSD] as __PV_38,
-        0x41 => [&DXF_BINARY, &DJVU, &DWG, &ARROW, &ALZ, &AMV] as __PV_41,  // DXF Binary ('AutoCAD'), DJVU, DWG, Apache Arrow, ALZ, AMV (Actions Media Video)
+        0x38 => [&PSD, &ACB] as __PV_38,  // PSD ('8BPS'), Adobe Color Book ('8BCB')
+        0x41 => [&DXF_BINARY, &DJVU, &DWG, &ARROW, &ALZ, &AMV, &ASE] as __PV_41,  // DXF Binary ('AutoCAD'), DJVU, DWG, Apache Arrow, ALZ, AMV (Actions Media Video), ASE (Adobe Swatch Exchange 'ASEF')
         0x06 => [&INDESIGN, &MXF] as __PV_06,  // Adobe InDesign, Material Exchange Format
         0x42 => [&BMFONT_BINARY, &BLEND, &BMP, &BPG, &BUFR, &BZIP3, &BZIP, &BZ2, &LLVM_BITCODE] as __PV_42,  // BMFont, BLEND, BMP, BPG, BUFR, BZIP3, BZIP before BZ2 for priority, LLVM Bitcode ('BC')
         0x43 => [&VOC, &SWF, &CRX, &COMMODORE_64_CARTRIDGE, &VMDK, &NETCDF] as __PV_43,  // SWF ('CWS'), CRX, C64 CRT, VMDK ('COWD'), NetCDF ('CDF')
@@ -84,7 +84,7 @@ build_prefix_vec! {
         0x4f => [&OTF, &OGG, &ALEMBIC, &AVRO] as __PV_4F,  // OTF, OGG, Alembic, Apache Avro
         0x50 => [&USD_BINARY, &PFM, &NINTENDO_SWITCH_NSP, &PAR2, &PARQUET, &ZIP, &PBM, &PGM, &PPM, &PAM, &PAK] as __PV_50,  // USD Binary ('PXR-USDC'), PFM, Nintendo Switch NSP, Par2, Parquet, ZIP, Portable formats, PAK
         0x51 => [&QCOW2, &QCOW, &QED, &CINEMA4D] as __PV_51,  // QEMU Copy-on-Write v2 ('QFI\xFB'), v1 ('QFI'), QED ('QED\x00'), Cinema4D ('QC4DC4D6')
-        0x52 => [&WINDOWS_REG, &RAR, &RIFF, &RZIP] as __PV_52,  // Windows Registry, RAR, RIFF container (children: WAV, AVI, WEBP, etc.), RZIP
+        0x52 => [&WINDOWS_REG, &RAR, &RIFF, &RZIP, &AEP] as __PV_52,  // Windows Registry, RAR, RIFF container (children: WAV, AVI, WEBP, etc.), RZIP, AEP (RIFX big-endian)
         0x53 => [&FITS, &SQLITE3, &STUFFIT, &STUFFITX, &SEQBOX, &DPX] as __PV_53,  // FITS, SQLite3, StuffIt, StuffItX, SeqBox, DPX (SDPX)
         0x54 => [&TTA, &TZIF] as __PV_54,
         0x55 => [&U3D] as __PV_55,
@@ -98,7 +98,7 @@ build_prefix_vec! {
         0x60 => [&ARJ] as __PV_60,
         0x61 => [&AGE] as __PV_61,  // Age Encryption ('age-encryption.org/v1\n')
         0x62 => [&MACOS_ALIAS, &LZFSE] as __PV_62,  // macOS Alias ('book'), LZFSE compression ('bvx-', 'bvx1', 'bvx2', 'bvx$')
-        0x63 => [&VHD] as __PV_63,  // Microsoft Virtual Hard Disk ('conectix')
+        0x63 => [&VHD, &CSH] as __PV_63,  // Microsoft Virtual Hard Disk ('conectix'), Photoshop Custom Shapes ('cust')
         0x64 => [&TORRENT, &DEX, &DEY] as __PV_64,  // BitTorrent, DEX, DEY all start with 0x64 ('d')
         0x71 => [&QOI, &QOA] as __PV_71,  // Quite OK Image, Quite OK Audio
         0x76 => [&OPENEXR, &VHDX] as __PV_76,  // OpenEXR, VHDX ('vhdxfile')
@@ -253,7 +253,8 @@ static XML: MimeType = MimeType::new(
     &[
         &RSS, &ATOM, &X3D, &KML, &XLIFF, &COLLADA, &GML, &GPX, &TCX, &AMF, &THREEMF, &XFDF, &OWL2,
         &XHTML, &FB2, &USF, &DRAWIO, &XSPF, &XSL, &MATHML, &MUSICXML, &TTML, &SOAP, &XSD, &TMX,
-        &TSX, &MPD, &DWFX, &CDDX, &SVG,
+        &TSX, &MPD, &DWFX, &CDDX, &SVG, // Adobe XML formats
+        &AEPX, &SESX,
     ],
 )
 .with_aliases(&[APPLICATION_XML])
@@ -318,6 +319,7 @@ static UTF8: MimeType = MimeType::new(
     utf8,
     &[
         &HTML,
+        &XMP, // Adobe XMP sidecar - must come before XML (XMP starts with <?xpacket, not <?xml)
         &XML,
         &RTF, // RTF must come before JSON (both start with {, RTF has more specific pattern)
         &VISUAL_STUDIO_SOLUTION,
@@ -326,13 +328,13 @@ static UTF8: MimeType = MimeType::new(
         &PHP,
         &CPP, // C++ before C (more specific patterns), before TS (preprocessor is distinctive)
         &C_LANG,
-        &GO_LANG,    // Go before TS/Java (package declaration is distinctive)
+        &GO_LANG,
+        &JAVA,
         &TYPESCRIPT, // TypeScript must come before JavaScript (TS is more specific)
         &JAVASCRIPT,
-        &PERL,   // Perl must come before Java (both use "package")
-        &CSHARP, // C# must come before Java (both use "public class/interface")
-        &VB,     // Visual Basic .NET language
-        &JAVA,
+        &PERL,
+        &CSHARP,
+        &VB, // Visual Basic .NET language
         &RUST_LANG,
         &RUBY, // Ruby must come before Python (both use class/def, but Ruby has "end")
         &PYTHON,
@@ -529,7 +531,7 @@ mimetype!(SEVEN_Z, APPLICATION_X_7Z_COMPRESSED, ".7z", b"7z\xbc\xaf\x27\x1c", na
 // Current ordering balances performance (common formats first) with correctness (specific before general)
 mimetype!(ZIP, APPLICATION_ZIP, ".zip", b"PK\x03\x04" | b"PK\x05\x06" | b"PK\x07\x08", name: "ZIP Archive", kind: ARCHIVE,
 aliases: [APPLICATION_X_ZIP, APPLICATION_X_ZIP_COMPRESSED],
-ext_aliases: [".xlsx", ".docx", ".pptx", ".vsdx", ".epub", ".jar", ".war", ".ear", ".odt", ".ods", ".odp", ".odg", ".odf", ".sxc", ".kmz", ".ora", ".aab", ".appx", ".appxbundle", ".ipa", ".xap", ".air", ".fla", ".idml", ".vsix", ".xpi", ".xps", ".sda", ".sdc", ".sdd", ".sds", ".sdw", ".smf", ".sxd", ".sxi", ".sxm", ".sxw", ".stc", ".std", ".sti", ".stw", ".sgw", ".uop", ".uos", ".uot", ".usdz", ".sketch", ".123dx", ".f3d", ".fig", ".mxl", ".fbz"],
+ext_aliases: [".xlsx", ".docx", ".pptx", ".vsdx", ".epub", ".jar", ".war", ".ear", ".odt", ".ods", ".odp", ".odg", ".odf", ".sxc", ".kmz", ".ora", ".aab", ".appx", ".appxbundle", ".ipa", ".xap", ".air", ".fla", ".idml", ".vsix", ".xpi", ".xps", ".sda", ".sdc", ".sdd", ".sds", ".sdw", ".smf", ".sxd", ".sxi", ".sxm", ".sxw", ".stc", ".std", ".sti", ".stw", ".sgw", ".uop", ".uos", ".uot", ".usdz", ".sketch", ".123dx", ".f3d", ".fig", ".mxl", ".fbz", ".sbsar", ".spsm"],
 children: [
     // Most common: Office Open XML (checked first for performance)
     &DOCX, &XLSX, &PPTX,
@@ -557,6 +559,9 @@ children: [
 
     // Design & creative tools
     &SKETCH, &FIGMA, &IDML, &FLA,
+
+    // Adobe Substance 3D
+    &SBSAR, &SPSM,
 
     // Geographic & 3D
     &KMZ, &USDZ,
@@ -1255,7 +1260,10 @@ mimetype!(ICO, IMAGE_X_ICON, ".ico", b"\x00\x00\x01\x00", name: "Icon File", kin
 
 mimetype!(ICNS, IMAGE_X_ICNS, ".icns", b"icns", name: "Apple Icon Image", kind: IMAGE);
 
-mimetype!(PSD, IMAGE_VND_ADOBE_PHOTOSHOP, ".psd", b"8BPS", name: "Adobe Photoshop Document", kind: IMAGE, aliases: [IMAGE_X_PSD, APPLICATION_PHOTOSHOP]);
+mimetype!(PSD, IMAGE_VND_ADOBE_PHOTOSHOP, ".psd", b"8BPS", name: "Adobe Photoshop Document", kind: IMAGE, aliases: [IMAGE_X_PSD, APPLICATION_PHOTOSHOP], children: [&PSB]);
+
+// Adobe Photoshop Large Document Format - same 8BPS magic as PSD but version word 0x00 0x02
+mimetype!(PSB, APPLICATION_X_PHOTOSHOP_LARGE, ".psb", offset: (0, b"8BPS\x00\x02"), name: "Adobe Photoshop Large Document", kind: IMAGE, parent: &PSD);
 
 mimetype!(PBM, IMAGE_X_PORTABLE_BITMAP, ".pbm", b"P1" | b"P4", name: "Portable Bitmap", kind: IMAGE);
 
@@ -3298,6 +3306,18 @@ static FRAMEMAKER: MimeType = MimeType::new(
 )
 .with_kind(MimeKind::DOCUMENT);
 
+// Adobe Swatch Exchange (.ase) - color swatch interchange format
+mimetype!(ASE, APPLICATION_VND_ADOBE_ASE, ".ase", b"ASEF", name: "Adobe Swatch Exchange", kind: APPLICATION);
+
+// Adobe After Effects Project (.aep / .aet) - RIFX big-endian container with form type 'Egg!'
+mimetype!(AEP, APPLICATION_VND_ADOBE_AFTEREFFECTS_PROJECT, ".aep", offset: (8, b"Egg!", prefix: (0, b"RIFX")), name: "Adobe After Effects Project", kind: APPLICATION, ext_aliases: [".aet"]);
+
+// Adobe Color Book (.acb) - 8BCB magic + version word
+mimetype!(ACB, APPLICATION_VND_ADOBE_ACB, ".acb", b"8BCB", name: "Adobe Color Book", kind: APPLICATION);
+
+// Photoshop Custom Shapes (.csh) - 'cust' magic
+mimetype!(CSH, APPLICATION_VND_ADOBE_PHOTOSHOP_SHAPES, ".csh", b"cust", name: "Photoshop Custom Shapes", kind: APPLICATION);
+
 // Meta Information Encapsulation - Phil Harvey's metadata container format
 mimetype!(MIE, APPLICATION_X_MIE, ".mie", [0x7E, 0x10, 0xD4, 0x40, 0x5E, 0x78], name: "Meta Information Encapsulation", kind: APPLICATION);
 
@@ -3461,6 +3481,28 @@ static IDML: MimeType = MimeType::new(
     &[],
 )
 .with_kind(MimeKind::DOCUMENT)
+.with_parent(&ZIP);
+
+// Substance Archive (.sbsar) - Adobe Substance 3D, ZIP-based with .sbsasm entries
+static SBSAR: MimeType = MimeType::new(
+    APPLICATION_VND_ALLEGORITHMIC_SBSAR,
+    "Substance Archive",
+    ".sbsar",
+    sbsar,
+    &[],
+)
+.with_kind(MimeKind::APPLICATION)
+.with_parent(&ZIP);
+
+// Substance Painter Smart Material (.spsm) - ZIP-based
+static SPSM: MimeType = MimeType::new(
+    APPLICATION_VND_ALLEGORITHMIC_SPSM,
+    "Substance Smart Material",
+    ".spsm",
+    spsm,
+    &[],
+)
+.with_kind(MimeKind::APPLICATION)
 .with_parent(&ZIP);
 
 static DOC: MimeType = MimeType::new(APPLICATION_MSWORD, "Word Document", ".doc", doc, &[])
@@ -4049,6 +4091,35 @@ static XFDF: MimeType = MimeType::new(APPLICATION_VND_ADOBE_XFDF, "XFDF", ".xfdf
     .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
+// Adobe After Effects Project XML (.aepx)
+static AEPX: MimeType = MimeType::new(
+    APPLICATION_VND_ADOBE_AFTEREFFECTS_PROJECT_XML,
+    "After Effects Project XML",
+    ".aepx",
+    aepx,
+    &[],
+)
+.with_kind(MimeKind::APPLICATION)
+.with_parent(&XML);
+
+// Adobe Audition Session XML (.sesx) - project file (references audio clips,
+// contains no audio data itself), so APPLICATION kind matches FLA/AEP precedent.
+static SESX: MimeType = MimeType::new(
+    APPLICATION_VND_ADOBE_AUDITION_SESX_XML,
+    "Audition Session",
+    ".sesx",
+    sesx,
+    &[],
+)
+.with_kind(MimeKind::APPLICATION)
+.with_parent(&XML);
+
+// Adobe XMP metadata sidecar (.xmp) - parented to UTF8 since the file may begin
+// with a `<?xpacket` processing instruction rather than the standard `<?xml` prolog.
+static XMP: MimeType = MimeType::new(APPLICATION_X_XMP, "Adobe XMP Sidecar", ".xmp", xmp, &[])
+    .with_kind(MimeKind::TEXT)
+    .with_parent(&UTF8);
+
 static OWL2: MimeType = MimeType::new(APPLICATION_OWL_XML, "OWL", ".owl", owl2, &[])
     .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
@@ -4421,6 +4492,22 @@ fn threemf(input: &[u8]) -> bool {
 
 fn xfdf(input: &[u8]) -> bool {
     detect_xml_with_tag(input, b"<xfdf")
+}
+
+fn aepx(input: &[u8]) -> bool {
+    detect_xml_with_tag(input, b"<AfterEffectsProject")
+}
+
+fn sesx(input: &[u8]) -> bool {
+    detect_xml_with_tag(input, b"<sesx")
+}
+
+fn xmp(input: &[u8]) -> bool {
+    // Adobe XMP files typically begin with an xpacket processing instruction
+    // (`<?xpacket begin=...?>`) and contain an `<x:xmpmeta>` element.
+    let limit = input.len().min(512);
+    let head = &input[..limit];
+    head.windows(9).any(|w| w == b"<?xpacket") || head.windows(11).any(|w| w == b"<x:xmpmeta ")
 }
 
 fn owl2(input: &[u8]) -> bool {
@@ -5773,13 +5860,41 @@ fn idml(input: &[u8]) -> bool {
     zip_has(input, &[(b"designmap.xml", false), (b"mimetype", false)], 1)
 }
 
+fn sbsar(input: &[u8]) -> bool {
+    zip_any_suffix(input, b".sbsasm", 8)
+}
+
+fn zip_any_suffix(input: &[u8], suffix: &[u8], scan_n: usize) -> bool {
+    let mut iter = ZipIterator::new(input);
+    for _ in 0..scan_n {
+        if let Some(name) = iter.next() {
+            if name.len() >= suffix.len() && name.ends_with(suffix) {
+                return true;
+            }
+        } else {
+            break;
+        }
+    }
+    false
+}
+
+fn spsm(input: &[u8]) -> bool {
+    // Substance Painter Smart Material - ZIP with smart_material.json or material.json
+    zip_has(
+        input,
+        &[
+            (b"smart_material.json", false),
+            (b"smart_material.spsm", false),
+            (b"material.json", false),
+        ],
+        8,
+    )
+}
+
 fn ai(input: &[u8]) -> bool {
     // Adobe Illustrator - PDF-based format
-    // AI files are PDF files with additional Adobe-specific metadata
-    // Check for %AI or Adobe_Illustrator markers in the file
-    contains_bytes(input, b"%AI")
-        || contains_bytes(input, b"Adobe_Illustrator")
-        || contains_bytes(input, b"Adobe Illustrator")
+    let sample = &input[..input.len().min(2048)];
+    contains_bytes(sample, b"%AI") || contains_bytes(sample, b"Adobe Illustrator")
 }
 
 fn dvr_ms(input: &[u8]) -> bool {
@@ -6014,12 +6129,10 @@ fn javascript(input: &[u8]) -> bool {
 
     let sample = &input[..input.len().min(1024)];
 
-    // Anti-patterns (indicates NOT JavaScript)
+    // Anti-patterns (indicates NOT JavaScript).
     const ANTI_JS: &[LangPattern] = &[
-        LangPattern::simple(b"#include"), // C/C++
-        LangPattern::simple(b"package "), // Java/Go
-        LangPattern::simple(b"using "),   // C#
-        LangPattern::simple(b"fn "),      // Rust
+        LangPattern::simple(b"using "), // C#
+        LangPattern::simple(b"fn "),    // Rust
     ];
 
     // Check anti-patterns FIRST - early stop on first match
@@ -6072,71 +6185,95 @@ fn javascript(input: &[u8]) -> bool {
 }
 
 fn java(input: &[u8]) -> bool {
-    let sample = &input[..input.len().min(1024)];
-
-    // Anti-patterns (JavaScript/TypeScript/C# false positives) - check FIRST
-    let anti_patterns = [
-        LangPattern::new(b"=>", 10),           // JavaScript arrow function
-        LangPattern::new(b"using System", 10), // C#
-        LangPattern::new(b"export ", 5),       // TypeScript/JavaScript
-        LangPattern::new(b"type ", 5),         // TypeScript
-        LangPattern::new(b"namespace ", 5),    // C#/C++
-        LangPattern::new(b"function ", 5),     // JavaScript
-        LangPattern::new(b"async ", 5),        // JavaScript
-        LangPattern::new(b"await ", 5),        // JavaScript
-        LangPattern::new(b"{ get", 3),         // C# property
-        LangPattern::new(b"{ set", 3),         // C# property
-        LangPattern::new(b"const ", 2),        // JavaScript
-        LangPattern::new(b"let ", 2),          // JavaScript
-        LangPattern::simple(b"var "),          // JavaScript (but also Java)
-    ];
-
-    // Check antipatterns FIRST - early stop if exceed threshold of 2
-    if SinglePassMatcher::new(sample, &anti_patterns).scan_early_stop(2) {
-        return false;
+    fn strip_java_modifiers(mut line: &[u8]) -> &[u8] {
+        const MODIFIERS: &[&[u8]] = &[
+            b"public ",
+            b"private ",
+            b"protected ",
+            b"abstract ",
+            b"final ",
+            b"static ",
+            b"sealed ",
+            b"non-sealed ",
+        ];
+        'outer: loop {
+            for m in MODIFIERS {
+                if line.starts_with(m) {
+                    line = &line[m.len()..];
+                    continue 'outer;
+                }
+            }
+            return line;
+        }
     }
 
-    // Java requires braces for code blocks
-    let has_braces = sample.contains(&b'{') && sample.contains(&b'}');
-    if !has_braces {
+    // Header-format detector: require `package <dotted.name>;`, then accept on
+    // the first valid `import <dotted.name>;` or class/interface/enum decl.
+    let sample = &input[..input.len().min(2048)];
+    let mut pos = skip_ws_and_comments(sample, 0);
+
+    // Phase 1: package is mandatory.
+    if !sample[pos..].starts_with(b"package ") {
         return false;
     }
+    let id_start = pos + 8;
+    let mut id_end = id_start;
+    while id_end < sample.len()
+        && (sample[id_end].is_ascii_alphanumeric()
+            || sample[id_end] == b'_'
+            || sample[id_end] == b'.')
+    {
+        id_end += 1;
+    }
+    let has_dot = sample[id_start..id_end].contains(&b'.');
+    let terminated = id_end < sample.len() && sample[id_end] == b';';
+    if !(has_dot && terminated) {
+        return false;
+    }
+    pos = read_line(sample, id_end).1;
 
-    // Java patterns with weights
-    let patterns = [
-        LangPattern::new(b"public static void main", 4),
-        LangPattern::new(b"public class ", 3),
-        LangPattern::new(b"public interface ", 3),
-        LangPattern::new(b"public abstract ", 3),
-        LangPattern::new(b"public enum ", 3),
-        LangPattern::new(b"package ", 3),
-        LangPattern::new(b"import java.", 3),
-        LangPattern::new(b"import javax.", 3),
-        LangPattern::new(b"@Override", 3),
-        LangPattern::new(b"@Autowired", 3),
-        LangPattern::new(b"@Component", 3),
-        LangPattern::new(b"@Service", 3),
-        LangPattern::new(b"@Repository", 3),
-        LangPattern::new(b"@RestController", 3),
-        LangPattern::new(b"@RequestMapping", 3),
-        LangPattern::new(b"System.out.", 3),
-        LangPattern::new(b"private class ", 2),
-        LangPattern::new(b"protected class ", 2),
-        LangPattern::new(b"import com.", 2),
-        LangPattern::new(b"import org.", 2),
-        LangPattern::new(b"extends ", 2),
-        LangPattern::new(b"implements ", 2),
-        LangPattern::new(b"throws ", 2),
-        LangPattern::new(b"catch (", 2),
-        LangPattern::simple(b"import "),
-        LangPattern::simple(b"class "),
-        LangPattern::simple(b"interface "),
-        LangPattern::simple(b"final "),
-        LangPattern::simple(b"try {"),
-        LangPattern::simple(b"finally {"),
-    ];
+    // Phase 2: scan lines for imports and type declarations.
+    while pos < sample.len() {
+        pos = skip_ws_and_comments(sample, pos);
+        if pos >= sample.len() {
+            break;
+        }
 
-    SinglePassMatcher::new(sample, &patterns).scan().1 >= 3
+        let (line, next) = read_line(sample, pos);
+        pos = next;
+
+        // `import [static] <dotted.name|wildcard>;` — strict body chars
+        if line.starts_with(b"import ") && line.last() == Some(&b';') {
+            let mut body = &line[7..line.len() - 1];
+            if body.starts_with(b"static ") {
+                body = &body[7..];
+            }
+            let valid = body.contains(&b'.')
+                && body
+                    .iter()
+                    .all(|&b| b.is_ascii_alphanumeric() || b == b'_' || b == b'.' || b == b'*');
+            if valid {
+                return true;
+            }
+        }
+
+        // class / interface / enum / @interface (after stripping modifiers).
+        let after_modifiers = strip_java_modifiers(line);
+        let is_decl = after_modifiers.starts_with(b"class ")
+            || after_modifiers.starts_with(b"interface ")
+            || after_modifiers.starts_with(b"enum ")
+            || after_modifiers.starts_with(b"@interface ");
+        if is_decl {
+            let opens_body = line.contains(&b'{');
+            let inherits = line.windows(9).any(|w| w == b" extends ")
+                || line.windows(12).any(|w| w == b" implements ");
+            if opens_body || inherits {
+                return true;
+            }
+        }
+    }
+
+    false
 }
 
 fn typescript(input: &[u8]) -> bool {
@@ -6146,20 +6283,12 @@ fn typescript(input: &[u8]) -> bool {
 
     let sample = &input[..input.len().min(1024)];
 
-    // Anti-patterns (Java, C# false positives) - check FIRST
-    // Note: C/C++/Go are detected before TypeScript, so no need for those anti-patterns
+    // Anti-patterns (C# false positives) - check FIRST.
     let anti_patterns = [
         LangPattern::new(b"using System", 10),  // C#
         LangPattern::new(b"{ get; set; }", 10), // C# property
         LangPattern::new(b"Task<", 8),          // C# async
-        LangPattern::new(b"public class ", 10), // Java, C#
-        LangPattern::new(b"package ", 10),      // Java
-        LangPattern::new(b"import java.", 10),  // Java
-        LangPattern::new(b"import javax.", 10), // Java
-        LangPattern::new(b"System.out", 10),    // Java
-        LangPattern::new(b"@Override", 5),      // Java
-        LangPattern::new(b"import com.", 5),    // Java
-        LangPattern::new(b"import org.", 5),    // Java
+        LangPattern::new(b"public class ", 10), // C# (also Java, but Java already filtered)
     ];
 
     // Check antipatterns FIRST - early stop if exceed threshold of 5
@@ -6235,20 +6364,29 @@ fn typescript(input: &[u8]) -> bool {
     has_custom_type_annotation || score >= 3
 }
 
-// Helper functions for C-style comment skipping (used by c_lang, go_lang, etc.)
-fn skip_to_next_line(sample: &[u8], mut pos: usize) -> usize {
-    while pos < sample.len() && sample[pos] != b'\n' {
-        pos += 1;
+/// Returns `(line, next_pos)` for the line starting at `pos`. The line slice
+/// excludes the terminator; `next_pos` skips it. Handles `\n`, `\r\n`, `\r`.
+fn read_line(sample: &[u8], pos: usize) -> (&[u8], usize) {
+    let mut eol = pos;
+    while eol < sample.len() && sample[eol] != b'\n' && sample[eol] != b'\r' {
+        eol += 1;
     }
-    (pos + 1).min(sample.len())
+    let mut next = eol;
+    if next < sample.len() && sample[next] == b'\r' {
+        next += 1;
+    }
+    if next < sample.len() && sample[next] == b'\n' {
+        next += 1;
+    }
+    (&sample[pos..eol], next)
 }
 
+/// Skip one C-style comment at `pos`. Returns position after `//` or `/* */`,
+/// or `None` if `pos` isn't a comment start.
 fn skip_c_comment(sample: &[u8], mut pos: usize) -> Option<usize> {
     if sample.get(pos + 1) == Some(&b'/') {
-        // Single-line comment - skip to end of line
-        Some(skip_to_next_line(sample, pos))
+        Some(read_line(sample, pos).1)
     } else if sample.get(pos + 1) == Some(&b'*') {
-        // Multi-line comment - skip to */
         pos += 2;
         while pos + 1 < sample.len() {
             if sample[pos] == b'*' && sample[pos + 1] == b'/' {
@@ -6259,6 +6397,22 @@ fn skip_c_comment(sample: &[u8], mut pos: usize) -> Option<usize> {
         Some(pos)
     } else {
         None
+    }
+}
+
+/// Skip a run of ASCII whitespace and consecutive C-style concat
+fn skip_ws_and_comments(sample: &[u8], mut pos: usize) -> usize {
+    loop {
+        while pos < sample.len() && matches!(sample[pos], b' ' | b'\t' | b'\n' | b'\r') {
+            pos += 1;
+        }
+        if pos < sample.len() && sample[pos] == b'/' {
+            if let Some(new_pos) = skip_c_comment(sample, pos) {
+                pos = new_pos;
+                continue;
+            }
+        }
+        return pos;
     }
 }
 
@@ -6276,17 +6430,6 @@ fn c_lang(input: &[u8]) -> bool {
     let mut has_pragma_once = false;
     let mut has_cplusplus_ifdef = false; // C header with C++ compatibility
     let mut has_conditional_directive = false; // Track if we've seen #if/#ifdef/#ifndef
-
-    // Helper to advance position to next line
-    let advance_to_next_line = |pos: &mut usize, line_end: usize, sample: &[u8]| {
-        *pos = line_end;
-        if *pos < sample.len() && sample[*pos] == b'\r' {
-            *pos += 1;
-        }
-        if *pos < sample.len() && sample[*pos] == b'\n' {
-            *pos += 1;
-        }
-    };
 
     'lines: while pos < sample.len() {
         // Skip leading whitespace on the line
@@ -6306,21 +6449,13 @@ fn c_lang(input: &[u8]) -> bool {
             }
         }
 
-        let line_start = pos;
-
-        // Find end of line
-        let mut line_end = pos;
-        while line_end < sample.len() && sample[line_end] != b'\n' && sample[line_end] != b'\r' {
-            line_end += 1;
-        }
+        let (line, next) = read_line(sample, pos);
+        pos = next;
 
         // Skip very short lines (includes empty lines) - can't contain meaningful patterns
-        if line_end - line_start < MIN_MEANINGFUL_LINE_LEN {
-            advance_to_next_line(&mut pos, line_end, sample);
+        if line.len() < MIN_MEANINGFUL_LINE_LEN {
             continue 'lines;
         }
-
-        let line = &sample[line_start..line_end];
 
         if score >= 5 {
             return true;
@@ -6362,36 +6497,31 @@ fn c_lang(input: &[u8]) -> bool {
                         score += 3;
                     }
                 }
-                Some(&b'd') if line.starts_with(b"#define") => {
-                    if line.len() > 8
+                Some(&b'd')
+                    if line.starts_with(b"#define")
+                        && line.len() > 8
                         && line[8..]
                             .iter()
-                            .any(|&b| b.is_ascii_alphanumeric() || b == b'_')
-                    {
-                        has_define = true;
-                        score += 3;
-                    }
+                            .any(|&b| b.is_ascii_alphanumeric() || b == b'_') =>
+                {
+                    has_define = true;
+                    score += 3;
                 }
-                Some(&b'e') => {
+                Some(&b'e') if has_conditional_directive => {
                     // #endif, #elif, #else
-                    if has_conditional_directive {
-                        if line.starts_with(b"#endif") {
-                            has_endif = true;
-                            score += 2;
-                        } else if line.starts_with(b"#elif") || line.starts_with(b"#else") {
-                            score += 2;
-                        }
-                    }
-                }
-                Some(&b'u') => {
-                    // #undef
-                    if has_conditional_directive && line.starts_with(b"#undef") {
+                    if line.starts_with(b"#endif") {
+                        has_endif = true;
+                        score += 2;
+                    } else if line.starts_with(b"#elif") || line.starts_with(b"#else") {
                         score += 2;
                     }
                 }
+                Some(&b'u') if has_conditional_directive && line.starts_with(b"#undef") => {
+                    // #undef
+                    score += 2;
+                }
                 _ => {}
             }
-            advance_to_next_line(&mut pos, line_end, sample);
             continue 'lines;
         }
 
@@ -6412,8 +6542,6 @@ fn c_lang(input: &[u8]) -> bool {
         {
             score += 1;
         }
-
-        advance_to_next_line(&mut pos, line_end, sample);
     }
 
     // Calculate header-specific bonus score
@@ -6528,7 +6656,7 @@ fn go_lang(input: &[u8]) -> bool {
             },
             b'p' if sample[pos..].starts_with(b"package ") => {
                 // Found package - skip to next line
-                pos = skip_to_next_line(sample, pos);
+                pos = read_line(sample, pos).1;
                 found_package = true;
                 break;
             }
@@ -6541,8 +6669,6 @@ fn go_lang(input: &[u8]) -> bool {
     }
 
     while pos + 8 < sample.len() {
-        let line_start = pos;
-
         // Fast fail on unexpected first byte
         match sample[pos] {
             b'i' | b't' | b'f' | b'v' | b'c' => {
@@ -6565,27 +6691,14 @@ fn go_lang(input: &[u8]) -> bool {
             }
         }
 
-        // Find end of line (excluding newline chars)
-        let mut line_end = pos;
-        while line_end < sample.len() && sample[line_end] != b'\n' && sample[line_end] != b'\r' {
-            line_end += 1;
-        }
-
-        pos = line_end;
-        if pos < sample.len() && sample[pos] == b'\r' {
-            pos += 1;
-        }
-        if pos < sample.len() && sample[pos] == b'\n' {
-            pos += 1;
-        }
+        let (line, next) = read_line(sample, pos);
+        pos = next;
 
         // Skip empty or too short lines (minimum is 8 bytes for "import (")
-        let line_len = line_end - line_start;
-        if line_len < 8 {
+        if line.len() < 8 {
             continue;
         }
 
-        let line = &sample[line_start..line_end];
         if line == b"import (" || (line.starts_with(b"import \"") && line.ends_with(b"\"")) {
             return true;
         }
@@ -6668,17 +6781,9 @@ fn rust_lang(input: &[u8]) -> bool {
 fn csharp(input: &[u8]) -> bool {
     let sample = &input[..input.len().min(1024)];
 
-    // Anti-patterns (C++, Java, TypeScript false positives)
+    // Anti-patterns (TypeScript false positives). C/C++/Go/Java are all
+    // detected before C#, so their identifying tokens no longer need exclusion.
     let anti_patterns = [
-        LangPattern::new(b"import java.", 10),
-        LangPattern::new(b"import javax.", 10),
-        LangPattern::new(b"import com.", 10),
-        LangPattern::new(b"import org.", 10),
-        LangPattern::new(b"package ", 10),
-        LangPattern::new(b"iostream", 10),
-        LangPattern::new(b"#include", 10),
-        LangPattern::new(b"cout", 8),
-        LangPattern::new(b"std::", 8),
         LangPattern::new(b"export ", 5), // TypeScript
         LangPattern::new(b"const ", 3),  // TypeScript/JavaScript
     ];
@@ -6821,20 +6926,9 @@ fn python(input: &[u8]) -> bool {
         LangPattern::new(b"__main__", 2),
     ];
 
-    // Anti-patterns (C++ false positives)
-    let anti_patterns = [
-        LangPattern::new(b"class {", 10),
-        LangPattern::new(b"class\n{", 10),
-        LangPattern::new(b"class {\n", 10),
-        LangPattern::new(b"namespace ", 5),
-        LangPattern::new(b"#include", 5),
-        LangPattern::new(b"std::", 5),
-    ];
-
-    // Check antipatterns FIRST - early stop on first C++ antipattern found
-    if SinglePassMatcher::new(sample, &anti_patterns).scan_early_stop(0) {
-        return false;
-    }
+    // C++/C/Java/C# all run before Python, so any C++ anti-patterns
+    // (#include, std::, namespace, class { ... }) no longer need to be
+    // excluded here — the file would already be classified as one of those.
 
     let matcher = SinglePassMatcher::new(sample, &patterns);
     let (found, score) = matcher.scan();
@@ -6944,23 +7038,13 @@ fn perl(input: &[u8]) -> bool {
 
     let sample = &input[..input.len().min(1024)];
 
-    // Anti-patterns (Java, Go, Rust, C#, C++ false positives)
+    // Anti-patterns (Rust, C# false positives). C/C++/Go/Java are all
+    // detected before Perl, so their identifying tokens no longer need exclusion.
     let anti_patterns = [
-        LangPattern::new(b"public class ", 10),     // Java
-        LangPattern::new(b"public enum ", 10),      // Java
-        LangPattern::new(b"public interface ", 10), // Java
-        LangPattern::new(b"import java.", 10),      // Java
-        LangPattern::new(b"import javax.", 10),     // Java
-        LangPattern::new(b"@Override", 10),         // Java
-        LangPattern::new(b"System.out", 10),        // Java
-        LangPattern::new(b"package main", 10),      // Go
-        LangPattern::new(b"func main()", 10),       // Go, Rust
-        LangPattern::new(b"func (", 10),            // Go method receiver
-        LangPattern::new(b" := ", 10),              // Go
-        LangPattern::new(b"using System", 10),      // C#
-        LangPattern::new(b"namespace ", 10),        // C++, C#
-        LangPattern::new(b"fn ", 10),               // Rust
-        LangPattern::new(b"impl ", 10),             // Rust
+        LangPattern::new(b"using System", 10), // C#
+        LangPattern::new(b"namespace ", 10),   // C# (also C++, but C++ already filtered)
+        LangPattern::new(b"fn ", 10),          // Rust
+        LangPattern::new(b"impl ", 10),        // Rust
     ];
 
     // Check antipatterns FIRST
