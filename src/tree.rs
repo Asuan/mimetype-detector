@@ -79,7 +79,7 @@ build_prefix_vec! {
         0x49 => [&IQM, &JXR, &LIT, &TIFF, &CHM, &INSTALL_SHIELD_CAB, &CRW, &IT, &RW2, &KODAK_KDC, &KODAK_DCR, &ORF, &STEP] as __PV_49,  // IQM, TIFF includes CR2/NEF as children, ORF variants (IIRO/IIRS) are TIFF-based but need direct detection, Kodak RAW, STEP ('ISO-10303-21')
         0x4b => [&FBX, &VMDK] as __PV_4B,  // Autodesk FBX (Kaydara), VMDK ('KDMV')
         0x4c => [&COFF, &LNK, &LZIP, &LRF, &LRZIP] as __PV_4C,  // COFF (i386), LNK, LZIP, LRF (Sony Reader), LRZIP
-        0x4d => [&MODEL3D_BINARY, &MLA, &MUSEPACK, &CAB, &MIDI, &EXE, &AUTODESK_3DS, &TIFF, &ORF, &MOZILLA_ARCHIVE, &WIM, &SGI_MOVIE, &OPENGEX] as __PV_4D,  // Model3D Binary ('MD30'), MLA, 3DS (exclude TIFF), ORF (MMOR) is TIFF-based but needs direct detection, Mozilla Archive, WIM, SGI Movie, OpenGEX ('Metric')
+        0x4d => [&MODEL3D_BINARY, &MLA, &MUSEPACK, &CAB, &MIDI, &EXE, &AUTODESK_3DS, &TIFF, &ORF, &MOZILLA_ARCHIVE, &WIM, &PDB, &SGI_MOVIE, &OPENGEX] as __PV_4D,  // Model3D Binary ('MD30'), MLA, 3DS (exclude TIFF), ORF (MMOR) is TIFF-based but needs direct detection, Mozilla Archive, WIM, PDB ('Microsoft C/C++ MSF 7.00'), SGI Movie, OpenGEX ('Metric')
         0x4e => [&NINTENDO_SWITCH_NSO, &NES] as __PV_4E,  // Nintendo Switch NSO, NES ROM
         0x4f => [&OTF, &OGG, &ALEMBIC, &AVRO] as __PV_4F,  // OTF, OGG, Alembic, Apache Avro
         0x50 => [&USD_BINARY, &PFM, &NINTENDO_SWITCH_NSP, &PAR2, &PARQUET, &ZIP, &PBM, &PGM, &PPM, &PAM, &PAK] as __PV_50,  // USD Binary ('PXR-USDC'), PFM, Nintendo Switch NSP, Par2, Parquet, ZIP, Portable formats, PAK
@@ -111,7 +111,7 @@ build_prefix_vec! {
         0x73 => [&STL_ASCII, &SQUASHFS] as __PV_73,  // STL ASCII 3D models, Squashfs ('sqsh')
         0x74 => [&TTC] as __PV_74,
         0x77 => [&WOFF, &WOFF2, &WAVPACK] as __PV_77,
-        0x78 => [&XAR, &ZLIB] as __PV_78,  // XAR, ZLIB
+        0x78 => [&XAR, &TNEF, &ZLIB] as __PV_78,  // XAR, TNEF, ZLIB
         0x7a => [&ZPAQ] as __PV_7A,  // ZPAQ also starts with "zPQ" (0x7A)
         0x7b => [&JSON_FEED, &GLYPHS] as __PV_7B,  // JSON Feed ('{"version'), Glyphs font ('{\n.appVe')
         0x7e => [&MIE] as __PV_7E,  // Meta Information Encapsulation
@@ -191,6 +191,7 @@ pub static ROOT: MimeType = MimeType::new(
         &EMF,                 // Offset 40 check
         &WMF,                 // Multiple signatures
         &VDI,                 // VirtualBox VDI - offset 64 check
+        &EDB,                 // ESE/Jet Blue database - offset 4 check
         &FIT,                 // FIT format - offset 8 check
         &MPEG2TS,             // Pattern at offset 188
         &ACE,                 // Offset 7 check
@@ -252,8 +253,8 @@ static XML: MimeType = MimeType::new(
     xml,
     &[
         &RSS, &ATOM, &X3D, &KML, &XLIFF, &COLLADA, &GML, &GPX, &TCX, &AMF, &THREEMF, &XFDF, &OWL2,
-        &XHTML, &FB2, &USF, &DRAWIO, &XSPF, &XSL, &MATHML, &MUSICXML, &TTML, &SOAP, &XSD, &TMX,
-        &TSX, &MPD, &DWFX, &CDDX, &SVG, // Adobe XML formats
+        &NUSPEC, &XHTML, &FB2, &USF, &DRAWIO, &XSPF, &XSL, &MATHML, &MUSICXML, &TTML, &SOAP, &XSD,
+        &TMX, &TSX, &MPD, &DWFX, &CDDX, &SVG, // Adobe XML formats
         &AEPX, &SESX,
     ],
 )
@@ -330,10 +331,10 @@ static UTF8: MimeType = MimeType::new(
         &C_LANG,
         &GO_LANG,
         &JAVA,
+        &CSHARP,
         &TYPESCRIPT, // TypeScript must come before JavaScript (TS is more specific)
         &JAVASCRIPT,
         &PERL,
-        &CSHARP,
         &VB, // Visual Basic .NET language
         &RUST_LANG,
         &RUBY, // Ruby must come before Python (both use class/def, but Ruby has "end")
@@ -534,7 +535,11 @@ aliases: [APPLICATION_X_ZIP, APPLICATION_X_ZIP_COMPRESSED],
 ext_aliases: [".xlsx", ".docx", ".pptx", ".vsdx", ".epub", ".jar", ".war", ".ear", ".odt", ".ods", ".odp", ".odg", ".odf", ".sxc", ".kmz", ".ora", ".aab", ".appx", ".appxbundle", ".ipa", ".xap", ".air", ".fla", ".idml", ".vsix", ".xpi", ".xps", ".sda", ".sdc", ".sdd", ".sds", ".sdw", ".smf", ".sxd", ".sxi", ".sxm", ".sxw", ".stc", ".std", ".sti", ".stw", ".sgw", ".uop", ".uos", ".uot", ".usdz", ".sketch", ".123dx", ".f3d", ".fig", ".mxl", ".fbz", ".sbsar", ".spsm"],
 children: [
     // Most common: Office Open XML (checked first for performance)
-    &DOCX, &XLSX, &PPTX,
+    // XLSB must precede XLSX (both contain an `xl/` directory)
+    &XLSB, &DOCX, &XLSX, &PPTX,
+
+    // Office theme + NuGet package (specific entries; before generic ZIP)
+    &THMX, &NUPKG,
 
     // Common: Android, eBooks
     &APK, &EPUB,
@@ -3374,6 +3379,36 @@ static VSDX: MimeType = MimeType::new(
 .with_kind(MimeKind::DOCUMENT)
 .with_parent(&ZIP);
 
+static XLSB: MimeType = MimeType::new(
+    APPLICATION_VND_MS_EXCEL_SHEET_BINARY,
+    "Excel 2007+ Binary Workbook",
+    ".xlsb",
+    xlsb,
+    &[],
+)
+.with_kind(MimeKind::SPREADSHEET)
+.with_parent(&ZIP);
+
+static THMX: MimeType = MimeType::new(
+    APPLICATION_VND_MS_OFFICETHEME,
+    "Office Theme",
+    ".thmx",
+    thmx,
+    &[],
+)
+.with_kind(MimeKind::DOCUMENT)
+.with_parent(&ZIP);
+
+static NUPKG: MimeType = MimeType::new(
+    APPLICATION_VND_MS_NUGET_PACKAGE,
+    "NuGet Package",
+    ".nupkg",
+    nupkg,
+    &[],
+)
+.with_kind(MimeKind::ARCHIVE)
+.with_parent(&ZIP);
+
 static EPUB: MimeType = MimeType::new(APPLICATION_EPUB_ZIP, "EPUB", ".epub", epub, &[])
     .with_kind(MimeKind::DOCUMENT)
     .with_parent(&ZIP);
@@ -4124,6 +4159,16 @@ static OWL2: MimeType = MimeType::new(APPLICATION_OWL_XML, "OWL", ".owl", owl2, 
     .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
 
+static NUSPEC: MimeType = MimeType::new(
+    APPLICATION_X_NUGET_NUSPEC,
+    "NuGet Package Manifest",
+    ".nuspec",
+    nuspec,
+    &[],
+)
+.with_kind(MimeKind::TEXT)
+.with_parent(&XML);
+
 static XHTML: MimeType = MimeType::new(APPLICATION_XHTML_XML, "XHTML", ".html", xhtml, &[])
     .with_kind(MimeKind::TEXT)
     .with_parent(&XML);
@@ -4423,8 +4468,18 @@ mimetype!(VMDK, APPLICATION_X_VMDK, ".vmdk", b"KDMV" | b"COWD" | b"# Disk Descri
 // VDI signature is at offset 0x40 (64 bytes): 0x7F 0x10 0xDA 0xBE
 mimetype!(VDI, APPLICATION_X_VIRTUALBOX_VDI, ".vdi", offset: (64, b"\x7F\x10\xDA\xBE"), name: "VirtualBox Virtual Disk Image", kind: DOCUMENT);
 
-// WIM - Windows Imaging Format
-mimetype!(WIM, APPLICATION_X_MS_WIM, ".wim", b"MSWIM\x00\x00\x00", name: "Windows Imaging Format", kind: ARCHIVE);
+// EDB - Microsoft Extensible Storage Engine (ESE / "Jet Blue") database.
+mimetype!(EDB, APPLICATION_X_MS_ESE, ".edb", offset: (4, b"\xEF\xCD\xAB\x89"), name: "Extensible Storage Engine DB", kind: DATABASE);
+
+// WIM - Windows Imaging Format (.esd is the LZMS-compressed variant, same magic)
+mimetype!(WIM, APPLICATION_X_MS_WIM, ".wim", b"MSWIM\x00\x00\x00", name: "Windows Imaging Format", kind: ARCHIVE, ext_aliases: [".esd"]);
+
+// TNEF - Transport Neutral Encapsulation Format (Outlook "winmail.dat" attachments)
+// Signature is the little-endian DWORD 0x223E9F78.
+mimetype!(TNEF, APPLICATION_VND_MS_TNEF, ".dat", b"\x78\x9F\x3E\x22", name: "Transport Neutral Encapsulation Format", kind: APPLICATION);
+
+// PDB - Program Database (Microsoft debug symbols), MSF 7.00 container.
+mimetype!(PDB, APPLICATION_X_MS_PDB, ".pdb", b"Microsoft C/C++ MSF 7.00\r\n\x1aDS\x00\x00\x00", name: "Program Database", kind: APPLICATION);
 
 // Squashfs - Compressed read-only filesystem used in embedded systems and live CDs.
 // Squashfs can be big-endian 'sqsh' or little-endian 'hsqs'
@@ -4528,6 +4583,15 @@ fn fb2(input: &[u8]) -> bool {
 fn usf(input: &[u8]) -> bool {
     // Universal Subtitle Format - XML-based with <USFSubtitles> root element
     detect_xml_with_tag(input, b"<USFSubtitles")
+}
+
+fn nuspec(input: &[u8]) -> bool {
+    // NuGet manifest: <package> root scoped to the NuGet packaging schema to
+    // avoid colliding with other XML formats that use a generic <package> tag.
+    detect_xml_with_tag(input, b"<package")
+        && input
+            .windows(30)
+            .any(|w| w == b"schemas.microsoft.com/packagin")
 }
 
 fn har(input: &[u8]) -> bool {
@@ -5043,6 +5107,21 @@ fn pptx(input: &[u8]) -> bool {
 
 fn vsdx(input: &[u8]) -> bool {
     msoxml(input, &[(b"visio/", true)], 100)
+}
+
+/// Excel 2007+ binary workbook: OOXML package containing `xl/workbook.bin`.
+fn xlsb(input: &[u8]) -> bool {
+    zip_has(input, &[(b"xl/workbook.bin", false)], 100)
+}
+
+/// Office theme: OOXML package whose payload lives under `theme/`.
+fn thmx(input: &[u8]) -> bool {
+    msoxml(input, &[(b"theme/", true)], 100)
+}
+
+/// NuGet package: ZIP containing a `.nuspec` manifest entry.
+fn nupkg(input: &[u8]) -> bool {
+    zip_any_suffix(input, b".nuspec", 100)
 }
 
 fn epub(input: &[u8]) -> bool {
@@ -6131,8 +6210,7 @@ fn javascript(input: &[u8]) -> bool {
 
     // Anti-patterns (indicates NOT JavaScript).
     const ANTI_JS: &[LangPattern] = &[
-        LangPattern::simple(b"using "), // C#
-        LangPattern::simple(b"fn "),    // Rust
+        LangPattern::simple(b"fn "), // Rust
     ];
 
     // Check anti-patterns FIRST - early stop on first match
@@ -6282,19 +6360,6 @@ fn typescript(input: &[u8]) -> bool {
     }
 
     let sample = &input[..input.len().min(1024)];
-
-    // Anti-patterns (C# false positives) - check FIRST.
-    let anti_patterns = [
-        LangPattern::new(b"using System", 10),  // C#
-        LangPattern::new(b"{ get; set; }", 10), // C# property
-        LangPattern::new(b"Task<", 8),          // C# async
-        LangPattern::new(b"public class ", 10), // C# (also Java, but Java already filtered)
-    ];
-
-    // Check antipatterns FIRST - early stop if exceed threshold of 5
-    if SinglePassMatcher::new(sample, &anti_patterns).scan_early_stop(5) {
-        return false;
-    }
 
     // TypeScript requires braces for code blocks
     let has_braces = sample.contains(&b'{') && sample.contains(&b'}');
@@ -6779,46 +6844,100 @@ fn rust_lang(input: &[u8]) -> bool {
 }
 
 fn csharp(input: &[u8]) -> bool {
-    let sample = &input[..input.len().min(1024)];
-
-    // Anti-patterns (TypeScript false positives). C/C++/Go/Java are all
-    // detected before C#, so their identifying tokens no longer need exclusion.
-    let anti_patterns = [
-        LangPattern::new(b"export ", 5), // TypeScript
-        LangPattern::new(b"const ", 3),  // TypeScript/JavaScript
+    // the order a C# compilation unit must follow —
+    //   extern alias* -> using* -> global attributes? -> namespace / type decls
+    const MODIFIERS: &[&[u8]] = &[
+        b"public ",
+        b"internal ",
+        b"private ",
+        b"protected ",
+        b"abstract ",
+        b"sealed ",
+        b"static ",
+        b"partial ",
+        b"unsafe ",
+        b"readonly ",
+        b"ref ",
+    ];
+    const TYPE_KEYWORDS: &[&[u8]] = &[
+        b"class ",
+        b"interface ",
+        b"struct ",
+        b"record ",
+        b"enum ",
+        b"delegate ",
     ];
 
-    // Check antipatterns FIRST - early stop if exceed threshold
-    if SinglePassMatcher::new(sample, &anti_patterns).scan_early_stop(7) {
-        return false;
+    // `using <...>;` / `global using <...>;`, excluding the C++ `using namespace`.
+    let is_using = |line: &[u8]| {
+        let body = line.strip_prefix(b"global ").unwrap_or(line);
+        body.starts_with(b"using ")
+            && !body.starts_with(b"using namespace ")
+            && line.last() == Some(&b';')
+    };
+    let namespace_decl = |line: &[u8]| {
+        line.strip_prefix(b"namespace ")
+            .and_then(<[u8]>::first)
+            .is_some_and(|&b| b.is_ascii_alphabetic() || b == b'_')
+    };
+
+    // Strip a UTF-8 BOM (the Visual Studio default for `.cs` files).
+    let input = input.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(input);
+    let sample = &input[..input.len().min(2048)];
+
+    // `#include` and friends are intentionally NOT skipped, so C/C++ fail the
+    // anchor rather than matching a later `namespace`.
+    let mut pos = skip_ws_and_comments(sample, 0);
+    while sample.get(pos) == Some(&b'#')
+        && (sample[pos..].starts_with(b"#nullable")
+            || sample[pos..].starts_with(b"#region")
+            || sample[pos..].starts_with(b"#endregion"))
+    {
+        pos = skip_ws_and_comments(sample, read_line(sample, pos).1);
     }
 
-    // C# requires braces for code blocks
-    let has_braces = sample.contains(&b'{') && sample.contains(&b'}');
-    if !has_braces {
+    // Phase 1: anchor. A `using` anchor must be a complete directive; a
+    // `namespace` anchor may open its block on a later line.
+    let (anchor, anchor_next) = read_line(sample, pos);
+    let anchor = anchor.trim_ascii_end();
+    if !(is_using(anchor) || namespace_decl(anchor)) {
         return false;
     }
+    pos = anchor_next;
 
-    // C# patterns with weights
-    let patterns = [
-        LangPattern::new(b"using System", 3), // C#-specific
-        LangPattern::new(b"namespace ", 2),
-        LangPattern::new(b"{ get; set; }", 3), // C# property
-        LangPattern::new(b"string ", 2),       // C#-specific type
-        LangPattern::new(b"async ", 2),
-        LangPattern::new(b"await ", 2),
-        LangPattern::new(b"public ", 2),
-        LangPattern::new(b"private ", 2),
-        LangPattern::new(b"static ", 2),
-        LangPattern::simple(b"using "),
-        LangPattern::simple(b"class "),
-        LangPattern::simple(b"void "),
-        LangPattern::simple(b"var "),
-        LangPattern::simple(b"{ get"),
-        LangPattern::simple(b"{ set"),
-    ];
+    // Phase 2: each line is already de-indented by skip_ws_and_comments. Confirm
+    // on the next using/namespace/type declaration, or fast-fail.
+    loop {
+        pos = skip_ws_and_comments(sample, pos);
+        if pos >= sample.len() {
+            break;
+        }
+        let (line, next) = read_line(sample, pos);
+        pos = next;
+        let line = line.trim_ascii_end();
 
-    SinglePassMatcher::new(sample, &patterns).scan().1 >= 3
+        // Block delimiters, preprocessor directives, and attributes
+        // (`[assembly: ...]`) sit between the header and the first declaration.
+        if matches!(line[0], b'{' | b'}' | b'#' | b'[') || line.starts_with(b"extern alias ") {
+            continue;
+        }
+        if is_using(line) || namespace_decl(line) {
+            return true;
+        }
+
+        // Type declaration after stripping any leading modifiers.
+        let mut decl = line;
+        while let Some(rest) = MODIFIERS.iter().find_map(|m| decl.strip_prefix(*m)) {
+            decl = rest;
+        }
+        return TYPE_KEYWORDS.iter().any(|kw| {
+            decl.strip_prefix(*kw)
+                .and_then(<[u8]>::first)
+                .is_some_and(|&b| b.is_ascii_alphabetic() || b == b'_')
+        });
+    }
+
+    false
 }
 
 fn vb(input: &[u8]) -> bool {
@@ -7038,13 +7157,10 @@ fn perl(input: &[u8]) -> bool {
 
     let sample = &input[..input.len().min(1024)];
 
-    // Anti-patterns (Rust, C# false positives). C/C++/Go/Java are all
-    // detected before Perl, so their identifying tokens no longer need exclusion.
+    // Anti-patterns (Rust false positives).
     let anti_patterns = [
-        LangPattern::new(b"using System", 10), // C#
-        LangPattern::new(b"namespace ", 10),   // C# (also C++, but C++ already filtered)
-        LangPattern::new(b"fn ", 10),          // Rust
-        LangPattern::new(b"impl ", 10),        // Rust
+        LangPattern::new(b"fn ", 10),   // Rust
+        LangPattern::new(b"impl ", 10), // Rust
     ];
 
     // Check antipatterns FIRST

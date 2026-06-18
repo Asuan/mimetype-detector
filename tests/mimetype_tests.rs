@@ -2300,6 +2300,72 @@ fn test_detect_pptx() {
 }
 
 #[test]
+fn test_detect_xlsb() {
+    // Binary workbook must win over XLSX (both carry an xl/ directory)
+    let data = create_zip_with_file(b"xl/workbook.bin");
+
+    let mime_type = detect(&data);
+    assert_eq!(mime_type.mime(), APPLICATION_VND_MS_EXCEL_SHEET_BINARY);
+    assert_eq!(mime_type.extension(), ".xlsb");
+    assert!(mime_type.kind().is_spreadsheet());
+    assert!(mime_type.kind().is_archive()); // Inherits from ZIP
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_thmx() {
+    let data = create_zip_with_file(b"theme/theme1.xml");
+
+    let mime_type = detect(&data);
+    assert_eq!(mime_type.mime(), APPLICATION_VND_MS_OFFICETHEME);
+    assert_eq!(mime_type.extension(), ".thmx");
+    assert!(mime_type.kind().is_archive()); // Inherits from ZIP
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_nupkg() {
+    let data = create_zip_with_file(b"MyPackage.nuspec");
+
+    let mime_type = detect(&data);
+    assert_eq!(mime_type.mime(), APPLICATION_VND_MS_NUGET_PACKAGE);
+    assert_eq!(mime_type.extension(), ".nupkg");
+    assert!(mime_type.kind().is_archive());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_nuspec() {
+    let data = br#"<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata><id>Sample</id></metadata>
+</package>"#;
+
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_NUGET_NUSPEC);
+    assert_eq!(mime_type.extension(), ".nuspec");
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_nuspec_does_not_match_generic_package_xml() {
+    // A <package> element without the NuGet schema must stay generic XML.
+    let data = br#"<?xml version="1.0"?><package><a/></package>"#;
+    assert_eq!(detect(data).mime(), TEXT_XML);
+}
+
+#[test]
+fn test_detect_edb() {
+    // ESE/Jet Blue: 4-byte checksum then 0x89ABCDEF (LE) at offset 4
+    let data = b"\x00\x00\x00\x00\xEF\xCD\xAB\x89the rest of the page header";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_MS_ESE);
+    assert_eq!(mime_type.extension(), ".edb");
+    assert!(mime_type.kind().is_database());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
 fn test_detect_epub() {
     let mut data = vec![0x50, 0x4b, 0x03, 0x04]; // ZIP header
     data.resize(30, 0);
@@ -3165,6 +3231,10 @@ fn test_detect_csharp() {
         (
             b"namespace MyApp\n{\n    public interface IRepository\n    {\n        Task<List<User>> GetUsersAsync();\n    }\n}",
             "namespace with interface and async"
+        ),
+        (
+            b"using System;   \n\nnamespace HelloWorld\n{\n    class Program { }\n}",
+            "trailing whitespace after using directive"
         ),
     ];
 
@@ -5101,6 +5171,36 @@ fn test_detect_vhdx() {
     let mime_type = detect(data);
     assert_eq!(mime_type.mime(), APPLICATION_X_VHDX);
     assert_eq!(mime_type.extension(), ".vhdx");
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_tnef() {
+    // Outlook winmail.dat attachment: little-endian DWORD 0x223E9F78
+    let data = b"\x78\x9F\x3E\x22\x01\x06\x90\x08\x00";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_VND_MS_TNEF);
+    assert_eq!(mime_type.extension(), ".dat");
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_pdb() {
+    // Program Database (MSF 7.00) debug symbols
+    let data = b"Microsoft C/C++ MSF 7.00\r\n\x1aDS\x00\x00\x00rest of file";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_MS_PDB);
+    assert_eq!(mime_type.extension(), ".pdb");
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_wim_and_esd() {
+    // WIM and its LZMS-compressed .esd sibling share the same magic
+    let data = b"MSWIM\x00\x00\x00\x00\x01\x02\x03";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_MS_WIM);
+    assert_eq!(mime_type.extension(), ".wim");
     assert!(!mime_type.name().is_empty());
 }
 

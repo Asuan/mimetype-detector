@@ -4,11 +4,11 @@
 [![Crates.io](https://img.shields.io/crates/v/mimetype-detector.svg)](https://crates.io/crates/mimetype-detector)
 [![Documentation](https://docs.rs/mimetype-detector/badge.svg)](https://docs.rs/mimetype-detector)
 
-Fast MIME type detection for ~550 file formats with zero dependencies.
+Fast MIME type detection for ~570 file formats with zero dependencies.
 
 ## Features
 
-- **527 supported formats** - Comprehensive coverage including images, audio, video, documents, archives, CAD, 3D models, and more
+- **567 supported formats** - Comprehensive coverage including images, audio, video, documents, archives, CAD, 3D models, and more
 - **Fast & lightweight** - Reads only file headers (≤3KB)
 - **Thread-safe** - Zero dependencies, pure Rust
 - **Smart detection** - Hierarchical format relationships (ZIP→DOCX/JAR/APK, OLE→Office/CAD)
@@ -23,7 +23,7 @@ Fast MIME type detection for ~550 file formats with zero dependencies.
 
 ```toml
 [dependencies]
-mimetype-detector = "0.3.9"
+mimetype-detector = "0.3.10"
 ```
 
 ## Usage

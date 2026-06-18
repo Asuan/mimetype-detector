@@ -849,6 +849,22 @@ pub const APPLICATION_VND_OPENXML_PRESENTATIONML_PRESENTATION: &str =
 pub const APPLICATION_VND_MS_VISIO_DRAWING_MAIN_XML: &str =
     "application/vnd.ms-visio.drawing.main+xml";
 
+/// Microsoft Excel 2007+ Binary Workbook
+pub const APPLICATION_VND_MS_EXCEL_SHEET_BINARY: &str =
+    "application/vnd.ms-excel.sheet.binary.macroenabled.12";
+
+/// Microsoft Office Theme
+pub const APPLICATION_VND_MS_OFFICETHEME: &str = "application/vnd.ms-officetheme";
+
+/// NuGet Package
+pub const APPLICATION_VND_MS_NUGET_PACKAGE: &str = "application/vnd.ms-nuget.package";
+
+/// NuGet Package Manifest (.nuspec)
+pub const APPLICATION_X_NUGET_NUSPEC: &str = "application/x-nuget-nuspec";
+
+/// Microsoft Extensible Storage Engine (ESE / Jet Blue) database
+pub const APPLICATION_X_MS_ESE: &str = "application/x-ms-ese";
+
 /// Microsoft HTML Help
 pub const APPLICATION_VND_MS_HTMLHELP: &str = "application/vnd.ms-htmlhelp";
 
@@ -1518,6 +1534,12 @@ pub const APPLICATION_X_VIRTUALBOX_VDI: &str = "application/x-virtualbox-vdi";
 
 /// Windows Imaging Format
 pub const APPLICATION_X_MS_WIM: &str = "application/x-ms-wim";
+
+/// Transport Neutral Encapsulation Format (Outlook winmail.dat attachments)
+pub const APPLICATION_VND_MS_TNEF: &str = "application/vnd.ms-tnef";
+
+/// Program Database (Microsoft debug symbols)
+pub const APPLICATION_X_MS_PDB: &str = "application/x-ms-pdb";
 
 // ============================================================================
 // FILESYSTEM FORMATS

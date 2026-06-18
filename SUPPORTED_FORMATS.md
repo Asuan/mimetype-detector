@@ -1,6 +1,6 @@
 # Supported File Formats
 
-This document provides a comprehensive listing of all 546 file formats supported by the mimetype-detector library.
+This document provides a comprehensive listing of all 567 file formats supported by the mimetype-detector library.
 
 ## All Supported Formats (Alphabetical)
 
@@ -128,12 +128,14 @@ This document provides a comprehensive listing of all 546 file formats supported
 | Encapsulated PostScript | Encapsulated PostScript | `application/eps` | `.eps` | | Binary EPS with TIFF/WMF preview |
 | Enhanced Metafile | Enhanced Metafile | `image/emf` | `.emf` | | Windows vector format |
 | Enhanced Read-Only File System | EROFS | `application/x-erofs` | `.erofs` | | Enhanced Read-Only File System (Android/Linux) |
+| EDB | Extensible Storage Engine DB | `application/x-ms-ese` | `.edb` | | Microsoft ESE / Jet Blue database (Exchange, AD, Windows Search) |
 | Enterprise Application Archive | Enterprise Archive | `application/x-ear` | `.ear` | | Java EE application archive |
 | EOT | Embedded OpenType Font | `application/vnd.ms-fontobject` | `.eot` | | Embedded OpenType |
 | EPUB | EPUB | `application/epub+zip` | `.epub` | | Electronic Publication |
 | ESRI Shapefile | Shapefile | `application/vnd.shp` | `.shp` | | |
 | ESRI Shapefile Index | Shapefile Index | `application/vnd.shx` | `.shx` | | |
 | Excel 2007+ | Excel 2007+ | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` | `.xlsx` | | |
+| Excel 2007+ Binary | Excel 2007+ Binary Workbook | `application/vnd.ms-excel.sheet.binary.macroenabled.12` | `.xlsb` | | OOXML package with xl/workbook.bin |
 | Excel 97-2003 | Excel 97-2003 | `application/vnd.ms-excel` | `.xls` | | Legacy format (OLE-based) |
 | Farbfeld | Farbfeld Image Format | `image/x-ff` | `.ff` | | Suckless lossless image format |
 | Fasoo | Fasoo DRM Document | `application/x-fasoo` | | | Document protection |
@@ -289,6 +291,8 @@ This document provides a comprehensive listing of all 546 file formats supported
 | NetCDF-4 | Network Common Data Form 4 | `application/x-netcdf` | `.nc4` | | NetCDF version 4 (HDF5-based scientific data format) |
 | Nintendo NES ROM | Nintendo NES ROM | `application/vnd.nintendo.snes.rom` | `.nes` | | |
 | Nintendo Switch ROM | Nintendo Switch ROM | `application/x-nintendo-switch-rom` | `.xci` | | Nintendo Switch XCI - NX Card Image |
+| NuGet Package | NuGet Package | `application/vnd.ms-nuget.package` | `.nupkg` | | ZIP package containing a .nuspec manifest |
+| NuGet Package Manifest | NuGet Package Manifest | `application/x-nuget-nuspec` | `.nuspec` | | XML manifest (NuGet packaging schema) |
 | ODC | ODF Chart | `application/vnd.oasis.opendocument.chart` | `.odc` | `application/x-vnd.oasis.opendocument.chart` | OpenDocument Chart |
 | ODB | OpenDocument Database | `application/vnd.oasis.opendocument.database` | `.odb` | `application/x-vnd.oasis.opendocument.database` | OpenDocument Database |
 | ODF | OpenDocument Formula | `application/vnd.oasis.opendocument.formula` | `.odf` | `application/x-vnd.oasis.opendocument.formula` | OpenDocument Formula |
@@ -304,6 +308,7 @@ This document provides a comprehensive listing of all 546 file formats supported
 | OGG Video | Ogg Media | `video/ogg` | `.ogv` | | |
 | Ogg Speex | Ogg Audio | `audio/ogg` | `.spx` | | Voice codec in Ogg container |
 | OLE Storage | OLE Compound Document | `application/x-ole-storage` | | | Microsoft OLE (legacy Office) |
+| Office Theme | Office Theme | `application/vnd.ms-officetheme` | `.thmx` | | OOXML package with theme/ payload |
 | OneNote | OneNote | `application/onenote` | `.one` | | |
 | OpenDocument Text Master Template | OpenDocument Text Master Template | `application/vnd.oasis.opendocument.text-master-template` | `.otm` | `application/x-vnd.oasis.opendocument.text-master-template` | Text Master Template |
 | OpenEXR | OpenEXR High Dynamic Range Image | `image/x-exr` | `.exr` | | High dynamic range format |
@@ -329,6 +334,7 @@ This document provides a comprehensive listing of all 546 file formats supported
 | PCAP | Packet Capture | `application/vnd.tcpdump.pcap` | `.pcap` | | Packet Capture (libpcap) |
 | PCAPNG | Next Generation Packet Capture | `application/x-pcapng` | `.pcapng` | | Next Generation PCAP |
 | PCX | PC Paintbrush | `image/x-pcx` | `.pcx` | | Picture Exchange / PC Paintbrush |
+| PDB | Program Database | `application/x-ms-pdb` | `.pdb` | | Microsoft debug symbols (MSF 7.00) |
 | PDF | Portable Document Format | `application/pdf` | `.pdf` | `application/x-pdf` | Adobe Portable Document Format |
 | PEM Certificate | PEM Certificate | `application/x-pem-file` | `.pem` | | PEM format certificate |
 | PEM CSR | PEM Certificate | `application/x-pem-file` | `.csr`, `.pem` | | Certificate Signing Request |
@@ -436,6 +442,7 @@ This document provides a comprehensive listing of all 546 file formats supported
 | TCX | TCX | `application/vnd.garmin.tcx+xml` | `.tcx` | | Training Center XML |
 | TIFF | Tagged Image File Format | `image/tiff` | `.tiff`, `.tif` | | |
 | TMX | Tmx XML | `application/x-tmx+xml` | `.tmx` | | Tiled Map XML (game development) |
+| TNEF | Transport Neutral Encapsulation Format | `application/vnd.ms-tnef` | `.dat` | | Outlook winmail.dat attachments |
 | TOML | TOML Configuration File | `application/toml` | `.toml` | | Configuration file format |
 | True Audio | True Audio | `audio/x-tta` | `.tta` | | Lossless codec |
 | Truevision TGA | Truevision Targa | `image/x-tga` | `.tga` | | Targa format |
@@ -481,7 +488,7 @@ This document provides a comprehensive listing of all 546 file formats supported
 | WebP | WebP Image | `image/webp` | `.webp` | | |
 | WebVTT | WebVTT | `text/vtt` | `.vtt` | | Web Video Text Tracks |
 | WebVTT (UTF-16) | Web Video Text Tracks (UTF-16 BE) | `text/vtt; charset=utf-16` | `.vtt` | | UTF-16 BE/LE variants |
-| WIM | Windows Imaging Format | `application/x-ms-wim` | `.wim` | | Windows Imaging Format |
+| WIM | Windows Imaging Format | `application/x-ms-wim` | `.wim`, `.esd` | | Windows Imaging Format (.esd = LZMS-compressed variant) |
 | Windows Animated Cursor | Windows Animated Cursor | `application/x-navi-animation` | `.ani` | | Animated cursor format |
 | Windows App Bundle | Windows App Bundle | `application/vnd.ms-appx.bundle` | `.appxbundle` | | ZIP-based Windows app bundle |
 | Windows App Package | Windows App Package | `application/vnd.ms-appx` | `.appx` | | ZIP-based Windows app |

@@ -10,6 +10,19 @@ Used prefixes:
 
 ## Unreleased
 
+## 0.3.10 - 2026.06.18
+
+* Added: Excel 2007+ Binary Workbook (.xlsb) (`application/vnd.ms-excel.sheet.binary.macroenabled.12`)
+* Added: Office Theme (.thmx) - OOXML theme package (`application/vnd.ms-officetheme`)
+* Added: NuGet Package (.nupkg) - ZIP package containing a  manifest (`application/vnd.ms-nuget.package`)
+* Added: NuGet Package Manifest (.nuspec) - XML manifest, NuGet packaging schema (`application/x-nuget-nuspec`)
+* Added: Extensible Storage Engine DB (.edb) - Microsoft ESE / Jet Blue database (`application/x-ms-ese`)
+* Added: Transport Neutral Encapsulation Format (.dat) - Outlook `winmail.dat` attachments (`application/vnd.ms-tnef`)
+* Added: Program Database (.pdb) - Microsoft debug symbols, MSF 7.00 container (`application/x-ms-pdb`)
+* Updated: WIM (Windows Imaging Format) add LZMS-compressed variant, same magic
+* Updated: C# (.cs) detection reworked to header-format style
+* Updated: removed redundant C# anti-pattern lists from other language detectors (TypeScript, Perl)
+
 ## 0.3.9 - 2026.05.14
 
 * Added: Photoshop Big (.psb) - Adobe Photoshop Large Document Format (`application/x-photoshop-large`)
