@@ -119,6 +119,7 @@ pub const APPLICATION_X_ZIP: &str = "application/x-zip";
 pub const APPLICATION_X_ZIP_COMPRESSED: &str = "application/x-zip-compressed";
 
 /// RAR archive
+pub const APPLICATION_VND_RAR: &str = "application/vnd.rar";
 pub const APPLICATION_X_RAR_COMPRESSED: &str = "application/x-rar-compressed";
 pub const APPLICATION_X_RAR: &str = "application/x-rar";
 
@@ -572,6 +573,7 @@ pub const VIDEO_WEBM: &str = "video/webm";
 pub const AUDIO_WEBM: &str = "audio/webm";
 
 /// Matroska video
+pub const VIDEO_MATROSKA: &str = "video/matroska";
 pub const VIDEO_X_MATROSKA: &str = "video/x-matroska";
 
 /// Audio Video Interleave
@@ -1379,6 +1381,9 @@ pub const MODEL_X_VOX: &str = "model/x-vox";
 
 /// Google Draco 3D compression
 pub const MODEL_X_DRACO: &str = "model/x-draco";
+
+/// OpenCTM compressed triangle mesh
+pub const MODEL_X_OPENCTM: &str = "model/x-openctm";
 
 /// STEP 3D model (ISO 10303-21)
 pub const MODEL_STEP: &str = "model/step";

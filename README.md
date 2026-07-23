@@ -8,7 +8,7 @@ Fast MIME type detection for ~570 file formats with zero dependencies.
 
 ## Features
 
-- **567 supported formats** - Comprehensive coverage including images, audio, video, documents, archives, CAD, 3D models, and more
+- **568 supported formats** - Comprehensive coverage including images, audio, video, documents, archives, CAD, 3D models, and more
 - **Fast & lightweight** - Reads only file headers (≤3KB)
 - **Thread-safe** - Zero dependencies, pure Rust
 - **Smart detection** - Hierarchical format relationships (ZIP→DOCX/JAR/APK, OLE→Office/CAD)
@@ -23,7 +23,7 @@ Fast MIME type detection for ~570 file formats with zero dependencies.
 
 ```toml
 [dependencies]
-mimetype-detector = "0.3.10"
+mimetype-detector = "0.3.11"
 ```
 
 ## Usage

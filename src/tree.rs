@@ -81,7 +81,7 @@ build_prefix_vec! {
         0x4c => [&COFF, &LNK, &LZIP, &LRF, &LRZIP] as __PV_4C,  // COFF (i386), LNK, LZIP, LRF (Sony Reader), LRZIP
         0x4d => [&MODEL3D_BINARY, &MLA, &MUSEPACK, &CAB, &MIDI, &EXE, &AUTODESK_3DS, &TIFF, &ORF, &MOZILLA_ARCHIVE, &WIM, &PDB, &SGI_MOVIE, &OPENGEX] as __PV_4D,  // Model3D Binary ('MD30'), MLA, 3DS (exclude TIFF), ORF (MMOR) is TIFF-based but needs direct detection, Mozilla Archive, WIM, PDB ('Microsoft C/C++ MSF 7.00'), SGI Movie, OpenGEX ('Metric')
         0x4e => [&NINTENDO_SWITCH_NSO, &NES] as __PV_4E,  // Nintendo Switch NSO, NES ROM
-        0x4f => [&OTF, &OGG, &ALEMBIC, &AVRO] as __PV_4F,  // OTF, OGG, Alembic, Apache Avro
+        0x4f => [&OTF, &OGG, &ALEMBIC, &AVRO, &OPENCTM] as __PV_4F,  // OTF, OGG, Alembic, Apache Avro, OpenCTM ('OCTM')
         0x50 => [&USD_BINARY, &PFM, &NINTENDO_SWITCH_NSP, &PAR2, &PARQUET, &ZIP, &PBM, &PGM, &PPM, &PAM, &PAK] as __PV_50,  // USD Binary ('PXR-USDC'), PFM, Nintendo Switch NSP, Par2, Parquet, ZIP, Portable formats, PAK
         0x51 => [&QCOW2, &QCOW, &QED, &CINEMA4D] as __PV_51,  // QEMU Copy-on-Write v2 ('QFI\xFB'), v1 ('QFI'), QED ('QED\x00'), Cinema4D ('QC4DC4D6')
         0x52 => [&WINDOWS_REG, &RAR, &RIFF, &RZIP, &AEP] as __PV_52,  // Windows Registry, RAR, RIFF container (children: WAV, AVI, WEBP, etc.), RZIP, AEP (RIFX big-endian)
@@ -326,6 +326,7 @@ static UTF8: MimeType = MimeType::new(
         &VISUAL_STUDIO_SOLUTION,
         &LATEX,
         &CLOJURE,
+        &TOML,
         &PHP,
         &CPP, // C++ before C (more specific patterns), before TS (preprocessor is distinctive)
         &C_LANG,
@@ -343,7 +344,6 @@ static UTF8: MimeType = MimeType::new(
         &SHELL,
         &BATCH,
         &TCL,
-        &TOML, // TOML must come before JSON (TOML [section] can look like JSON array)
         &JSON,
         &CSV_FORMAT,
         &TSV,
@@ -589,7 +589,7 @@ children: [
     &XPI, &XAP, &MXL, &FBZ
 ]);
 
-mimetype!(RAR, APPLICATION_X_RAR_COMPRESSED, ".rar", b"Rar!\x1a\x07\x00" | b"Rar!\x1a\x07\x01\x00", name: "RAR Archive", kind: ARCHIVE, aliases: [APPLICATION_X_RAR]);
+mimetype!(RAR, APPLICATION_X_RAR_COMPRESSED, ".rar", b"Rar!\x1a\x07\x00" | b"Rar!\x1a\x07\x01\x00", name: "RAR Archive", kind: ARCHIVE, aliases: [APPLICATION_VND_RAR, APPLICATION_X_RAR]);
 
 mimetype!(PAR2, APPLICATION_X_PAR2, ".par2", b"PAR2\x00PKT", name: "Par2 Recovery File", kind: ARCHIVE);
 
@@ -724,6 +724,8 @@ fn is_email_header(line: &[u8]) -> bool {
         || line.starts_with(b"Content-Type: ")
         || line.starts_with(b"Return-Path: ")
         || line.starts_with(b"Delivered-To: ")
+        || line.starts_with(b"Message-ID: ")
+        || line.starts_with(b"Message-Id: ") // wrong by spec but real word
 }
 
 /// Detect EML (email) format by checking first few lines for RFC822 headers
@@ -1675,6 +1677,7 @@ static WEBM: MimeType = MimeType::new(VIDEO_WEBM, "WebM", ".webm", webm, &[])
     .with_parent(&EBML);
 
 static MKV: MimeType = MimeType::new(VIDEO_X_MATROSKA, "Matroska", ".mkv", mkv, &[])
+    .with_aliases(&[VIDEO_MATROSKA])
     .with_extension_aliases(&[".mk3d", ".mka", ".mks"])
     .with_kind(MimeKind::VIDEO)
     .with_parent(&EBML);
@@ -3235,7 +3238,35 @@ mimetype!(DPX, IMAGE_X_DPX, ".dpx", b"SDPX" | b"XPDS", name: "Digital Picture Ex
 // FONT FORMATS
 // ============================================================================
 
-mimetype!(TTF, FONT_TTF, ".ttf", b"\x00\x01\x00\x00" | b"true" | b"typ1", name: "TrueType Font", kind: FONT, aliases: [FONT_SFNT, APPLICATION_X_FONT_TTF, APPLICATION_FONT_SFNT]);
+// TrueType font
+static TTF: MimeType = MimeType::new(FONT_TTF, "TrueType Font", ".ttf", ttf, &[])
+    .with_kind(MimeKind::FONT)
+    .with_aliases(&[FONT_SFNT, APPLICATION_X_FONT_TTF, APPLICATION_FONT_SFNT]);
+
+/// Known TrueType/OpenType/Apple-AAT table tags, kept sorted for binary search.
+static SFNT_TABLE_TAGS: &[[u8; 4]] = &[
+    *b"BASE", *b"CBDT", *b"CBLC", *b"CFF ", *b"CFF2", *b"COLR", *b"CPAL", *b"DSIG", *b"EBDT",
+    *b"EBLC", *b"EBSC", *b"GDEF", *b"GPOS", *b"GSUB", *b"HVAR", *b"JSTF", *b"LTSH", *b"MATH",
+    *b"MERG", *b"MVAR", *b"OS/2", *b"PCLT", *b"STAT", *b"SVG ", *b"VDMX", *b"VORG", *b"VVAR",
+    *b"acnt", *b"ankr", *b"avar", *b"bdat", *b"bhed", *b"bloc", *b"bsln", *b"cmap", *b"cvar",
+    *b"cvt ", *b"fdsc", *b"feat", *b"fmtx", *b"fond", *b"fpgm", *b"fvar", *b"gasp", *b"gcid",
+    *b"glyf", *b"gvar", *b"hdmx", *b"head", *b"hhea", *b"hmtx", *b"hvgl", *b"hvpm", *b"just",
+    *b"kern", *b"kerx", *b"lcar", *b"loca", *b"ltag", *b"maxp", *b"meta", *b"mort", *b"morx",
+    *b"name", *b"opbd", *b"post", *b"prep", *b"sbix", *b"vhea", *b"vmtx",
+];
+
+/// Detect sfnt-housed fonts (TrueType outlines). The 0x00010000, "true", and
+/// "typ1" sfnt versions are all ambiguous on their own — "true"/"typ1"
+fn ttf(input: &[u8]) -> bool {
+    let is_sfnt_version = input.starts_with(&[0x00, 0x01, 0x00, 0x00])
+        || input.starts_with(b"true")
+        || input.starts_with(b"typ1");
+    if !is_sfnt_version || input.len() < 16 {
+        return false;
+    }
+    let tag: [u8; 4] = [input[12], input[13], input[14], input[15]];
+    SFNT_TABLE_TAGS.binary_search(&tag).is_ok()
+}
 
 mimetype!(WOFF, FONT_WOFF, ".woff", b"wOFF", name: "Web Open Font Format", kind: FONT);
 
@@ -4389,6 +4420,9 @@ mimetype!(VOX, MODEL_X_VOX, ".vox", b"VOX ", name: "MagicaVoxel", kind: MODEL);
 
 // Google Draco - 3D geometry compression format
 mimetype!(DRACO, MODEL_X_DRACO, ".drc", b"DRACO", name: "Google Draco", kind: MODEL);
+
+// OpenCTM - compressed triangle mesh format ("OCTM" magic + version word)
+mimetype!(OPENCTM, MODEL_X_OPENCTM, ".ctm", b"OCTM", name: "OpenCTM", kind: MODEL);
 
 // STEP - ISO 10303-21 3D CAD data exchange format
 mimetype!(STEP, MODEL_STEP, ".stp", b"ISO-10303-21;", name: "STEP CAD", kind: MODEL);
@@ -7284,20 +7318,30 @@ fn geojson(input: &[u8]) -> bool {
 }
 
 fn ndjson(input: &[u8]) -> bool {
-    let lines = input.split(|&b| b == b'\n');
-    let mut line_count = 0;
-    let mut valid_lines = 0;
-
-    for line in lines.take(3) {
-        line_count += 1;
-        if line.is_empty() || json(line) {
-            valid_lines += 1;
-        } else {
-            return false;
+    let mut records = 0;
+    let mut start = 0;
+    let mut i = 0;
+    while i <= input.len() {
+        // The slice [start, i) is one line once we hit a '\n' or the buffer end.
+        if i == input.len() || input[i] == b'\n' {
+            let line = input[start..i]
+                .strip_suffix(b"\r")
+                .unwrap_or(&input[start..i]);
+            if !line.is_empty() {
+                if !json(line) {
+                    return false;
+                }
+                records += 1;
+                if records >= 3 {
+                    return true;
+                }
+            }
+            start = i + 1;
         }
+        i += 1;
     }
 
-    line_count > 1 && valid_lines == line_count
+    records > 1
 }
 
 /// Generic function to detect delimited text formats (CSV, TSV, etc.)
@@ -8691,4 +8735,17 @@ fn threedxml(input: &[u8]) -> bool {
         }
     }
     false
+}
+
+#[cfg(test)]
+mod tree_tests {
+
+    #[test]
+    fn sfnt_table_tags_sorted() {
+        use super::SFNT_TABLE_TAGS;
+        assert!(
+            SFNT_TABLE_TAGS.is_sorted(),
+            "SFNT_TABLE_TAGS must be sorted ascending and deduplicated"
+        );
+    }
 }

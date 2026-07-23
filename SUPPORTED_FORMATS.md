@@ -1,6 +1,6 @@
 # Supported File Formats
 
-This document provides a comprehensive listing of all 567 file formats supported by the mimetype-detector library.
+This document provides a comprehensive listing of all 568 file formats supported by the mimetype-detector library.
 
 ## All Supported Formats (Alphabetical)
 
@@ -311,6 +311,7 @@ This document provides a comprehensive listing of all 567 file formats supported
 | Office Theme | Office Theme | `application/vnd.ms-officetheme` | `.thmx` | | OOXML package with theme/ payload |
 | OneNote | OneNote | `application/onenote` | `.one` | | |
 | OpenDocument Text Master Template | OpenDocument Text Master Template | `application/vnd.oasis.opendocument.text-master-template` | `.otm` | `application/x-vnd.oasis.opendocument.text-master-template` | Text Master Template |
+| OpenCTM | OpenCTM | `model/x-openctm` | `.ctm` | | Compressed triangle mesh format (3D) |
 | OpenEXR | OpenEXR High Dynamic Range Image | `image/x-exr` | `.exr` | | High dynamic range format |
 | OpenFlight | OpenFlight | `model/vnd.openflight` | `.flt` | | Real-time visualization |
 | OpenGEX | OpenGEX | `model/vnd.opengex` | `.ogex` | | Game engine scene transfer format |

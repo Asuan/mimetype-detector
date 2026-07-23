@@ -244,6 +244,8 @@ fn test_detect_rar() {
     assert_eq!(mime_type.mime(), APPLICATION_X_RAR_COMPRESSED);
     assert_eq!(mime_type.extension(), ".rar");
     assert!(mime_type.is(APPLICATION_X_RAR_COMPRESSED));
+    assert!(mime_type.is(APPLICATION_VND_RAR));
+    assert!(mime_type.is(APPLICATION_X_RAR));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_archive());
     assert!(!mime_type.name().is_empty());
@@ -506,6 +508,11 @@ fn test_detect_email() {
         EmailTest {
             name: "Email with To: header",
             data: b"To: recipient@example.com\r\nFrom: sender@example.com\r\nSubject: Test\r\n\r\nBody",
+        },
+        EmailTest {
+            // Real-world mails (e.g. the Enron dataset) often lead with Message-ID.
+            name: "Email leading with Message-ID: header",
+            data: b"Message-ID: <123@example.com>\nDate: Mon, 1 Jan 2001 00:00:00\nFrom: a@example.com\nTo: b@example.com\nSubject: hi\n\nbody",
         },
     ];
 
@@ -1694,6 +1701,7 @@ fn test_detect_mkv() {
     assert_eq!(mime_type.mime(), VIDEO_X_MATROSKA);
     assert_eq!(mime_type.extension(), ".mkv");
     assert!(mime_type.is(VIDEO_X_MATROSKA));
+    assert!(mime_type.is(VIDEO_MATROSKA));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_video());
     assert!(!mime_type.name().is_empty());
@@ -2014,14 +2022,58 @@ fn test_detect_wasm() {
 
 #[test]
 fn test_detect_ttf() {
-    let data = b"\x00\x01\x00\x00";
-    let mime_type = detect(data);
-    assert_eq!(mime_type.mime(), FONT_TTF);
-    assert_eq!(mime_type.extension(), ".ttf");
-    assert!(mime_type.is(FONT_TTF));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    assert!(mime_type.kind().is_font());
-    assert!(!mime_type.name().is_empty());
+    struct TtfCase {
+        name: &'static str,
+        data: &'static [u8],
+        is_ttf: bool,
+    }
+
+    let cases = [
+        TtfCase {
+            // sfnt version 0x00010000 + table directory, first table tag "glyf".
+            name: "sfnt version with glyf table",
+            data: b"\x00\x01\x00\x00\x00\x0a\x00\x80\x00\x03\x00\x20glyf",
+            is_ttf: true,
+        },
+        TtfCase {
+            // "true" sfnt version + table directory with "glyf" at offset 12.
+            name: "true signature with glyf table",
+            data: b"true\x00\x0a\x00\x80\x00\x03\x00\x20glyf",
+            is_ttf: true,
+        },
+        TtfCase {
+            // "typ1" sfnt version + table directory with "glyf" at offset 12.
+            name: "typ1 signature with glyf table",
+            data: b"typ1\x00\x0a\x00\x80\x00\x03\x00\x20glyf",
+            is_ttf: true,
+        },
+        TtfCase {
+            // 0x00010000 alone (no recognized table tag) is too ambiguous.
+            name: "bare sfnt version",
+            data: b"\x00\x01\x00\x00",
+            is_ttf: false,
+        },
+        TtfCase {
+            // Plain text starting with "true" must not be mistaken for a font.
+            name: "text starting with true",
+            data: b"true, this is plain text and not a font at all",
+            is_ttf: false,
+        },
+    ];
+
+    for case in cases {
+        let mime_type = detect(case.data);
+        if case.is_ttf {
+            assert_eq!(mime_type.mime(), FONT_TTF, "{}", case.name);
+            assert_eq!(mime_type.extension(), ".ttf", "{}", case.name);
+            assert!(mime_type.is(FONT_TTF), "{}", case.name);
+            assert!(!mime_type.is(APPLICATION_OCTET_STREAM), "{}", case.name);
+            assert!(mime_type.kind().is_font(), "{}", case.name);
+            assert!(!mime_type.name().is_empty(), "{}", case.name);
+        } else {
+            assert!(!mime_type.is(FONT_TTF), "{}", case.name);
+        }
+    }
 }
 
 #[test]
@@ -3809,11 +3861,57 @@ fn test_detect_geojson() {
 
 #[test]
 fn test_detect_ndjson() {
-    let data = b"{\"line\": 1}\n{\"line\": 2}\n{\"line\": 3}";
-    let mime_type = detect(data);
+    struct NdjsonCase {
+        name: &'static str,
+        data: &'static [u8],
+        is_ndjson: bool,
+    }
+
+    let cases = [
+        NdjsonCase {
+            name: "multiple records, no trailing newline",
+            data: b"{\"line\": 1}\n{\"line\": 2}\n{\"line\": 3}",
+            is_ndjson: true,
+        },
+        NdjsonCase {
+            name: "multiple records with trailing newline",
+            data: b"{\"line\": 1}\n{\"line\": 2}\n",
+            is_ndjson: true,
+        },
+        NdjsonCase {
+            name: "CRLF line endings tolerated",
+            data: b"{\"line\": 1}\r\n{\"line\": 2}\r\n{\"line\": 3}",
+            is_ndjson: true,
+        },
+        NdjsonCase {
+            // Blank separator lines are ignored, not counted as records.
+            name: "blank line between records",
+            data: b"{\"line\": 1}\n\n{\"line\": 2}\n",
+            is_ndjson: true,
+        },
+        NdjsonCase {
+            // A lone JSON document followed by a newline must not be mistaken
+            // for NDJSON (regression for the trailing-newline edge case).
+            name: "single record with trailing newline is not NDJSON",
+            data: b"{\"line\": 1}\n",
+            is_ndjson: false,
+        },
+        NdjsonCase {
+            name: "single record, no newline is not NDJSON",
+            data: b"{\"line\": 1}",
+            is_ndjson: false,
+        },
+    ];
+
+    for case in cases {
+        let detected = detect(case.data).is(APPLICATION_X_NDJSON);
+        assert_eq!(detected, case.is_ndjson, "case: {}", case.name);
+    }
+
+    // Verify the full metadata on a canonical NDJSON payload.
+    let mime_type = detect(b"{\"line\": 1}\n{\"line\": 2}\n{\"line\": 3}");
     assert_eq!(mime_type.mime(), APPLICATION_X_NDJSON);
     assert_eq!(mime_type.extension(), ".ndjson");
-    assert!(mime_type.is(APPLICATION_X_NDJSON));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_text());
     assert!(!mime_type.name().is_empty());
@@ -7244,6 +7342,18 @@ fn test_detect_alembic() {
     assert_eq!(mime_type.mime(), APPLICATION_X_ALEMBIC);
     assert_eq!(mime_type.extension(), ".abc");
     assert!(mime_type.is(APPLICATION_X_ALEMBIC));
+    assert!(mime_type.kind().is_model());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_openctm() {
+    // OpenCTM header: "OCTM" magic followed by a format-version word.
+    let data = b"OCTM\x05\x00\x00\x00";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), MODEL_X_OPENCTM);
+    assert_eq!(mime_type.extension(), ".ctm");
+    assert!(mime_type.is(MODEL_X_OPENCTM));
     assert!(mime_type.kind().is_model());
     assert!(!mime_type.name().is_empty());
 }

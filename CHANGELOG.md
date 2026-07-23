@@ -10,6 +10,16 @@ Used prefixes:
 
 ## Unreleased
 
+## 0.3.11 - 2026.07.23
+
+* Added: OpenCTM (.ctm) - compressed triangle mesh 3D format, "OCTM" magic (`model/x-openctm`)
+* Improved: TTF detection now validates the SFNT table directory (recognized table tag at bytes 12..16)
+* Improved: EML detection now recognizes a leading `Message-ID` header - detects real-world mails that lead with it, e.g.
+* Fixed: NDJSON detection now respect CRLF ending
+* Added: Matroska (.mkv) now recognizes the IANA-registered `video/matroska` as an alias
+* Added: RAR (.rar) now recognizes the IANA-registered `application/vnd.rar` as an alias
+* Updated: TOML detection now runs before the weak language token-scorers - fixes TOML
+
 ## 0.3.10 - 2026.06.18
 
 * Added: Excel 2007+ Binary Workbook (.xlsb) (`application/vnd.ms-excel.sheet.binary.macroenabled.12`)
