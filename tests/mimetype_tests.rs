@@ -174,12 +174,30 @@ fn test_detect_fdf() {
 
 #[test]
 fn test_detect_postscript() {
-    let data = b"%!PS-Adobe-3.0";
+    // Plain "%!PS" header (as in fixture.ps) must not fall through to text/plain.
+    let data = b"%!PS\n\n/Courier";
     let mime_type = detect(data);
     assert_eq!(mime_type.mime(), APPLICATION_POSTSCRIPT);
     assert_eq!(mime_type.extension(), ".ps");
     assert!(mime_type.is(APPLICATION_POSTSCRIPT));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_document());
+    assert!(!mime_type.name().is_empty());
+
+    // "%!PS-Adobe-3.0" without EPSF is still generic PostScript.
+    let mime_type = detect(b"%!PS-Adobe-3.0");
+    assert_eq!(mime_type.mime(), APPLICATION_POSTSCRIPT);
+}
+
+#[test]
+fn test_detect_eps() {
+    // EPS is a PostScript subset: "%!PS-Adobe-" with " EPSF-" (leading space) at offset 14.
+    let data = b"%!PS-Adobe-2.0 EPSF-1.2\r%%Creator: Adobe Illustrator";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_EPS);
+    assert_eq!(mime_type.extension(), ".eps");
+    assert!(mime_type.is(APPLICATION_EPS));
+    assert!(!mime_type.is(APPLICATION_POSTSCRIPT));
     assert!(mime_type.kind().is_document());
     assert!(!mime_type.name().is_empty());
 }
@@ -387,6 +405,16 @@ fn test_detect_ar() {
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_archive());
     assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_ar_extension_alias() {
+    let data = b"!<arch>\n"; // real ar magic
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_ARCHIVE);
+    assert_eq!(mime_type.extension(), ".a");
+    assert!(mime_type.extension_aliases().contains(&".ar"));
+    assert!(mime_type.kind().is_archive());
 }
 
 #[test]
@@ -752,6 +780,36 @@ fn test_detect_lz4() {
 }
 
 #[test]
+fn test_detect_asar() {
+    // Electron ASAR: Pickle header (`04 00 00 00`), then a LE u32 jsonSize at
+    // offset 12, then the JSON file index containing a `files` key at offset 16.
+    let header = br#"{"files":{"a.txt":{"size":11,"offset":"0"}}}"#;
+    let json_size = header.len() as u32;
+
+    let mut data = Vec::new();
+    data.extend_from_slice(&[0x04, 0x00, 0x00, 0x00]); // Pickle payload marker
+    data.extend_from_slice(&(json_size + 8).to_le_bytes()); // offset 4
+    data.extend_from_slice(&(json_size + 4).to_le_bytes()); // offset 8
+    data.extend_from_slice(&json_size.to_le_bytes()); // offset 12 == jsonSize
+    data.extend_from_slice(header); // offset 16 == JSON header
+    data.extend_from_slice(b"helloworld\n"); // file payload
+
+    let mime_type = detect(&data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_ASAR);
+    assert_eq!(mime_type.extension(), ".asar");
+    assert!(mime_type.is(APPLICATION_X_ASAR));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_archive());
+    assert!(!mime_type.name().is_empty());
+
+    // Negative: bare `04 00 00 00` + zeros must NOT be detected as ASAR.
+    let not_asar = [
+        0x04u8, 0x00, 0x00, 0x00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    ];
+    assert_ne!(detect(&not_asar).mime(), APPLICATION_X_ASAR);
+}
+
+#[test]
 fn test_detect_arj() {
     let data = b"\x60\xEA\x00\x00\x00\x00\x00\x00";
     let mime_type = detect(data);
@@ -765,8 +823,25 @@ fn test_detect_arj() {
 
 #[test]
 fn test_detect_lha() {
-    let data = b"-lh0-\x00\x00\x00";
+    // The '-lhN-' method signature is at offset 2 (bytes 0-1 are header size + checksum).
+    let data = b"\x00\x00-lh0-\x00\x00\x00";
     let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_LZH_COMPRESSED);
+    assert_eq!(mime_type.extension(), ".lzh");
+    assert!(mime_type.is(APPLICATION_X_LZH_COMPRESSED));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_archive());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_lzh() {
+    // First 16 bytes of doc/file-type/fixture/fixture.lzh: '-lh5-' at offset 2.
+    let data = [
+        0x26, 0xb6, 0x2d, 0x6c, 0x68, 0x35, 0x2d, 0x6a, 0x36, 0x01, 0x00, 0x3a, 0x46, 0x01, 0x00,
+        0xd0,
+    ];
+    let mime_type = detect(&data);
     assert_eq!(mime_type.mime(), APPLICATION_X_LZH_COMPRESSED);
     assert_eq!(mime_type.extension(), ".lzh");
     assert!(mime_type.is(APPLICATION_X_LZH_COMPRESSED));
@@ -1060,7 +1135,6 @@ fn test_detect_heic() {
     assert_eq!(mime_type.mime(), IMAGE_HEIC);
     assert_eq!(mime_type.extension(), ".heic");
     assert!(mime_type.is(IMAGE_HEIC));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_image());
     assert!(!mime_type.name().is_empty());
 }
@@ -1075,7 +1149,6 @@ fn test_detect_heic_sequence() {
     assert_eq!(mime_type.mime(), IMAGE_HEIC_SEQUENCE);
     assert_eq!(mime_type.extension(), ".heic");
     assert!(mime_type.is(IMAGE_HEIC_SEQUENCE));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_image());
     assert!(!mime_type.name().is_empty());
 }
@@ -1088,9 +1161,8 @@ fn test_detect_heif() {
     data[8..12].copy_from_slice(b"mif1");
     let mime_type = detect(&data);
     assert_eq!(mime_type.mime(), IMAGE_HEIF);
-    assert_eq!(mime_type.extension(), ".heif");
+    assert_eq!(mime_type.extension(), ".heic");
     assert!(mime_type.is(IMAGE_HEIF));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_image());
     assert!(!mime_type.name().is_empty());
 }
@@ -1103,7 +1175,7 @@ fn test_detect_heif_sequence() {
     data[8..12].copy_from_slice(b"msf1");
     let mime_type = detect(&data);
     assert_eq!(mime_type.mime(), IMAGE_HEIF_SEQUENCE);
-    assert_eq!(mime_type.extension(), ".heif");
+    assert_eq!(mime_type.extension(), ".heic");
     assert!(!mime_type.name().is_empty());
 }
 
@@ -1114,7 +1186,6 @@ fn test_detect_bpg() {
     assert_eq!(mime_type.mime(), IMAGE_BPG);
     assert_eq!(mime_type.extension(), ".bpg");
     assert!(mime_type.is(IMAGE_BPG));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_image());
     assert!(!mime_type.name().is_empty());
 }
@@ -1126,7 +1197,6 @@ fn test_detect_xcf() {
     assert_eq!(mime_type.mime(), IMAGE_X_XCF);
     assert_eq!(mime_type.extension(), ".xcf");
     assert!(mime_type.is(IMAGE_X_XCF));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_image());
     assert!(!mime_type.name().is_empty());
 }
@@ -1365,7 +1435,6 @@ fn test_detect_ani() {
     assert_eq!(mime_type.mime(), APPLICATION_X_NAVI_ANIMATION);
     assert_eq!(mime_type.extension(), ".ani");
     assert!(mime_type.is(APPLICATION_X_NAVI_ANIMATION));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_image());
     assert!(!mime_type.name().is_empty());
 }
@@ -1379,7 +1448,6 @@ fn test_detect_cdr() {
     assert!(mime_type.is(APPLICATION_VND_COREL_DRAW));
     assert!(mime_type.is(APPLICATION_CDR));
     assert!(mime_type.is(APPLICATION_X_CDR));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_image());
     assert!(!mime_type.name().is_empty());
 }
@@ -1392,7 +1460,6 @@ fn test_detect_ilbm() {
     assert_eq!(mime_type.extension(), ".lbm");
     assert!(mime_type.is(IMAGE_X_ILBM));
     assert!(mime_type.is(IMAGE_X_IFF));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_image());
     assert!(!mime_type.name().is_empty());
 }
@@ -1403,14 +1470,30 @@ fn test_detect_ilbm() {
 
 #[test]
 fn test_detect_mp3() {
+    // ID3v2-tagged MP3.
     let data = b"ID3";
     let mime_type = detect(data);
     assert_eq!(mime_type.mime(), AUDIO_MPEG);
     assert_eq!(mime_type.extension(), ".mp3");
     assert!(mime_type.is(AUDIO_MPEG));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_audio());
     assert!(!mime_type.name().is_empty());
+
+    // Raw Layer III frames (no ID3): validated against the frame tables plus a
+    // required consecutive frame, matching MP1/MP2 rigor.
+    //   byte1 = 0xFB => MPEG-1, Layer III; byte2 = 0x90 => 128 kbps, 44100 Hz
+    //   => 417-byte frames.
+    let header = [0xFFu8, 0xFB, 0x90, 0x00];
+    let mut raw = Vec::new();
+    raw.extend_from_slice(&header);
+    raw.resize(417, 0x00); // first frame body
+    raw.extend_from_slice(&header); // second frame header at offset 417
+    raw.resize(417 * 2, 0x00);
+    assert_eq!(detect(&raw).mime(), AUDIO_MPEG);
+    assert_eq!(detect(&raw).extension(), ".mp3");
+
+    // A lone/truncated raw frame with no consecutive frame no longer matches.
+    assert_ne!(detect(b"\xFF\xFB\x90").mime(), AUDIO_MPEG);
 }
 
 #[test]
@@ -1420,7 +1503,6 @@ fn test_detect_flac() {
     assert_eq!(mime_type.mime(), AUDIO_FLAC);
     assert_eq!(mime_type.extension(), ".flac");
     assert!(mime_type.is(AUDIO_FLAC));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_audio());
     assert!(!mime_type.name().is_empty());
 }
@@ -1432,7 +1514,18 @@ fn test_detect_wav() {
     assert_eq!(mime_type.mime(), AUDIO_WAV);
     assert_eq!(mime_type.extension(), ".wav");
     assert!(mime_type.is(AUDIO_WAV));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_audio());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_aiff_c() {
+    // AIFF-C (compressed): "FORM" at offset 0, 4-byte size, then "AIFC" at offset 8
+    let data = b"FORM\x00\x00\xb8\x24AIFCFVER";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), AUDIO_AIFF);
+    assert_eq!(mime_type.extension(), ".aiff");
+    assert!(mime_type.is(AUDIO_AIFF));
     assert!(mime_type.kind().is_audio());
     assert!(!mime_type.name().is_empty());
 }
@@ -1444,7 +1537,6 @@ fn test_detect_aiff() {
     assert_eq!(mime_type.mime(), AUDIO_AIFF);
     assert_eq!(mime_type.extension(), ".aiff");
     assert!(mime_type.is(AUDIO_AIFF));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_audio());
     assert!(!mime_type.name().is_empty());
 }
@@ -1456,7 +1548,6 @@ fn test_detect_midi() {
     assert_eq!(mime_type.mime(), AUDIO_MIDI);
     assert_eq!(mime_type.extension(), ".midi");
     assert!(mime_type.is(AUDIO_MIDI));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_audio());
     assert!(!mime_type.name().is_empty());
 }
@@ -1468,7 +1559,6 @@ fn test_detect_ogg() {
     assert_eq!(mime_type.mime(), APPLICATION_OGG);
     assert_eq!(mime_type.extension(), ".ogg");
     assert!(mime_type.is(APPLICATION_OGG));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_audio());
     assert!(!mime_type.name().is_empty());
 }
@@ -1482,7 +1572,6 @@ fn test_detect_ogg_audio() {
     assert_eq!(mime_type.mime(), AUDIO_OGG);
     assert_eq!(mime_type.extension(), ".oga");
     assert!(mime_type.is(AUDIO_OGG));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_audio());
     assert!(!mime_type.name().is_empty());
 }
@@ -1496,8 +1585,22 @@ fn test_detect_ogg_video() {
     assert_eq!(mime_type.mime(), VIDEO_OGG);
     assert_eq!(mime_type.extension(), ".ogv");
     assert!(mime_type.is(VIDEO_OGG));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_video());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_ape_monkeysaudio() {
+    // First bytes of doc/file-type/fixture/fixture-monkeysaudio.ape.
+    // This header version differs from the strict bytes below; only the
+    // 4-byte `MAC ` signature is needed to detect it.
+    let data =
+        b"MAC \x96\x0F\x00\x00\x34\x00\x00\x00\x18\x00\x00\x00\x04\x00\x00\x00\x2c\x00\x00\x00";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), AUDIO_APE);
+    assert_eq!(mime_type.extension(), ".ape");
+    assert!(mime_type.is(AUDIO_APE));
+    assert!(mime_type.kind().is_audio());
     assert!(!mime_type.name().is_empty());
 }
 
@@ -1508,7 +1611,6 @@ fn test_detect_ape() {
     assert_eq!(mime_type.mime(), AUDIO_APE);
     assert_eq!(mime_type.extension(), ".ape");
     assert!(mime_type.is(AUDIO_APE));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_audio());
     assert!(!mime_type.name().is_empty());
 }
@@ -1520,7 +1622,21 @@ fn test_detect_musepack() {
     assert_eq!(mime_type.mime(), AUDIO_MUSEPACK);
     assert_eq!(mime_type.extension(), ".mpc");
     assert!(mime_type.is(AUDIO_MUSEPACK));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_audio());
+    assert!(!mime_type.name().is_empty());
+
+    // A file that merely begins with the ASCII bytes "MP+" but has an invalid
+    // stream-version nibble must not be reported as Musepack.
+    assert!(!detect(b"MP+ this is not musepack").is(AUDIO_MUSEPACK));
+}
+
+#[test]
+fn test_detect_musepack_sv7() {
+    let data = b"MP+\x07\x0b\x00\x00\x00\xef\x6e\x10\x5f";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), AUDIO_MUSEPACK);
+    assert_eq!(mime_type.extension(), ".mpc");
+    assert!(mime_type.is(AUDIO_MUSEPACK));
     assert!(mime_type.kind().is_audio());
     assert!(!mime_type.name().is_empty());
 }
@@ -1532,7 +1648,6 @@ fn test_detect_au() {
     assert_eq!(mime_type.mime(), AUDIO_BASIC);
     assert_eq!(mime_type.extension(), ".au");
     assert!(mime_type.is(AUDIO_BASIC));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_audio());
     assert!(!mime_type.name().is_empty());
 }
@@ -1544,7 +1659,6 @@ fn test_detect_amr() {
     assert_eq!(mime_type.mime(), AUDIO_AMR);
     assert_eq!(mime_type.extension(), ".amr");
     assert!(mime_type.is(AUDIO_AMR));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_audio());
     assert!(!mime_type.name().is_empty());
 }
@@ -1556,7 +1670,6 @@ fn test_detect_voc() {
     assert_eq!(mime_type.mime(), AUDIO_X_VOC);
     assert_eq!(mime_type.extension(), ".voc");
     assert!(mime_type.is(AUDIO_X_VOC));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_audio());
     assert!(!mime_type.name().is_empty());
 }
@@ -1568,7 +1681,6 @@ fn test_detect_m3u() {
     assert_eq!(mime_type.mime(), AUDIO_X_MPEGURL);
     assert_eq!(mime_type.extension(), ".m3u");
     assert!(mime_type.is(AUDIO_X_MPEGURL));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_text());
     assert!(!mime_type.name().is_empty());
 }
@@ -1580,7 +1692,6 @@ fn test_detect_aac() {
     assert_eq!(mime_type.mime(), AUDIO_AAC);
     assert_eq!(mime_type.extension(), ".aac");
     assert!(mime_type.is(AUDIO_AAC));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_audio());
     assert!(!mime_type.name().is_empty());
 }
@@ -1592,26 +1703,33 @@ fn test_detect_qcp() {
     assert_eq!(mime_type.mime(), AUDIO_QCELP);
     assert_eq!(mime_type.extension(), ".qcp");
     assert!(mime_type.is(AUDIO_QCELP));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_audio());
     assert!(!mime_type.name().is_empty());
 }
 
 #[test]
 fn test_detect_m4a() {
-    let data = b"\x00\x00\x00\x18ftypM4A ";
-    let mime_type = detect(data);
-    assert_eq!(mime_type.mime(), APPLICATION_OCTET_STREAM);
-    assert_eq!(mime_type.extension(), "");
-    assert!(!mime_type.name().is_empty());
+    let datas = vec![
+        b"\x00\x00\x00\x18ftypM4A ",
+        // `M4A\0` (NUL 4th byte) variant resolves the same way.
+        b"\x00\x00\x00\x18ftypM4A\x00",
+    ];
+
+    for data in datas {
+        let mime_type = detect(data);
+        assert_eq!(mime_type.mime(), AUDIO_X_M4A);
+        assert!(mime_type.is(AUDIO_X_M4A));
+        assert_eq!(mime_type.extension(), ".m4a");
+        assert!(!mime_type.name().is_empty());
+    }
 }
 
 #[test]
 fn test_detect_amp4() {
     let data = b"\x00\x00\x00\x18ftypF4A ";
     let mime_type = detect(data);
-    assert_eq!(mime_type.mime(), APPLICATION_OCTET_STREAM);
-    assert_eq!(mime_type.extension(), "");
+    assert_eq!(mime_type.mime(), AUDIO_MP4);
+    assert_eq!(mime_type.extension(), ".f4a");
     assert!(!mime_type.name().is_empty());
 }
 
@@ -1622,7 +1740,6 @@ fn test_detect_wavpack() {
     assert_eq!(mime_type.mime(), AUDIO_X_WAVPACK);
     assert_eq!(mime_type.extension(), ".wv");
     assert!(mime_type.is(AUDIO_X_WAVPACK));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_audio());
     assert!(!mime_type.name().is_empty());
 }
@@ -1634,7 +1751,6 @@ fn test_detect_tta() {
     assert_eq!(mime_type.mime(), AUDIO_X_TTA);
     assert_eq!(mime_type.extension(), ".tta");
     assert!(mime_type.is(AUDIO_X_TTA));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_audio());
     assert!(!mime_type.name().is_empty());
 }
@@ -1677,7 +1793,6 @@ fn test_detect_mp4() {
     assert_eq!(mime_type.mime(), VIDEO_MP4);
     assert_eq!(mime_type.extension(), ".mp4");
     assert!(mime_type.is(VIDEO_MP4));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_video());
     assert!(!mime_type.name().is_empty());
 }
@@ -1689,7 +1804,6 @@ fn test_detect_webm() {
     assert_eq!(mime_type.mime(), VIDEO_WEBM);
     assert_eq!(mime_type.extension(), ".webm");
     assert!(mime_type.is(VIDEO_WEBM));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_video());
     assert!(!mime_type.name().is_empty());
 }
@@ -1702,7 +1816,6 @@ fn test_detect_mkv() {
     assert_eq!(mime_type.extension(), ".mkv");
     assert!(mime_type.is(VIDEO_X_MATROSKA));
     assert!(mime_type.is(VIDEO_MATROSKA));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_video());
     assert!(!mime_type.name().is_empty());
 }
@@ -1719,7 +1832,6 @@ fn test_detect_avi() {
     assert_eq!(mime_type.mime(), VIDEO_X_MSVIDEO);
     assert_eq!(mime_type.extension(), ".avi");
     assert!(mime_type.is(VIDEO_X_MSVIDEO));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_video());
     assert!(!mime_type.name().is_empty());
 }
@@ -1731,7 +1843,19 @@ fn test_detect_mpeg() {
     assert_eq!(mime_type.mime(), VIDEO_MPEG);
     assert_eq!(mime_type.extension(), ".mpg"); // MPEG Video variant (00 00 01 B3)
     assert!(mime_type.is(VIDEO_MPEG));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_video());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_mpeg_video_mpg_alias() {
+    // Parent MPEG matcher (00 00 01 B0-BF, excluding B3/BA child variants)
+    let data = b"\x00\x00\x01\xB0";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), VIDEO_MPEG);
+    assert_eq!(mime_type.extension(), ".mpeg");
+    assert!(mime_type.extension_aliases().contains(&".mpg"));
+    assert!(mime_type.is(VIDEO_MPEG));
     assert!(mime_type.kind().is_video());
     assert!(!mime_type.name().is_empty());
 }
@@ -1739,13 +1863,13 @@ fn test_detect_mpeg() {
 #[test]
 fn test_detect_quicktime() {
     let mut data = vec![0; 16];
+    data[0..4].copy_from_slice(&16u32.to_be_bytes()); // ftyp box size
     data[4..8].copy_from_slice(b"ftyp");
     data[8..12].copy_from_slice(b"qt  ");
     let mime_type = detect(&data);
     assert_eq!(mime_type.mime(), VIDEO_QUICKTIME);
     assert_eq!(mime_type.extension(), ".mov");
     assert!(mime_type.is(VIDEO_QUICKTIME));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_video());
     assert!(!mime_type.name().is_empty());
 }
@@ -1753,13 +1877,13 @@ fn test_detect_quicktime() {
 #[test]
 fn test_detect_mqv() {
     let mut data = vec![0; 16];
+    data[0..4].copy_from_slice(&16u32.to_be_bytes()); // ftyp box size
     data[4..8].copy_from_slice(b"ftyp");
     data[8..12].copy_from_slice(b"mqt ");
     let mime_type = detect(&data);
     assert_eq!(mime_type.mime(), VIDEO_QUICKTIME);
     assert_eq!(mime_type.extension(), ".mqv");
     assert!(mime_type.is(VIDEO_QUICKTIME));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_video());
     assert!(!mime_type.name().is_empty());
 }
@@ -1771,7 +1895,6 @@ fn test_detect_flv() {
     assert_eq!(mime_type.mime(), VIDEO_X_FLV);
     assert_eq!(mime_type.extension(), ".flv");
     assert!(mime_type.is(VIDEO_X_FLV));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_video());
     assert!(!mime_type.name().is_empty());
 }
@@ -2077,6 +2200,20 @@ fn test_detect_ttf() {
 }
 
 #[test]
+fn test_detect_ttf_fixture() {
+    // First 16 bytes of doc/file-type/fixture/fixture.ttf: sfnt version
+    // 0x00010000 followed by a table directory whose first tag is "FFTM".
+    let data = b"\x00\x01\x00\x00\x00\x0e\x00\x80\x00\x03\x00\x60FFTM";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), FONT_TTF);
+    assert_eq!(mime_type.extension(), ".ttf");
+    assert!(mime_type.is(FONT_TTF));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_font());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
 fn test_detect_woff() {
     let data = b"wOFF";
     let mime_type = detect(data);
@@ -2114,15 +2251,39 @@ fn test_detect_otf() {
 
 #[test]
 fn test_detect_eot() {
-    let mut data = vec![0; 36];
-    data[34..36].copy_from_slice(b"LP");
-    let mime_type = detect(&data);
-    assert_eq!(mime_type.mime(), APPLICATION_VND_MS_FONTOBJECT);
-    assert_eq!(mime_type.extension(), ".eot");
-    assert!(mime_type.is(APPLICATION_VND_MS_FONTOBJECT));
-    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
-    assert!(mime_type.kind().is_font());
-    assert!(!mime_type.name().is_empty());
+    let data = vec![
+        // First 40 bytes of doc/file-type/fixture/fixture.eot (version signature
+        // 0x02,0x00,0x02 at offset 8, `LP` at offset 34).
+        [
+            0x5f, 0xed, 0x00, 0x00, 0x79, 0xec, 0x00, 0x00, 0x02, 0x00, 0x02, 0x00, 0x04, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00,
+            0x90, 0x01, 0x00, 0x00, 0x04, 0x00, 0x4c, 0x50, 0x00, 0x00, 0x00, 0x00,
+        ],
+        // First 40 bytes of doc/file-type/fixture/fixture-0x20001.eot (version
+        // signature 0x01,0x00,0x02 at offset 8, `LP` at offset 34).
+        [
+            0x40, 0x20, 0x00, 0x00, 0x80, 0x1f, 0x00, 0x00, 0x01, 0x00, 0x02, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x02, 0x00, 0x06, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xc0,
+            0x90, 0x01, 0x00, 0x00, 0x00, 0x00, 0x4c, 0x50, 0x00, 0x00, 0x00, 0x01,
+        ],
+        // Synthetic EOT v1 header (version 0x00010000 -> 0x00,0x00,0x01,0x00 at offset 8,
+        // `LP` at offset 34).
+        [
+            0x5f, 0xed, 0x00, 0x00, 0x79, 0xec, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x04, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00,
+            0x90, 0x01, 0x00, 0x00, 0x04, 0x00, 0x4c, 0x50, 0x00, 0x00, 0x00, 0x00,
+        ],
+    ];
+
+    for d in data {
+        let mime_type = detect(&d);
+        assert_eq!(mime_type.mime(), APPLICATION_VND_MS_FONTOBJECT);
+        assert_eq!(mime_type.extension(), ".eot");
+        assert!(mime_type.is(APPLICATION_VND_MS_FONTOBJECT));
+        assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+        assert!(mime_type.kind().is_font());
+        assert!(!mime_type.name().is_empty());
+    }
 }
 
 #[test]
@@ -2867,6 +3028,33 @@ fn test_detect_marc() {
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_text());
     assert!(!mime_type.name().is_empty());
+    assert!(mime_type.kind().is_database());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_jmp() {
+    // Little-endian signature (as used by the real fixture)
+    let data_le = [
+        0xFF, 0xFF, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01,
+        0x00,
+    ];
+    let mime_type = detect(&data_le);
+    assert_eq!(mime_type.mime(), APPLICATION_X_JMP_DATA);
+    assert_eq!(mime_type.extension(), ".jmp");
+    assert!(mime_type.is(APPLICATION_X_JMP_DATA));
+    assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+    assert!(mime_type.kind().is_database());
+    assert!(!mime_type.name().is_empty());
+
+    // Big-endian signature
+    let data_be = [
+        0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x04, 0x00, 0x01, 0x00,
+        0x01,
+    ];
+    let mime_type = detect(&data_be);
+    assert_eq!(mime_type.mime(), APPLICATION_X_JMP_DATA);
+    assert_eq!(mime_type.extension(), ".jmp");
     assert!(mime_type.kind().is_database());
     assert!(!mime_type.name().is_empty());
 }
@@ -4929,8 +5117,15 @@ fn test_detect_document_formats() {
 
 #[test]
 fn test_detect_audio_formats() {
-    let mp3 = b"\xFF\xFB\x90";
-    assert_eq!(detect(mp3).mime(), AUDIO_MPEG);
+    // MPEG-1 Layer III, 128 kbps / 44100 Hz => 417-byte frames; requires a
+    // consecutive frame like MP1/MP2.
+    let header = [0xFFu8, 0xFB, 0x90, 0x00];
+    let mut mp3 = Vec::new();
+    mp3.extend_from_slice(&header);
+    mp3.resize(417, 0x00);
+    mp3.extend_from_slice(&header);
+    mp3.resize(417 * 2, 0x00);
+    assert_eq!(detect(&mp3).mime(), AUDIO_MPEG);
 
     let flac = b"fLaC";
     assert_eq!(detect(flac).mime(), AUDIO_FLAC);
@@ -5845,27 +6040,99 @@ fn test_detect_mpp() {
 
 #[test]
 fn test_detect_lzs() {
-    // LArc/LZS - Japanese compression format
-    let data = b"-lzs-";
+    // LArc/LZS - Japanese compression format; '-lzN-' signature at offset 2
+    let data = b"\x00\x00-lz5-\x00\x00\x00";
     let mime_type = detect(data);
     assert_eq!(mime_type.mime(), APPLICATION_X_LZS_COMPRESSED);
     assert_eq!(mime_type.extension(), ".lzs");
     assert!(!mime_type.name().is_empty());
+
+    // -lzs- method variant as well
+    let data = b"\x00\x00-lzs-\x00\x00\x00";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_LZS_COMPRESSED);
+    assert_eq!(mime_type.extension(), ".lzs");
 }
 
 #[test]
 fn test_detect_mp2() {
-    // MPEG-1/2 Audio Layer 2
-    // Frame sync: 0xFFE or 0xFFF (11 bits all 1)
-    // Layer II indicator: bits 17-18 (in header) = 10 binary
-    // 0xFFF4 = 1111 1111 1111 0100
-    //   sync: 1111 1111 111 (11 bits) ✓
-    //   layer bits (bits 1-2 of 2nd byte): 01 → after shift = 10 binary = 2 decimal ✓
-    let data = b"\xFF\xF4\x00\x00";
-    let mime_type = detect(data);
+    // MPEG-1 Audio Layer II, validated against the frame tables and a required
+    // second frame:
+    //   byte0 = 0xFF                     sync
+    //   byte1 = 0xFD = 1111 1101         sync | version 11 (MPEG-1) | layer 10 (II) | protection
+    //   byte2 = 0x80 = 1000 0000         bitrate index 1000 (128 kbps) | sample 00 (44100 Hz)
+    // => 417-byte frames.
+    let header = [0xFFu8, 0xFD, 0x80, 0x00];
+    let mut data = Vec::new();
+    data.extend_from_slice(&header);
+    data.resize(417, 0x00); // first frame body
+    data.extend_from_slice(&header); // second frame header at offset 417
+    data.resize(417 * 2, 0x00);
+    let mime_type = detect(&data);
     assert_eq!(mime_type.mime(), AUDIO_MP2);
     assert_eq!(mime_type.extension(), ".mp2");
     assert!(!mime_type.name().is_empty());
+
+    // Free-format (bitrate index 0) and invalid (index 15) frames must not
+    // match, so arbitrary 0xFF-prefixed data is not reported as MP2.
+    assert_ne!(detect(b"\xFF\xF4\x00\x00").mime(), AUDIO_MP2);
+    assert_ne!(detect(b"\xFF\xFD\xF0\x00").mime(), AUDIO_MP2);
+}
+
+#[test]
+fn test_mp2_consecutive_frame_validation() {
+    // 128 kbps, 44100 Hz MPEG-1 Layer II => 417-byte frames.
+    let header = [0xFFu8, 0xFD, 0x80, 0x00];
+
+    // Two back-to-back frames are detected via the consecutive-frame check.
+    let mut two_frames = Vec::new();
+    two_frames.extend_from_slice(&header);
+    two_frames.resize(417, 0x55); // first frame body
+    two_frames.extend_from_slice(&header); // second header at offset 417
+    two_frames.resize(417 * 2, 0x55);
+    assert_eq!(detect(&two_frames).mime(), AUDIO_MP2);
+
+    // A lone valid header followed by non-frame data is rejected once the
+    // buffer is long enough to require a second frame — the key false-positive
+    // reduction over a bare sync-word check.
+    let mut lone_header = vec![0xFFu8, 0xFD, 0x80, 0x00];
+    lone_header.resize(417 + 8, 0x00);
+    assert_ne!(detect(&lone_header).mime(), AUDIO_MP2);
+}
+
+#[test]
+fn test_detect_mp1() {
+    // MPEG-1 Audio Layer I frame header (validated against the frame tables and
+    // a required second frame). Real fixture first bytes: FF FF 18 C4
+    //   sync: 11 bits all set (FF FF & FFE0 == FFE0) ✓
+    //   layer bits (byte1 & 0x06) = 0xFF & 0x06 = 0x06 => Layer I ✓
+    //   byte2 = 0x18 => bitrate index 1 (32 kbps), sample 10 (32000 Hz) => 48-byte frames
+    let header = [0xFFu8, 0xFF, 0x18, 0xC4];
+    let mut data = Vec::new();
+    data.extend_from_slice(&header);
+    data.resize(48, 0x00); // first frame body
+    data.extend_from_slice(&header); // second frame header at offset 48
+    data.resize(48 * 2, 0x00);
+    let mime_type = detect(&data);
+    assert_eq!(mime_type.mime(), AUDIO_MPEG);
+    assert_eq!(mime_type.extension(), ".mp1");
+    assert!(mime_type.kind().is_audio());
+    assert!(!mime_type.name().is_empty());
+
+    // Ensure MP1 does not steal Layer III (MP3) frames: a valid two-frame
+    // Layer III stream must still resolve to .mp3.
+    let mp3_header = [0xFFu8, 0xFB, 0x90, 0x00];
+    let mut mp3 = Vec::new();
+    mp3.extend_from_slice(&mp3_header);
+    mp3.resize(417, 0x00);
+    mp3.extend_from_slice(&mp3_header);
+    mp3.resize(417 * 2, 0x00);
+    assert_eq!(detect(&mp3).extension(), ".mp3");
+
+    // MP1 must not match arbitrary 0xFF-prefixed data with an invalid frame
+    // header. 0xFF 0xFF 0xFF 0xFF has bitrate index 1111 (invalid), so it must
+    // not be reported as audio/mpeg.
+    assert_ne!(detect(b"\xFF\xFF\xFF\xFF").mime(), AUDIO_MPEG);
 }
 
 #[test]
@@ -6026,7 +6293,20 @@ fn test_detect_macos_alias() {
 
     let mime_type = detect(data);
     assert_eq!(mime_type.mime(), APPLICATION_X_APPLE_ALIAS);
-    assert_eq!(mime_type.extension(), "");
+    assert_eq!(mime_type.extension(), ".alias");
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_macos_alias_extension() {
+    // macOS Alias - Finder alias file, verify primary extension is set
+    let data = b"book\x00\x00\x00\x00mark\x00\x00\x00\x00";
+
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_APPLE_ALIAS);
+    assert_eq!(mime_type.extension(), ".alias");
+    assert!(mime_type.is(APPLICATION_X_APPLE_ALIAS));
+    assert!(mime_type.kind().is_application());
     assert!(!mime_type.name().is_empty());
 }
 
@@ -6088,36 +6368,18 @@ fn test_detect_mla() {
 }
 
 #[test]
-fn test_detect_pma_pm0() {
-    // PMA - PMarc variant 0
-    let data = b"-pm0-\x00\x00\x00\x00";
-
-    let mime_type = detect(data);
-    assert_eq!(mime_type.mime(), APPLICATION_X_LZH_COMPRESSED);
-    assert_eq!(mime_type.extension(), ".pma");
-    assert!(!mime_type.name().is_empty());
-}
-
-#[test]
-fn test_detect_pma_pm1() {
-    // PMA - PMarc variant 1
-    let data = b"-pm1-\x00\x00\x00\x00";
-
-    let mime_type = detect(data);
-    assert_eq!(mime_type.mime(), APPLICATION_X_LZH_COMPRESSED);
-    assert_eq!(mime_type.extension(), ".pma");
-    assert!(!mime_type.name().is_empty());
-}
-
-#[test]
-fn test_detect_pma_pm2() {
-    // PMA - PMarc variant 2
-    let data = b"-pm2-\x00\x00\x00\x00";
-
-    let mime_type = detect(data);
-    assert_eq!(mime_type.mime(), APPLICATION_X_LZH_COMPRESSED);
-    assert_eq!(mime_type.extension(), ".pma");
-    assert!(!mime_type.name().is_empty());
+fn test_detect_pma() {
+    // PMA - PMarc variants 0, 1 and 2; '-pmN-' signature at offset 2 (bytes 0-1 are header size + checksum)
+    for data in [
+        b"\x00\x00-pm0-\x00\x00\x00\x00",
+        b"\x00\x00-pm1-\x00\x00\x00\x00",
+        b"\x00\x00-pm2-\x00\x00\x00\x00",
+    ] {
+        let mime_type = detect(data);
+        assert_eq!(mime_type.mime(), APPLICATION_X_LZH_COMPRESSED);
+        assert_eq!(mime_type.extension(), ".pma");
+        assert!(!mime_type.name().is_empty());
+    }
 }
 
 #[test]
@@ -6186,51 +6448,56 @@ fn test_detect_xci() {
 
 #[test]
 fn test_detect_xpi() {
-    // Mozilla XPInstall (Firefox/Thunderbird extension) - ZIP with install.rdf
-    let mut data = vec![];
-
-    // ZIP local file header
-    data.extend_from_slice(b"PK\x03\x04");
-    data.extend_from_slice(&[0x14, 0x00]); // Version
-    data.extend_from_slice(&[0x00, 0x00]); // Flags
-    data.extend_from_slice(&[0x00, 0x00]); // Method
-    data.extend_from_slice(&[0x00, 0x00]); // Time
-    data.extend_from_slice(&[0x00, 0x00]); // Date
-    data.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]); // CRC32
-    data.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]); // Compressed size
-    data.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]); // Uncompressed size
-    data.extend_from_slice(&[0x0B, 0x00]); // Filename length (11)
-    data.extend_from_slice(&[0x00, 0x00]); // Extra field length
-    data.extend_from_slice(b"install.rdf");
+    // Mozilla XPInstall (Firefox/Thunderbird extension) - ZIP with META-INF/mozilla.rsa
+    let data = create_zip_with_file(b"META-INF/mozilla.rsa");
 
     let mime_type = detect(&data);
     assert_eq!(mime_type.mime(), APPLICATION_X_XPINSTALL);
     assert_eq!(mime_type.extension(), ".xpi");
+    assert!(mime_type.kind().is_archive());
     assert!(!mime_type.name().is_empty());
 }
 
 #[test]
 fn test_detect_xps() {
-    // OpenXPS (XML Paper Specification) - ZIP with _rels/.rels
-    let mut data = vec![];
-
-    // ZIP local file header
-    data.extend_from_slice(b"PK\x03\x04");
-    data.extend_from_slice(&[0x14, 0x00]); // Version
-    data.extend_from_slice(&[0x00, 0x00]); // Flags
-    data.extend_from_slice(&[0x00, 0x00]); // Method
-    data.extend_from_slice(&[0x00, 0x00]); // Time
-    data.extend_from_slice(&[0x00, 0x00]); // Date
-    data.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]); // CRC32
-    data.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]); // Compressed size
-    data.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]); // Uncompressed size
-    data.extend_from_slice(&[0x0B, 0x00]); // Filename length (11)
-    data.extend_from_slice(&[0x00, 0x00]); // Extra field length
-    data.extend_from_slice(b"_rels/.rels");
+    // OpenXPS (XML Paper Specification) - identified by the mandatory
+    // FixedDocumentSequence part, not merely by generic OPC entries.
+    let data = create_zip_with_file(b"FixedDocumentSequence.fdseq");
 
     let mime_type = detect(&data);
     assert_eq!(mime_type.mime(), APPLICATION_OXPS);
     assert_eq!(mime_type.extension(), ".xps");
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_vsdx() {
+    // Microsoft Visio 2007+ (VSDX/VSTX) - OPC/ZIP package identified by the
+    // `visio/` directory entry. Must win over the loosely-matching XPS detector.
+    let data = create_zip_with_file(b"visio/document.xml");
+
+    let mime_type = detect(&data);
+    assert_eq!(mime_type.mime(), APPLICATION_VND_MS_VISIO_DRAWING_MAIN_XML);
+    assert_eq!(mime_type.extension(), ".vsdx");
+    assert!(mime_type.kind().is_document());
+    assert!(!mime_type.name().is_empty());
+    // A generic OPC container (only `[Content_Types].xml`) must not be XPS anymore.
+    let opc = create_zip_with_file(b"[Content_Types].xml");
+    assert_ne!(detect(&opc).mime(), APPLICATION_OXPS);
+}
+
+#[test]
+fn test_detect_3mf() {
+    // 3D Manufacturing Format (OPC/ZIP container) - identified by the `3D/`
+    // model directory entry. Must be detected as 3MF, not misdetected as XPS.
+    let data = create_zip_with_file(b"3D/3dmodel.model");
+    let mime_type = detect(&data);
+    assert_eq!(
+        mime_type.mime(),
+        APPLICATION_VND_MS_PACKAGE_3DMANUFACTURING_3DMODEL_XML
+    );
+    assert_eq!(mime_type.extension(), ".3mf");
+    assert!(mime_type.kind().is_model());
     assert!(!mime_type.name().is_empty());
 }
 
@@ -7188,6 +7455,26 @@ fn test_detect_zlib_not_text() {
 }
 
 #[test]
+fn test_detect_dmg() {
+    // Apple Disk Image (UDIF): the "koly" trailer is a 512-byte block at the end of the
+    // file, so its signature sits at offset `file_size - 512`. Build a small image whose
+    // payload begins with the usual zlib stream and whose last 512 bytes start with "koly".
+    let mut data = vec![0x77u8, 0x01, 0xed, 0xd0, 0xb1, 0x0d, 0x41, 0x61];
+    data.resize(600, 0); // total len 600; trailer must start at 600 - 512 = 88
+    data[88..92].copy_from_slice(b"koly");
+
+    let mime_type = detect(&data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_APPLE_DISKIMAGE);
+    assert_eq!(mime_type.extension(), ".dmg");
+    assert!(mime_type.kind().is_archive());
+    assert!(!mime_type.name().is_empty());
+
+    // Negative: a plain zlib stream (0x78 0x01 ...) with no "koly" trailer must NOT be DMG.
+    let zlib = b"\x78\x01\xed\xd0\xb1\x0d\x41\x61\x14\x05";
+    assert_ne!(detect(zlib).mime(), APPLICATION_X_APPLE_DISKIMAGE);
+}
+
+#[test]
 fn test_detect_bufr() {
     let data = b"BUFR\x00\x00\x00\x03";
     let mime_type = detect(data);
@@ -7448,4 +7735,45 @@ fn test_detect_parallels_hdd_ext() {
     assert!(mime_type.is(APPLICATION_X_PARALLELS_HDD));
     assert!(mime_type.kind().is_document());
     assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_mie_big_endian() {
+    // Big-endian MIE: [0x7E, 0x10, 0x04] prefix, "0MIE" at offset 4
+    let data = b"\x7E\x10\x04\xFE0MIE\x00\x00\x00\x00";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_MIE);
+    assert_eq!(mime_type.extension(), ".mie");
+    assert!(mime_type.is(APPLICATION_X_MIE));
+    assert!(mime_type.kind().is_application());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_mie_little_endian() {
+    // Little-endian MIE: [0x7E, 0x18, 0x04] prefix, "0MIE" at offset 4
+    let data = b"\x7E\x18\x04\xFE0MIE\x00\x00\x00\x00";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_MIE);
+    assert_eq!(mime_type.extension(), ".mie");
+    assert!(mime_type.is(APPLICATION_X_MIE));
+    assert!(mime_type.kind().is_application());
+    assert!(!mime_type.name().is_empty());
+}
+
+#[test]
+fn test_detect_spss_sav() {
+    // SPSS SAV data files start with "$FL2" or "$FL3"
+    let data = b"$FL2@(#) SPSS DATA FILE";
+    let mime_type = detect(data);
+    assert_eq!(mime_type.mime(), APPLICATION_X_SPSS_SAV);
+    assert_eq!(mime_type.extension(), ".sav");
+    assert!(mime_type.is(APPLICATION_X_SPSS_SAV));
+    assert!(mime_type.kind().is_database());
+    assert!(!mime_type.name().is_empty());
+
+    let data_fl3 = b"$FL3@(#) SPSS DATA FILE";
+    let mime_type_fl3 = detect(data_fl3);
+    assert_eq!(mime_type_fl3.mime(), APPLICATION_X_SPSS_SAV);
+    assert_eq!(mime_type_fl3.extension(), ".sav");
 }

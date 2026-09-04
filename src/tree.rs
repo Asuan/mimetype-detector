@@ -39,7 +39,8 @@ build_prefix_vec! {
         0x01 => [&SGI] as __PV_01,
         0x02 => [&ARSC, &CLARISWORKS] as __PV_02,  // Android Resource Storage Container, ClarisWorks
         0x03 => [&AXML, &DBASE] as __PV_03,  // Android Binary XML and dBASE
-        0x04 => [&LZ4] as __PV_04,
+        0x04 => [&ASAR, &LZ4] as __PV_04,
+        0x24 => [&SPSS] as __PV_24,  // SPSS SAV ('$FL2', '$FL3')
         0x0a => [&PCAPNG] as __PV_0A,
         0x0b => [&AC3] as __PV_0B,  // Audio Codec 3
         0x0e => [&HDF4] as __PV_0E,  // HDF4 format
@@ -51,9 +52,9 @@ build_prefix_vec! {
         0x1f => [&GZIP, &UNIX_COMPRESS] as __PV_1F,  // GZIP (0x1F 0x8B), Unix compress (0x1F 0x9D)
         0x21 => [&PST, &AR] as __PV_21,  // PST ('!BDN'), AR ('!<arch>')
         0x23 => [&USD_ASCII, &IQE, &AMR, &HDR, &M3U, &VMDK, &VRML] as __PV_23,  // USD ASCII ('#usda'), IQE, AMR, HDR, M3U, VMDK, VRML
-        0x25 => [&PS, &FDF, &PDF] as __PV_25,
+        0x25 => [&EPS, &PS, &FDF, &PDF] as __PV_25,
         0x28 => [&WAT, &DWF] as __PV_28,  // WebAssembly Text '(module', Design Web Format '(DWF'
-        0x2d => [&CSR, &P7S, &PEM, &PMA, &LHA, &LZS, &PGP_MESSAGE, &PGP_SIGNED_MESSAGE, &PGP_PUBLIC_KEY, &PGP_PRIVATE_KEY, &PGP_SIGNATURE] as __PV_2D,  // CSR, P7S, PEM, PMA, LHA, LZS, PGP formats
+        0x2d => [&CSR, &P7S, &PEM, &PGP_MESSAGE, &PGP_SIGNED_MESSAGE, &PGP_PUBLIC_KEY, &PGP_PRIVATE_KEY, &PGP_SIGNATURE] as __PV_2D,  // CSR, P7S, PEM, PGP formats
         0x20 => [&NEO_GEO_POCKET_ROM, &WORKS_DB, &IGES] as __PV_20,  // Neo Geo Pocket (parent checks header, child refines to Color), Microsoft Works DB, IGES CAD format
         0x2e => [&NINTENDO_DS_ROM, &REALMEDIA, &AU, &REALAUDIO] as __PV_2E,  // Nintendo DS ROM, RealMedia, AU/SND, RealAudio
         0x2f => [&XPM, &MAYA_ASCII, &OPENGEX] as __PV_2F,  // XPM, Maya ASCII, OpenGEX
@@ -73,10 +74,10 @@ build_prefix_vec! {
         0x43 => [&VOC, &SWF, &CRX, &COMMODORE_64_CARTRIDGE, &VMDK, &NETCDF] as __PV_43,  // SWF ('CWS'), CRX, C64 CRT, VMDK ('COWD'), NetCDF ('CDF')
         0x44 => [&ADF, &DDS, &DSF, &DRACO] as __PV_44,  // Amiga Disk File ('DOS'), DDS, DSF, Draco ('DRACO')
         0x45 => [&XM, &EVTX] as __PV_45,  // Extended Module, Windows Event Log XML
-        0x46 => [&FLV, &DFF, &FVT, &SWF, &RAF, &EIGHTSVX, &MAYA_BINARY, &FLIF] as __PV_46,  // Added SWF ('FWS'), RAF ('FUJIFILM'), 8SVX ('FORM'), Maya Binary ('FOR4'/'FOR8'), FLIF
+        0x46 => [&FLV, &DFF, &FVT, &SWF, &RAF, &AIFF, &EIGHTSVX, &MAYA_BINARY, &FLIF] as __PV_46,  // SWF ('FWS'), RAF ('FUJIFILM'), AIFF/AIFF-C ('FORM' + 'AIFF'/'AIFC' at offset 8), 8SVX ('FORM'), Maya Binary ('FOR4'/'FOR8'), FLIF
         0x47 => [&GIF, &GRIB] as __PV_47,  // GIF, GRIB weather data
         0x48 => [&OS2_HLP, &OS2_INF, &XCI] as __PV_48,  // OS/2 Help, OS/2 INF, Nintendo Switch ROM (XCI - 'HEAD')
-        0x49 => [&IQM, &JXR, &LIT, &TIFF, &CHM, &INSTALL_SHIELD_CAB, &CRW, &IT, &RW2, &KODAK_KDC, &KODAK_DCR, &ORF, &STEP] as __PV_49,  // IQM, TIFF includes CR2/NEF as children, ORF variants (IIRO/IIRS) are TIFF-based but need direct detection, Kodak RAW, STEP ('ISO-10303-21')
+        0x49 => [&IQM, &JXR, &LIT, &TIFF, &CHM, &INSTALL_SHIELD_CAB, &CRW, &IT, &RW2, &KODAK_KDC, &KODAK_DCR, &ORF, &STEP, &MP3] as __PV_49,  // IQM, TIFF includes CR2/NEF as children, ORF variants (IIRO/IIRS) are TIFF-based but need direct detection, Kodak RAW, STEP ('ISO-10303-21'), MP3 ('ID3'-tagged)
         0x4b => [&FBX, &VMDK] as __PV_4B,  // Autodesk FBX (Kaydara), VMDK ('KDMV')
         0x4c => [&COFF, &LNK, &LZIP, &LRF, &LRZIP] as __PV_4C,  // COFF (i386), LNK, LZIP, LRF (Sony Reader), LRZIP
         0x4d => [&MODEL3D_BINARY, &MLA, &MUSEPACK, &CAB, &MIDI, &EXE, &AUTODESK_3DS, &TIFF, &ORF, &MOZILLA_ARCHIVE, &WIM, &PDB, &SGI_MOVIE, &OPENGEX] as __PV_4D,  // Model3D Binary ('MD30'), MLA, 3DS (exclude TIFF), ORF (MMOR) is TIFF-based but needs direct detection, Mozilla Archive, WIM, PDB ('Microsoft C/C++ MSF 7.00'), SGI Movie, OpenGEX ('Metric')
@@ -106,12 +107,12 @@ build_prefix_vec! {
         0x67 => [&XCF, &GLB,  &OPENGEX] as __PV_67,  // XCF, GLB, OpenGEX ('GeometryNode')
         0x68 => [&SQUASHFS] as __PV_68,  // Squashfs little-endian ('hsqs')
         0x69 => [&MIFF, &ICNS] as __PV_69,  // MIFF ('id=ImageMagick'), Apple ICNS
-        0x6B => [&DMG] as __PV_6B,  // Apple Disk Image
+
         0x70 => [&PLY] as __PV_70,
         0x73 => [&STL_ASCII, &SQUASHFS] as __PV_73,  // STL ASCII 3D models, Squashfs ('sqsh')
         0x74 => [&TTC] as __PV_74,
         0x77 => [&WOFF, &WOFF2, &WAVPACK] as __PV_77,
-        0x78 => [&XAR, &TNEF, &ZLIB] as __PV_78,  // XAR, TNEF, ZLIB
+        0x78 => [&XAR, &TNEF,  &ZLIB] as __PV_78,  // XAR, TNEF, ZLIB
         0x7a => [&ZPAQ] as __PV_7A,  // ZPAQ also starts with "zPQ" (0x7A)
         0x7b => [&JSON_FEED, &GLYPHS] as __PV_7B,  // JSON Feed ('{"version'), Glyphs font ('{\n.appVe')
         0x7e => [&MIE] as __PV_7E,  // Meta Information Encapsulation
@@ -136,7 +137,7 @@ build_prefix_vec! {
         0xef => [&UTF8_BOM] as __PV_EF,
         0xfd => [&XZ] as __PV_FD,
         0xfe => [&UTF16_BE, &JAVA_KEYSTORE] as __PV_FE,  // UTF16-BE and Java Keystore
-        0xff => [&SKETCHUP, &WORKS_SPREADSHEET, &WINDOWS_REG, &JXL, &JPEG_LS, &JP2_CODESTREAM, &JPG, &MP2, &AAC, &UTF16_LE, &SNAPPY_FRAMED] as __PV_FF,  // SketchUp (UTF-16 LE + specific content), MS Works Spreadsheet, Windows Registry (UTF-16), JXL, JPEG-LS, JPEG 2000 Codestream, JPG, MP2, AAC, UTF-16 LE, Snappy framed
+        0xff => [&SKETCHUP, &WORKS_SPREADSHEET, &WINDOWS_REG, &JXL, &JPEG_LS, &JP2_CODESTREAM, &JPG, &JMP, &MP1, &MP2, &MP3, &AAC, &UTF16_LE, &SNAPPY_FRAMED] as __PV_FF,  // SketchUp (UTF-16 LE + specific content), MS Works Spreadsheet, Windows Registry (UTF-16), JXL, JPEG-LS, JPEG 2000 Codestream, JPG, JMP (before MP1), MP1, MP2, MP3, AAC, UTF-16 LE, Snappy framed
     ]
 }
 
@@ -167,49 +168,46 @@ pub static ROOT: MimeType = MimeType::new(
         &JP2,                 // Offset 4-8 check (children JPX/JPM detected through parent)
         &TAR,                 // No magic number
         &LOTUS123,            // Offset 4-7 check (parent; children WK1/WK3/WK4 refine version)
-        &MP3,                 // Multiple first bytes (conflict)
         &APE,                 // Conflict with 0x4D
-        &AIFF,                // FORM format, offset 8
+        &LHA,                 // Signature at offset 2 (any first byte)
+        &LZS,                 // LArc '-lzN-' signature at offset 2 (any first byte)
+        &PMA,                 // PMarc '-pmN-' signature at offset 2 (any first byte)
+        &JMP,                 // Two endian variants (LE: 0xFF 0xFF, BE: 0x00 0x00)
         &MPEG,                // Conflict with 0x00
-        &QUICKTIME,           // Offset 4-8 check
-        &MQV,                 // Offset 4-8 check
-        &MP4,                 // Offset 4-8 check
-        &TTF,                 // Multiple patterns (conflict)
-        &EOT,                 // 34 null bytes
-        &DBF,                 // Multiple first bytes
-        &DCM,                 // Offset 128 check
-        &MOBI,                // Offset 60 check
-        &DXF,                 // Space patterns
-        &WPD,                 // Conflict with 0xFF
-        &MACHO,               // Multiple magics (conflict)
-        &MRC,                 // Offset checks
-        &ZSTD,                // Range check on first 4 bytes
-        &PAT,                 // Offset 20 check
-        &GBR,                 // Offset 20 check
-        &PCX,                 // Conflict with 0x0A
-        &ILBM,                // IFF/FORM format
-        &EMF,                 // Offset 40 check
-        &WMF,                 // Multiple signatures
-        &VDI,                 // VirtualBox VDI - offset 64 check
-        &EDB,                 // ESE/Jet Blue database - offset 4 check
-        &FIT,                 // FIT format - offset 8 check
-        &MPEG2TS,             // Pattern at offset 188
-        &ACE,                 // Offset 7 check
-        &ISO9660,             // Large offset checks
-        &UDF,                 // UDF - offset 32769 check
-        &EROFS,               // EROFS - offset 1024 check
-        &ID3V2,               // Multiple signatures
-        &ICC,                 // Offset 36 check
-        &GBA_ROM,             // GameBoy Advance ROM - offset 4
-        &GB_ROM,              // GameBoy ROM - offset 260 (parent to GBC_ROM)
-        &MSO,                 // ActiveMime - offset 0x32 check
-        &EMPTY,               // Empty file - zero-length check
-        &PYTHON_BYTECODE,     // Python .pyc - checks offset 2-3
+        &MP4, // ftyp gate at offset 4-8; ISOBMFF brands (QuickTime, CR3, HEIC, AVIF, 3GP, ...) are children
+        &TTF, // Multiple patterns (conflict)
+        &EOT, // 34 null bytes
+        &DBF, // Multiple first bytes
+        &DCM, // Offset 128 check
+        &MOBI, // Offset 60 check
+        &DXF, // Space patterns
+        &WPD, // Conflict with 0xFF
+        &MACHO, // Multiple magics (conflict)
+        &MRC, // Offset checks
+        &ZSTD, // Range check on first 4 bytes
+        &PAT, // Offset 20 check
+        &GBR, // Offset 20 check
+        &PCX, // Conflict with 0x0A
+        &ILBM, // IFF/FORM format
+        &EMF, // Offset 40 check
+        &WMF, // Multiple signatures
+        &VDI, // VirtualBox VDI - offset 64 check
+        &EDB, // ESE/Jet Blue database - offset 4 check
+        &FIT, // FIT format - offset 8 check
+        &MPEG2TS, // Pattern at offset 188
+        &ACE, // Offset 7 check
+        &ISO9660, // Large offset checks
+        &UDF, // UDF - offset 32769 check
+        &EROFS, // EROFS - offset 1024 check
+        &DMG, // Apple Disk Image - "koly" trailer at file_size - 512
+        &ID3V2, // Multiple signatures
+        &ICC, // Offset 36 check
+        &GBA_ROM, // GameBoy Advance ROM - offset 4
+        &GB_ROM, // GameBoy ROM - offset 260 (parent to GBC_ROM)
+        &MSO, // ActiveMime - offset 0x32 check
+        &EMPTY, // Empty file - zero-length check
+        &PYTHON_BYTECODE, // Python .pyc - checks offset 2-3
         &NINTENDO_SWITCH_NRO, // Nintendo Switch NRO - checks offset 0x10
-        // Camera RAW formats (formats with clear signatures are in PREFIX_VEC)
-        // Note: TIFF-based RAW formats (CR2, NEF, DNG, ARW, SR2, PEF, 3FR) are children of TIFF in PREFIX_VEC
-        &CR3, // Canon Raw 3 (ISO Base Media) - offset check
-        // Audio module formats (simple ones in PREFIX_VEC)
         &S3M, // Scream Tracker 3 Module - offset 44 check
         &MOD, // ProTracker Module - offset 1080 check
         // Sega game ROM formats (require larger READ_LIMIT for detection)
@@ -435,10 +433,11 @@ static AI: MimeType = MimeType::new(
 .with_kind(MimeKind::IMAGE)
 .with_parent(&PDF);
 
-mimetype!(PS, APPLICATION_POSTSCRIPT, ".ps", b"%!PS-Adobe-", name: "PostScript", kind: DOCUMENT);
+mimetype!(PS, APPLICATION_POSTSCRIPT, ".ps", b"%!PS", name: "PostScript", kind: DOCUMENT);
 
-// Encapsulated PostScript - Binary EPS with TIFF/WMF preview
-mimetype!(EPS, APPLICATION_EPS, ".eps", [0xC5, 0xD0, 0xD3, 0xC6], name: "Encapsulated PostScript", kind: DOCUMENT);
+// Encapsulated PostScript - binary preview form (TIFF/WMF) or text form (%!PS-Adobe-x EPSF-y)
+static EPS: MimeType = MimeType::new(APPLICATION_EPS, "Encapsulated PostScript", ".eps", eps, &[])
+    .with_kind(MimeKind::DOCUMENT);
 
 // OLE (Object Linking and Embedding) container format - parent of Microsoft Office and CAD formats
 // Detection uses CLSID (Class ID) at dynamic offset (512 or 4096 bytes depending on version)
@@ -552,6 +551,7 @@ children: [
     &AIR,      // META-INF/AIR/application.xml
     &EAR,      // META-INF/application.xml
     &WAR,      // WEB-INF/web.xml
+    &XPI,      // META-INF/mozilla.rsa (must come before JAR)
 
     // Generic Java (after specific META-INF patterns)
     &JAR,      // META-INF/ or META-INF/MANIFEST.MF
@@ -583,10 +583,10 @@ children: [
     &UOP, &UOS, &UOT,
 
     // CAD & 3D modeling
-    &AUTODESK_123D, &FUSION_360, &THREEDXML,
+    &AUTODESK_123D, &FUSION_360, &THREEDXML, &THREEMF_ZIP,
 
     // Other specialized formats
-    &XPI, &XAP, &MXL, &FBZ
+    &XAP, &MXL, &FBZ
 ]);
 
 mimetype!(RAR, APPLICATION_X_RAR_COMPRESSED, ".rar", b"Rar!\x1a\x07\x00" | b"Rar!\x1a\x07\x01\x00", name: "RAR Archive", kind: ARCHIVE, aliases: [APPLICATION_VND_RAR, APPLICATION_X_RAR]);
@@ -633,6 +633,16 @@ mimetype!(LZIP, APPLICATION_LZIP, ".lz", b"LZIP", name: "Lzip Compressed Archive
 // LZ4 - Fast compression format
 mimetype!(LZ4, APPLICATION_X_LZ4, ".lz4", [0x04, 0x22, 0x4D, 0x18], name: "LZ4 Compressed Archive", kind: ARCHIVE);
 
+// Electron ASAR Archive: Pickle header 04 00 00 00, JSON index with "files" key at offset 16
+static ASAR: MimeType = MimeType::new(
+    APPLICATION_X_ASAR,
+    "Electron ASAR Archive",
+    ".asar",
+    asar,
+    &[],
+)
+.with_kind(MimeKind::ARCHIVE);
+
 mimetype!(CAB, APPLICATION_VND_MS_CAB_COMPRESSED, ".cab", b"MSCF", name: "Microsoft Cabinet Archive", kind: ARCHIVE);
 
 static INSTALL_SHIELD_CAB: MimeType = MimeType::new(
@@ -647,7 +657,7 @@ static INSTALL_SHIELD_CAB: MimeType = MimeType::new(
 static CPIO: MimeType = MimeType::new(APPLICATION_X_CPIO, "CPIO Archive", ".cpio", cpio, &[])
     .with_kind(MimeKind::ARCHIVE);
 
-mimetype!(AR, APPLICATION_X_ARCHIVE, ".a", b"!<arch>", name: "Unix Archive", kind: ARCHIVE, aliases: [APPLICATION_X_UNIX_ARCHIVE], ext_aliases: [".deb"], children: [&DEB]);
+mimetype!(AR, APPLICATION_X_ARCHIVE, ".a", b"!<arch>", name: "Unix Archive", kind: ARCHIVE, aliases: [APPLICATION_X_UNIX_ARCHIVE], ext_aliases: [".ar", ".deb"], children: [&DEB]);
 
 mimetype!(RPM, APPLICATION_X_RPM, ".rpm", b"\xed\xab\xee\xdb", name: "Red Hat Package Manager", kind: ARCHIVE);
 
@@ -660,11 +670,25 @@ mimetype!(XAR, APPLICATION_X_XAR, ".xar", b"xar!", name: "eXtensible ARchive", k
 // ARJ - Legacy DOS compression format
 mimetype!(ARJ, APPLICATION_ARJ, ".arj", [0x60, 0xEA], name: "ARJ Archive", kind: ARCHIVE);
 
-// LHA/LZH - Japanese compression standard
-mimetype!(LHA, APPLICATION_X_LZH_COMPRESSED, ".lzh", b"-lh", name: "LHA Archive", kind: ARCHIVE);
+// LHA/LZH - Japanese compression standard; signature `-lh` is at offset 2
+static LHA: MimeType = MimeType::new(
+    APPLICATION_X_LZH_COMPRESSED,
+    "LHA Archive",
+    ".lzh",
+    lha,
+    &[],
+)
+.with_kind(MimeKind::ARCHIVE);
 
-// LArc/LZS - Legacy Japanese compression format (similar to LZH)
-mimetype!(LZS, APPLICATION_X_LZS_COMPRESSED, ".lzs", b"-lz", name: "LArc Archive", kind: ARCHIVE);
+// LArc/LZS - Legacy Japanese compression format (similar to LZH); `-lzN-` signature at offset 2
+static LZS: MimeType = MimeType::new(
+    APPLICATION_X_LZS_COMPRESSED,
+    "LArc Archive",
+    ".lzs",
+    lzs,
+    &[],
+)
+.with_kind(MimeKind::ARCHIVE);
 
 // DEB - Debian package, checks for "debian-binary" at offset 8
 mimetype!(DEB, APPLICATION_VND_DEBIAN_BINARY_PACKAGE, ".deb", offset: (8, b"debian-binary"), name: "Debian Package", kind: ARCHIVE, parent: &AR);
@@ -1290,16 +1314,15 @@ static HEIC: MimeType = MimeType::new(
 .with_kind(MimeKind::IMAGE)
 .with_parent(&HEIF);
 
-static HEIF: MimeType = MimeType::new(
-    IMAGE_HEIF,
-    "High Efficiency Image Format",
-    ".heif",
-    heif,
-    &[],
-)
-.with_kind(MimeKind::IMAGE);
+// The `mif1` structural brand carries the `.heic` extension to match file-type's
+// convention (Apple HEIC still images use major brand `mif1` with a `heic`
+// compatible brand); the MIME stays `image/heif` per the brand. `.heif` remains
+// an extension alias.
+mimetype!(HEIF, IMAGE_HEIF, ".heic", offset: (4, b"ftypmif1"), name: "High Efficiency Image Format", kind: IMAGE, ext_aliases: [".heif"]);
 
-mimetype!(HEIF_SEQ, IMAGE_HEIF_SEQUENCE, ".heif", offset: (4, b"ftypmsf1"), name: "High Efficiency Image Format Sequence", kind: IMAGE, ext_aliases: [".heifs"]);
+// The `msf1` structural brand likewise carries `.heic`; MIME stays
+// `image/heif-sequence`. `.heifs`/`.heif` remain extension aliases.
+mimetype!(HEIF_SEQ, IMAGE_HEIF_SEQUENCE, ".heic", offset: (4, b"ftypmsf1"), name: "High Efficiency Image Format Sequence", kind: IMAGE, ext_aliases: [".heifs", ".heif"]);
 
 mimetype!(HEIC_SEQ, IMAGE_HEIC_SEQUENCE, ".heic", offset: (4, b"ftyphevc"), name: "High Efficiency Image Container Sequence", kind: IMAGE, ext_aliases: [".heics"], parent: &HEIF);
 
@@ -1413,9 +1436,11 @@ mimetype!(SGI, IMAGE_X_SGI, ".sgi", [0x01, 0xDA], name: "Silicon Graphics Image"
 mimetype!(ILBM, IMAGE_X_ILBM, ".lbm", offset: (8, b"ILBM", prefix: (0, b"FORM")), name: "Interchange File Format", kind: IMAGE, aliases: [IMAGE_X_IFF], ext_aliases: [".iff", ".ilbm"]);
 
 // AVIF Sequence - Animated AVIF images
-mimetype!(AVIF_SEQUENCE, IMAGE_AVIF_SEQUENCE, ".avifs", offset: (4, b"ftypavis"), name: "AV1 Image File Format Sequence", kind: IMAGE);
+// AVIF sequence (`avis` brand): report the generic `image/avif` / `.avif` (matching file-type's
+// convention, which doesn't split sequences from single images), keeping `.avifs` as an alias.
+mimetype!(AVIF_SEQUENCE, IMAGE_AVIF, ".avif", offset: (4, b"ftypavis"), name: "AV1 Image File Format Sequence", kind: IMAGE, ext_aliases: [".avifs"]);
 
-mimetype!(AVIF_FORMAT, IMAGE_AVIF, ".avif", offset: (4, b"ftypavif"), name: "AV1 Image File Format", kind: IMAGE, children: [&AVIF_SEQUENCE]);
+mimetype!(AVIF_FORMAT, IMAGE_AVIF, ".avif", offset: (4, b"ftypavif"), name: "AV1 Image File Format", kind: IMAGE);
 
 // Quite OK Image Format - A fast, lossless image format.
 mimetype!(QOI, IMAGE_X_QOI, ".qoi", b"qoif", name: "Quite OK Image Format", kind: IMAGE);
@@ -1460,6 +1485,10 @@ static MP3: MimeType = MimeType::new(AUDIO_MPEG, "MPEG Audio Layer III", ".mp3",
 // MPEG-1/2 Audio Layer 2 - Predecessor to MP3, still used in broadcasting
 static MP2: MimeType =
     MimeType::new(AUDIO_MP2, "MPEG Audio Layer II", ".mp2", mp2, &[]).with_kind(MimeKind::AUDIO);
+
+// MPEG-1/2 Audio Layer 1
+static MP1: MimeType =
+    MimeType::new(AUDIO_MPEG, "MPEG Audio Layer I", ".mp1", mp1, &[]).with_kind(MimeKind::AUDIO);
 
 mimetype!(FLAC, AUDIO_FLAC, ".flac", b"fLaC", name: "Free Lossless Audio Codec", kind: AUDIO, aliases: [AUDIO_X_FLAC]);
 
@@ -1535,7 +1564,18 @@ static MTV: MimeType = MimeType::new(VIDEO_X_MTV, "MTV Video", ".mtv", riff_mtv,
     .with_kind(MimeKind::VIDEO)
     .with_parent(&RIFF);
 
-mimetype!(AIFF, AUDIO_AIFF, ".aiff", offset: (8, b"AIFF", prefix: (0, b"FORM")), name: "Audio Interchange File Format", kind: AUDIO, aliases: [AUDIO_X_AIFF], ext_aliases: [".aif"]);
+// AIFF and AIFF-C: IFF/FORM container. Bytes 0-3 are the "FORM" chunk id, bytes 4-7 are the
+// big-endian chunk size, and the form type at offset 8 is "AIFF" (AIFF) or "AIFC" (AIFF-C).
+static AIFF: MimeType = MimeType::new(
+    AUDIO_AIFF,
+    "Audio Interchange File Format",
+    ".aiff",
+    aiff,
+    &[],
+)
+.with_aliases(&[AUDIO_X_AIFF])
+.with_extension_aliases(&[".aif"])
+.with_kind(MimeKind::AUDIO);
 
 mimetype!(MIDI, AUDIO_MIDI, ".midi", b"MThd", name: "Musical Instrument Digital Interface", kind: AUDIO, aliases: [AUDIO_MID], ext_aliases: [".mid"]);
 
@@ -1564,9 +1604,13 @@ static OGG_MULTIPLEXED: MimeType = MimeType::new(
 .with_kind(MimeKind::VIDEO)
 .with_parent(&OGG);
 
-mimetype!(APE, AUDIO_APE, ".ape", b"MAC \x96\x0F\x00\x00\x34\x00\x00\x00\x18\x00\x00\x00\x90\xE3", name: "Monkey's Audio", kind: AUDIO);
+mimetype!(APE, AUDIO_APE, ".ape", b"MAC ", name: "Monkey's Audio", kind: AUDIO);
 
-mimetype!(MUSEPACK, AUDIO_MUSEPACK, ".mpc", b"MPCK", name: "Musepack Audio", kind: AUDIO);
+// Musepack SV8 ('MPCK') and SV4-SV7 ('MP+'). The 'MP+' magic is only 3 bytes,
+// so the version byte is validated in `musepack` to avoid false positives.
+static MUSEPACK: MimeType = MimeType::new(AUDIO_MUSEPACK, "Musepack Audio", ".mpc", musepack, &[])
+    .with_kind(MimeKind::AUDIO)
+    .with_extension_aliases(&[".mp+", ".mpp"]);
 
 mimetype!(AU, AUDIO_BASIC, ".au", b".snd", name: "Sun/NeXT Audio", kind: AUDIO, ext_aliases: [".snd"]);
 
@@ -1600,19 +1644,21 @@ mimetype!(M3U, AUDIO_X_MPEGURL, ".m3u", b"#EXTM3U", name: "M3U Playlist", kind: 
 
 mimetype!(AAC, AUDIO_AAC, ".aac", b"\xFF\xF1" | b"\xFF\xF9", name: "Advanced Audio Coding", kind: AUDIO);
 
-mimetype!(M4A, AUDIO_X_M4A, ".m4a", offset: (8, b"M4A ", prefix: (4, b"ftyp")), name: "MPEG-4 Audio", kind: AUDIO);
+// Match the 3-byte `M4A` brand prefix: real files use both `M4A ` (space) and `M4A\0` (NUL) as
+// the 4th byte, and no other brand shares the `M4A` prefix.
+mimetype!(M4A, AUDIO_X_M4A, ".m4a", offset: (4, b"ftypM4A"), name: "MPEG-4 Audio", kind: AUDIO);
 
 // Apple iTunes Audiobook - MP4-based audiobook format
-mimetype!(M4B, AUDIO_MP4, ".m4b", offset: (8, b"M4B ", prefix: (4, b"ftyp")), name: "Apple iTunes Audiobook", kind: AUDIO);
+mimetype!(M4B, AUDIO_MP4, ".m4b", offset: (4, b"ftypM4B"), name: "Apple iTunes Audiobook", kind: AUDIO);
 
 // Apple iTunes Protected Audio - DRM-protected MP4 audio
-mimetype!(M4P, AUDIO_MP4, ".m4p", offset: (8, b"M4P ", prefix: (4, b"ftyp")), name: "Apple iTunes Protected Audio", kind: AUDIO);
+mimetype!(M4P, AUDIO_MP4, ".m4p", offset: (4, b"ftypM4P"), name: "Apple iTunes Protected Audio", kind: AUDIO);
 
 // Flash MP4 Audio - Adobe Flash MP4 audio format
-mimetype!(F4A, AUDIO_MP4, ".f4a", offset: (8, b"F4A ", prefix: (4, b"ftyp")), name: "Flash MP4 Audio", kind: AUDIO);
+mimetype!(F4A, AUDIO_MP4, ".f4a", offset: (4, b"ftypF4A "), name: "Flash MP4 Audio", kind: AUDIO);
 
 // Flash MP4 Audiobook - Adobe Flash MP4 audiobook format
-mimetype!(F4B, AUDIO_MP4, ".f4b", offset: (8, b"F4B ", prefix: (4, b"ftyp")), name: "Flash MP4 Audiobook", kind: AUDIO);
+mimetype!(F4B, AUDIO_MP4, ".f4b", offset: (4, b"ftypF4B "), name: "Flash MP4 Audiobook", kind: AUDIO);
 
 // Merged AMP4 into MP4 below
 
@@ -1665,6 +1711,9 @@ static MP4: MimeType = MimeType::new(
         &HEIF_SEQ,
         &MJ2,
         &DVB,
+        &QUICKTIME, // ftyp + 'qt  ' brand
+        &MQV,       // ftyp + 'mqt ' brand
+        &CR3,       // ftyp + 'crx ' brand (Canon Raw 3)
     ],
 )
 .with_aliases(&[AUDIO_MP4, AUDIO_X_M4A, AUDIO_X_MP4A])
@@ -1710,11 +1759,12 @@ static MPEG: MimeType = MimeType::new(
     mpeg,
     &[&MPEG_VIDEO, &VOB],
 )
+.with_extension_aliases(&[".mpg"])
 .with_kind(MimeKind::VIDEO);
 
-mimetype!(QUICKTIME, VIDEO_QUICKTIME, ".mov", offset: (8, b"qt  ", prefix: (4, b"ftyp")), name: "QuickTime Video", kind: VIDEO);
+mimetype!(QUICKTIME, VIDEO_QUICKTIME, ".mov", offset: (4, b"ftypqt  "), name: "QuickTime Video", kind: VIDEO);
 
-mimetype!(MQV, VIDEO_QUICKTIME, ".mqv", offset: (8, b"mqt ", prefix: (4, b"ftyp")), name: "QuickTime MQV Video", kind: VIDEO);
+mimetype!(MQV, VIDEO_QUICKTIME, ".mqv", offset: (4, b"ftypmqt "), name: "QuickTime MQV Video", kind: VIDEO);
 
 mimetype!(FLV, VIDEO_X_FLV, ".flv", b"FLV", name: "Flash Video", kind: VIDEO);
 
@@ -1747,13 +1797,13 @@ static WMV: MimeType = MimeType::new(VIDEO_X_MS_WMV, "Windows Media Video", ".wm
     .with_kind(MimeKind::VIDEO)
     .with_parent(&ASF);
 
-mimetype!(M4V, VIDEO_X_M4V, ".m4v", offset: (8, b"M4V ", prefix: (4, b"ftyp")), name: "iTunes Video", kind: VIDEO);
+mimetype!(M4V, VIDEO_X_M4V, ".m4v", offset: (4, b"ftypM4V "), name: "iTunes Video", kind: VIDEO);
 
 // Flash MP4 Video - Adobe Flash MP4 video format
-mimetype!(F4V, VIDEO_MP4, ".f4v", offset: (8, b"F4V ", prefix: (4, b"ftyp")), name: "Flash MP4 Video", kind: VIDEO);
+mimetype!(F4V, VIDEO_MP4, ".f4v", offset: (4, b"ftypF4V "), name: "Flash MP4 Video", kind: VIDEO);
 
 // Flash MP4 Protected Video - Adobe Flash MP4 protected video format
-mimetype!(F4P, VIDEO_MP4, ".f4p", offset: (8, b"F4P ", prefix: (4, b"ftyp")), name: "Flash MP4 Protected Video", kind: VIDEO);
+mimetype!(F4P, VIDEO_MP4, ".f4p", offset: (4, b"ftypF4P "), name: "Flash MP4 Protected Video", kind: VIDEO);
 
 // RealMedia Variable Bitrate - Child of RealMedia
 // RMVB is a variant of RealMedia with variable bitrate encoding
@@ -1876,8 +1926,15 @@ static EMPTY: MimeType = MimeType::new(
 // MLA - Multi Layer Archive
 mimetype!(MLA, APPLICATION_X_MLA, ".mla", b"MLA\x00", name: "Multi Layer Archive", kind: ARCHIVE);
 
-// PMA - PMarc (LZH variant)
-mimetype!(PMA, APPLICATION_X_LZH_COMPRESSED, ".pma", b"-pm0-" | b"-pm1-" | b"-pm2-", name: "PMarc Archive", kind: ARCHIVE);
+// PMA - PMarc (LZH variant); `-pmN-` signature at offset 2
+static PMA: MimeType = MimeType::new(
+    APPLICATION_X_LZH_COMPRESSED,
+    "PMarc Archive",
+    ".pma",
+    pma,
+    &[],
+)
+.with_kind(MimeKind::ARCHIVE);
 
 // XCI - Nintendo Switch ROM (NX Card Image)
 mimetype!(XCI, APPLICATION_X_NINTENDO_SWITCH_ROM, ".xci", b"HEAD", name: "Nintendo Switch ROM", kind: APPLICATION);
@@ -2906,11 +2963,19 @@ mimetype!(WPL, APPLICATION_VND_MS_WPL, ".wpl", b"<?wpl ", name: "Windows Media P
 // APPLE FORMATS
 // ============================================================================
 
-// Apple Disk Image
-mimetype!(DMG, APPLICATION_X_APPLE_DISKIMAGE, ".dmg", b"koly", name: "Apple Disk Image", kind: ARCHIVE);
+// Apple Disk Image (UDIF): identified by the 512-byte "koly" trailer at the end of the file.
+// NOTE: only detectable when the full file is read (the trailer is at the end, not the header).
+static DMG: MimeType = MimeType::new(
+    APPLICATION_X_APPLE_DISKIMAGE,
+    "Apple Disk Image",
+    ".dmg",
+    dmg,
+    &[],
+)
+.with_kind(MimeKind::ARCHIVE);
 
 // macOS Alias File - Finder alias files
-mimetype!(MACOS_ALIAS, APPLICATION_X_APPLE_ALIAS, "", b"book\x00\x00\x00\x00mark\x00\x00\x00\x00", name: "macOS Alias File", kind: APPLICATION);
+mimetype!(MACOS_ALIAS, APPLICATION_X_APPLE_ALIAS, ".alias", b"book\x00\x00\x00\x00mark\x00\x00\x00\x00", name: "macOS Alias File", kind: APPLICATION);
 
 // ============================================================================
 // SEGA GAME ROM FORMATS
@@ -3139,6 +3204,20 @@ static DBASE: MimeType = MimeType::new(
 .with_aliases(&[APPLICATION_X_DBASE])
 .with_kind(MimeKind::DATABASE);
 
+// SPSS SAV Data File - starts with "$FL2" or "$FL3"
+static SPSS: MimeType = MimeType::new(APPLICATION_X_SPSS_SAV, "SPSS Data File", ".sav", spss, &[])
+    .with_kind(MimeKind::DATABASE);
+
+// JMP Statistics Data File - little-endian or big-endian signature
+static JMP: MimeType = MimeType::new(
+    APPLICATION_X_JMP_DATA,
+    "JMP Statistics Data File",
+    ".jmp",
+    jmp,
+    &[],
+)
+.with_kind(MimeKind::DATABASE);
+
 // ============================================================================
 // ADDITIONAL IMAGE FORMATS
 // ============================================================================
@@ -3246,13 +3325,13 @@ static TTF: MimeType = MimeType::new(FONT_TTF, "TrueType Font", ".ttf", ttf, &[]
 /// Known TrueType/OpenType/Apple-AAT table tags, kept sorted for binary search.
 static SFNT_TABLE_TAGS: &[[u8; 4]] = &[
     *b"BASE", *b"CBDT", *b"CBLC", *b"CFF ", *b"CFF2", *b"COLR", *b"CPAL", *b"DSIG", *b"EBDT",
-    *b"EBLC", *b"EBSC", *b"GDEF", *b"GPOS", *b"GSUB", *b"HVAR", *b"JSTF", *b"LTSH", *b"MATH",
-    *b"MERG", *b"MVAR", *b"OS/2", *b"PCLT", *b"STAT", *b"SVG ", *b"VDMX", *b"VORG", *b"VVAR",
-    *b"acnt", *b"ankr", *b"avar", *b"bdat", *b"bhed", *b"bloc", *b"bsln", *b"cmap", *b"cvar",
-    *b"cvt ", *b"fdsc", *b"feat", *b"fmtx", *b"fond", *b"fpgm", *b"fvar", *b"gasp", *b"gcid",
-    *b"glyf", *b"gvar", *b"hdmx", *b"head", *b"hhea", *b"hmtx", *b"hvgl", *b"hvpm", *b"just",
-    *b"kern", *b"kerx", *b"lcar", *b"loca", *b"ltag", *b"maxp", *b"meta", *b"mort", *b"morx",
-    *b"name", *b"opbd", *b"post", *b"prep", *b"sbix", *b"vhea", *b"vmtx",
+    *b"EBLC", *b"EBSC", *b"FFTM", *b"GDEF", *b"GPOS", *b"GSUB", *b"HVAR", *b"JSTF", *b"LTSH",
+    *b"MATH", *b"MERG", *b"MVAR", *b"OS/2", *b"PCLT", *b"STAT", *b"SVG ", *b"VDMX", *b"VORG",
+    *b"VVAR", *b"acnt", *b"ankr", *b"avar", *b"bdat", *b"bhed", *b"bloc", *b"bsln", *b"cmap",
+    *b"cvar", *b"cvt ", *b"fdsc", *b"feat", *b"fmtx", *b"fond", *b"fpgm", *b"fvar", *b"gasp",
+    *b"gcid", *b"glyf", *b"gvar", *b"hdmx", *b"head", *b"hhea", *b"hmtx", *b"hvgl", *b"hvpm",
+    *b"just", *b"kern", *b"kerx", *b"lcar", *b"loca", *b"ltag", *b"maxp", *b"meta", *b"mort",
+    *b"morx", *b"name", *b"opbd", *b"post", *b"prep", *b"sbix", *b"vhea", *b"vmtx",
 ];
 
 /// Detect sfnt-housed fonts (TrueType outlines). The 0x00010000, "true", and
@@ -3274,7 +3353,15 @@ mimetype!(WOFF2, FONT_WOFF2, ".woff2", b"wOF2", name: "Web Open Font Format 2", 
 
 mimetype!(OTF, FONT_OTF, ".otf", b"OTTO", name: "OpenType Font", kind: FONT);
 
-mimetype!(EOT, APPLICATION_VND_MS_FONTOBJECT, ".eot", [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, b'L', b'P'], name: "Embedded OpenType Font", kind: FONT);
+// Embedded OpenType Font: "LP" magic at offset 34, version (0x00010000/0x00020001/0x00020002) at offset 8
+static EOT: MimeType = MimeType::new(
+    APPLICATION_VND_MS_FONTOBJECT,
+    "Embedded OpenType Font",
+    ".eot",
+    eot,
+    &[],
+)
+.with_kind(MimeKind::FONT);
 
 mimetype!(TTC, FONT_COLLECTION, ".ttc", b"ttcf", name: "TrueType Collection", kind: FONT);
 
@@ -3314,14 +3401,7 @@ mimetype!(P7S, APPLICATION_PKCS7_SIGNATURE, ".p7s", b"-----BEGIN PKCS7-----", na
 
 mimetype!(DCM, APPLICATION_DICOM, ".dcm", offset: (128, b"DICM"), name: "DICOM Medical Image", kind: IMAGE);
 
-static MOBI: MimeType = MimeType::new(
-    APPLICATION_X_MOBIPOCKET_EBOOK,
-    "Mobipocket Ebook",
-    ".mobi",
-    mobi,
-    &[],
-)
-.with_kind(MimeKind::DOCUMENT);
+mimetype!(MOBI, APPLICATION_X_MOBIPOCKET_EBOOK, ".mobi", offset: (60, b"BOOKMOBI"), name: "Mobipocket Ebook", kind: DOCUMENT);
 
 mimetype!(LIT, APPLICATION_X_MS_READER, ".lit", b"ITOLITLS", name: "Microsoft Reader eBook", kind: DOCUMENT);
 
@@ -3355,7 +3435,15 @@ mimetype!(ACB, APPLICATION_VND_ADOBE_ACB, ".acb", b"8BCB", name: "Adobe Color Bo
 mimetype!(CSH, APPLICATION_VND_ADOBE_PHOTOSHOP_SHAPES, ".csh", b"cust", name: "Photoshop Custom Shapes", kind: APPLICATION);
 
 // Meta Information Encapsulation - Phil Harvey's metadata container format
-mimetype!(MIE, APPLICATION_X_MIE, ".mie", [0x7E, 0x10, 0xD4, 0x40, 0x5E, 0x78], name: "Meta Information Encapsulation", kind: APPLICATION);
+// Byte 0: 0x7E, byte 1: 0x10 (big-endian) or 0x18 (little-endian), byte 2: 0x04, bytes 4-7: "0MIE"
+static MIE: MimeType = MimeType::new(
+    APPLICATION_X_MIE,
+    "Meta Information Encapsulation",
+    ".mie",
+    mie,
+    &[],
+)
+.with_kind(MimeKind::APPLICATION);
 
 static PGP_NET_SHARE: MimeType = MimeType::new(
     APPLICATION_X_PGP_NET_SHARE,
@@ -4471,6 +4559,17 @@ static THREEDXML: MimeType = MimeType::new(MODEL_VND_3DXML, "3DXML", ".3dxml", t
     .with_kind(MimeKind::MODEL)
     .with_parent(&ZIP);
 
+// 3MF - 3D Manufacturing Format (OPC/ZIP container identified by 3D/ model directory)
+static THREEMF_ZIP: MimeType = MimeType::new(
+    APPLICATION_VND_MS_PACKAGE_3DMANUFACTURING_3DMODEL_XML,
+    "3D Manufacturing Format",
+    ".3mf",
+    threemf_zip,
+    &[],
+)
+.with_kind(MimeKind::MODEL)
+.with_parent(&ZIP);
+
 // ============================================================================
 // VIRTUAL MACHINE & DISK IMAGE FORMATS & FILE SYSTEM
 // ============================================================================
@@ -4792,12 +4891,24 @@ fn mp4_precise(input: &[u8]) -> bool {
     }
 
     let box_size = u32::from_be_bytes([input[0], input[1], input[2], input[3]]) as usize;
-    if input.len() < box_size || box_size % 4 != 0 || box_size < 12 {
+    // Sanity-check the ftyp box size field, but don't require the whole box to be buffered:
+    // the compatible-brands list can push the box past what we've read (or past a small file),
+    // and we only need the major brand at bytes 8..12 to identify the format.
+    if box_size % 4 != 0 || box_size < 12 {
         return false;
     }
 
     // Detect all ISOBMFF files (MP4, 3GPP, etc.) by checking for ftyp box
     &input[4..8] == b"ftyp"
+}
+
+fn musepack(input: &[u8]) -> bool {
+    // Musepack SV8 uses the 'MPCK' magic.
+    // Musepack SV4-SV7 use the 'MP+' magic followed by a version byte whose low
+    // nibble is the stream version (4..=7)
+    input.len() >= 4
+        && (input.starts_with(b"MPCK")
+            || (input.starts_with(b"MP+") && matches!(input[3] & 0x0F, 4..=7)))
 }
 
 fn ogg_audio(input: &[u8]) -> bool {
@@ -4843,16 +4954,8 @@ fn ogg_multiplexed(_input: &[u8]) -> bool {
     false
 }
 
-fn mobi(input: &[u8]) -> bool {
-    input.len() >= 68 && &input[60..68] == b"BOOKMOBI"
-}
-
 fn heic(input: &[u8]) -> bool {
     input.len() >= 12 && (&input[4..12] == b"ftypheic" || &input[4..12] == b"ftypheix")
-}
-
-fn heif(input: &[u8]) -> bool {
-    input.len() >= 12 && &input[4..12] == b"ftypmif1"
 }
 
 fn cpio(input: &[u8]) -> bool {
@@ -4933,34 +5036,122 @@ fn wpd(input: &[u8]) -> bool {
 ///
 /// The enhanced algorithm reduces false positives while maintaining
 /// compatibility with various MP3 encoding methods.
-fn mp3(input: &[u8]) -> bool {
-    if input.len() < 3 {
+/// Bitrate in kbps for an MPEG audio frame, indexed by bitrate field (1..=14).
+/// Returns `None` for the free-format (0) and invalid (15) indices — a bare
+/// sync word is far too common in arbitrary data, so we only treat a frame as
+/// MPEG audio when the bitrate is a concrete, table-valid value.
+fn mpeg_bitrate_kbps(is_v1: bool, layer: u8, index: u8) -> Option<u16> {
+    // Index 0 = free format, 15 = invalid; both rejected.
+    const V1_L1: [u16; 16] = [
+        0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 0,
+    ];
+    const V1_L2: [u16; 16] = [
+        0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384, 0,
+    ];
+    const V1_L3: [u16; 16] = [
+        0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0,
+    ];
+    const V2_L1: [u16; 16] = [
+        0, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256, 0,
+    ];
+    const V2_L23: [u16; 16] = [
+        0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 0,
+    ];
+    let table = match (is_v1, layer) {
+        (true, 1) => &V1_L1,
+        (true, 2) => &V1_L2,
+        (true, _) => &V1_L3,
+        (false, 1) => &V2_L1,
+        (false, _) => &V2_L23,
+    };
+    match table[index as usize] {
+        0 => None,
+        kbps => Some(kbps),
+    }
+}
+
+/// Sampling rate (Hz) for an MPEG audio frame. `sample_index` must be 0..=2
+/// (index 3 is reserved and rejected by the caller).
+fn mpeg_sample_rate(version_id: u8, sample_index: u8) -> u32 {
+    let rates = match version_id {
+        0x03 => [44100, 48000, 32000], // MPEG-1
+        0x02 => [22050, 24000, 16000], // MPEG-2
+        _ => [11025, 12000, 8000],     // MPEG-2.5
+    };
+    rates[sample_index as usize]
+}
+
+/// Parse a 4-byte MPEG audio frame header at the start of `input`. Returns the
+/// `(layer, frame_len)` when every field is valid: 11-bit sync, non-reserved
+/// version, non-reserved layer, table-valid bitrate, and non-reserved sample
+/// rate. `layer` is 1, 2 or 3; `frame_len` is the total frame size in bytes.
+///
+/// Header field layout reference:
+/// <http://www.mp3-tech.org/programmer/frame_header.html>
+fn mpeg_frame_header(input: &[u8]) -> Option<(u8, usize)> {
+    if input.len() < 4 {
+        return None;
+    }
+    // 11-bit frame sync: byte0 all 1s, byte1 top 3 bits all 1s.
+    if input[0] != 0xFF || (input[1] & 0xE0) != 0xE0 {
+        return None;
+    }
+    let version_id = (input[1] >> 3) & 0x03; // 00=2.5, 01=reserved, 10=v2, 11=v1
+    let layer_bits = (input[1] >> 1) & 0x03; // 00=reserved, 01=L3, 10=L2, 11=L1
+    if version_id == 0x01 || layer_bits == 0x00 {
+        return None;
+    }
+    let layer = 4 - layer_bits; // 11->1, 10->2, 01->3
+    let bitrate_index = (input[2] >> 4) & 0x0F;
+    let sample_index = (input[2] >> 2) & 0x03;
+    if sample_index == 0x03 {
+        return None; // reserved sample rate
+    }
+    let is_v1 = version_id == 0x03;
+    let bitrate = mpeg_bitrate_kbps(is_v1, layer, bitrate_index)? as u32 * 1000;
+    let sample_rate = mpeg_sample_rate(version_id, sample_index);
+    let padding = ((input[2] >> 1) & 0x01) as usize;
+
+    let frame_len = if layer == 1 {
+        (12 * bitrate / sample_rate) as usize * 4 + padding * 4
+    } else {
+        // Layer III on MPEG-2/2.5 carries 576 samples/frame instead of 1152.
+        let coef = if layer == 3 && !is_v1 { 72 } else { 144 };
+        (coef * bitrate / sample_rate) as usize + padding
+    };
+    if frame_len < 4 {
+        return None;
+    }
+    Some((layer, frame_len))
+}
+
+/// True when `input` begins with a valid MPEG audio frame of `want_layer`
+/// immediately followed by a second frame of the same version and layer.
+fn is_mpeg_audio_layer(input: &[u8], want_layer: u8) -> bool {
+    let Some((layer, frame_len)) = mpeg_frame_header(input) else {
+        return false;
+    };
+    if layer != want_layer || input.len() < frame_len + 4 {
         return false;
     }
-
-    if input.starts_with(b"ID3") {
-        return true;
+    // Version (0x18) + layer (0x06) bits of byte 1 must match across frames.
+    const VL_MASK: u8 = 0x1E;
+    match mpeg_frame_header(&input[frame_len..]) {
+        Some((next_layer, _)) => {
+            next_layer == want_layer && (input[frame_len + 1] & VL_MASK) == (input[1] & VL_MASK)
+        }
+        None => false,
     }
+}
 
-    // Check for MPEG audio frame headers
-    let header = u16::from_be_bytes([input[0], input[1]]) & 0xFFFE;
-    matches!(header, 0xFFFA | 0xFFF2 | 0xFFE2)
+fn mp3(input: &[u8]) -> bool {
+    // MPEG Audio Layer III, or an ID3v2 tag (how real files usually start).
+    input.starts_with(b"ID3") || is_mpeg_audio_layer(input, 3)
 }
 
 fn mp2(input: &[u8]) -> bool {
-    // MP2 (MPEG-1/2 Audio Layer 2) detection
-    // Starts with MPEG frame sync pattern 0xFFE or 0xFFF
-    // Layer bits should indicate Layer II (01 in bits 17-18)
-    if input.len() < 2 {
-        return false;
-    }
-
-    // Check for MPEG sync word (11 bits set) and Layer II indicator
-    let header = u16::from_be_bytes([input[0], input[1]]);
-    let sync = (header & 0xFFE0) == 0xFFE0; // Check 11-bit sync word
-    let layer = (header & 0x0006) >> 1; // Extract layer bits
-
-    sync && layer == 0x02 // Layer II = 10 binary = 2 decimal
+    // MPEG Audio Layer II.
+    is_mpeg_audio_layer(input, 2)
 }
 
 // WEBM and MKV are children of EBML - parent already validated magic bytes
@@ -5540,21 +5731,149 @@ fn xap(input: &[u8]) -> bool {
 }
 
 fn xpi(input: &[u8]) -> bool {
-    // Mozilla XPInstall (Firefox/Thunderbird extension) - check for install.rdf or manifest.json
+    // Mozilla XPInstall (Firefox/Thunderbird extension)
     zip_has(
         input,
-        &[(b"install.rdf", false), (b"manifest.json", false)],
+        &[
+            (b"META-INF/mozilla.rsa", false),
+            (b"install.rdf", false),
+            (b"manifest.json", false),
+        ],
         1,
     )
 }
 
 fn xps(input: &[u8]) -> bool {
-    // OpenXPS (XML Paper Specification) - check for _rels/.rels or [Content_Types].xml
+    // OpenXPS / XPS (XML Paper Specification) is an OPC/ZIP package. Matching only on the
+    // generic OPC entries (`_rels/.rels` / `[Content_Types].xml`) is too eager: it also
+    // captures other OPC containers such as Visio VSDX/VSTX whose more specific `visio/`
+    // marker lives beyond the read limit. Require the mandatory XPS FixedDocumentSequence
+    // part so only real XPS documents match.
     zip_has(
         input,
-        &[(b"_rels/.rels", false), (b"[Content_Types].xml", false)],
-        1,
+        &[
+            (b"FixedDocumentSequence.fdseq", false),
+            (b"FixedDocSeq.fdseq", false),
+        ],
+        100,
     )
+}
+
+fn threemf_zip(input: &[u8]) -> bool {
+    zip_has(input, &[(b"3D/", true)], 100)
+}
+
+fn eps(input: &[u8]) -> bool {
+    // Binary EPS: TIFF/WMF preview wrapper
+    if input.starts_with(&[0xC5, 0xD0, 0xD3, 0xC6]) {
+        return true;
+    }
+    // Text EPS: %!PS-Adobe- followed by " EPSF-" at offset 14
+    input.len() >= 20 && input.starts_with(b"%!PS-Adobe-") && input[14..].starts_with(b" EPSF-")
+}
+
+fn lha(input: &[u8]) -> bool {
+    // LHA/LZH: the compression-method signature `-lhN-` sits at offset 2 (bytes 0-1 are
+    // the header size + checksum). The method id is a single character (0-7 for the common
+    // methods, `d` for a directory entry, etc.) framed by dashes, e.g. `-lh0-`, `-lh5-`,
+    // `-lhd-`. Require the full 5-byte frame — the leading `-lh`, a method byte, and the
+    // trailing `-` — so partial `-lh` matches don't false-positive.
+    input.len() >= 7 && &input[2..5] == b"-lh" && input[6] == b'-'
+}
+
+fn lzs(input: &[u8]) -> bool {
+    // LArc/LZS shares the LHA header layout: bytes 0-1 are the header size + checksum, and the
+    // `-lzN-` compression-method signature sits at offset 2. Methods are -lz4-, -lz5- and -lzs-.
+    // Require the full 5-byte frame (leading `-lz`, method byte, trailing `-`) at offset 2.
+    input.len() >= 7 && &input[2..5] == b"-lz" && input[6] == b'-'
+}
+
+fn pma(input: &[u8]) -> bool {
+    // PMarc (an LZH variant) also shares the LHA header layout, with the `-pmN-` method signature
+    // at offset 2 (bytes 0-1 are the header size + checksum). Methods are -pm0-, -pm1- and -pm2-.
+    input.len() >= 7 && &input[2..5] == b"-pm" && input[6] == b'-'
+}
+
+fn aiff(input: &[u8]) -> bool {
+    // AIFF and AIFF-C share the IFF/FORM layout: the "FORM" chunk id at offset 0, a big-endian
+    // chunk size at offset 4, and the form type at offset 8 ("AIFF" for AIFF, "AIFC" for AIFF-C).
+    input.len() >= 12
+        && input.starts_with(b"FORM")
+        && (input[8..12] == *b"AIFF" || input[8..12] == *b"AIFC")
+}
+
+fn eot(input: &[u8]) -> bool {
+    // EOT: the 16-bit MagicNumber 0x504C ("LP" little-endian) sits at offset 34, and the
+    // 32-bit Version field at offset 8 is one of the three defined values (stored LE):
+    // 0x00010000 (v1), 0x00020001 and 0x00020002 (v2).
+    input.len() >= 36
+        && input[34..36] == *b"LP"
+        && matches!(
+            input[8..12],
+            [0x00, 0x00, 0x01, 0x00] | [0x01, 0x00, 0x02, 0x00] | [0x02, 0x00, 0x02, 0x00]
+        )
+}
+
+fn dmg(input: &[u8]) -> bool {
+    // Apple Disk Image (UDIF): the "koly" trailer is a 512-byte block at the END of the
+    // file, so its "koly" signature sits at offset `file_size - 512`.
+    //
+    // NOTE: this only detects DMGs when `input` is the *whole* file. Detection from a
+    // header-only prefix (a truncated read) will miss the trailer and fail to match.
+    input.len() >= 512 && &input[input.len() - 512..input.len() - 508] == b"koly"
+}
+
+fn mie(input: &[u8]) -> bool {
+    // MIE: byte 0 = 0x7E, byte 1 = 0x10 (BE) or 0x18 (LE), byte 2 = 0x04, bytes 4-7 = "0MIE"
+    input.len() >= 8
+        && input[0] == 0x7E
+        && matches!(input[1], 0x10 | 0x18)
+        && input[2] == 0x04
+        && &input[4..8] == b"0MIE"
+}
+
+fn spss(input: &[u8]) -> bool {
+    input.starts_with(b"$FL2") || input.starts_with(b"$FL3")
+}
+
+fn jmp(input: &[u8]) -> bool {
+    // JMP: little-endian (FF FF 00 00 07 00 00 00 04 00 00 00 01 00 01 00)
+    //      or big-endian (00 00 FF FF 00 00 00 07 00 00 00 04 00 01 00 01)
+    if input.len() < 16 {
+        return false;
+    }
+    let le = [
+        0xFF, 0xFF, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01,
+        0x00,
+    ];
+    let be = [
+        0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x04, 0x00, 0x01, 0x00,
+        0x01,
+    ];
+    input[..16] == le || input[..16] == be
+}
+
+fn asar(input: &[u8]) -> bool {
+    // Electron ASAR: Pickle header 04 00 00 00 at offset 0,
+    // followed by JSON index starting with {"files": at offset 16.
+    if input.len() < 20 {
+        return false;
+    }
+    if !input.starts_with(&[0x04, 0x00, 0x00, 0x00]) {
+        return false;
+    }
+    // Bytes 4-15 are Pickle size fields; JSON starts at offset 16
+    let json_start = &input[16..];
+    json_start.starts_with(b"{\"files\"") || json_start.starts_with(b"{ \"files\"")
+}
+
+fn mp1(input: &[u8]) -> bool {
+    // 0xFF 0xFE parses as a valid Layer I header; defer to UTF-16 LE BOM instead.
+    if input.len() >= 2 && input[1] == 0xFE {
+        return false;
+    }
+    // MPEG Audio Layer I.
+    is_mpeg_audio_layer(input, 1)
 }
 
 fn sda(input: &[u8]) -> bool {

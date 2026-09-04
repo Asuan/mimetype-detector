@@ -231,6 +231,9 @@ pub const APPLICATION_X_RZIP: &str = "application/x-rzip";
 /// LRZIP Archive (long-range ZIP)
 pub const APPLICATION_X_LRZIP: &str = "application/x-lrzip";
 
+/// Electron ASAR Archive
+pub const APPLICATION_X_ASAR: &str = "application/x-asar";
+
 // ============================================================================
 // IMAGE FORMATS
 // ============================================================================
@@ -1050,6 +1053,12 @@ pub const APPLICATION_X_MSACCESS: &str = "application/x-msaccess";
 
 /// dBase Database File
 pub const APPLICATION_X_DBF: &str = "application/x-dbf";
+
+/// SPSS SAV Data File
+pub const APPLICATION_X_SPSS_SAV: &str = "application/x-spss-sav";
+
+/// JMP Statistics Data File
+pub const APPLICATION_X_JMP_DATA: &str = "application/x-jmp-data";
 
 /// Lotus 1-2-3 Spreadsheet
 pub const APPLICATION_VND_LOTUS_1_2_3: &str = "application/vnd.lotus-1-2-3";

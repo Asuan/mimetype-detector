@@ -1,6 +1,6 @@
 # Supported File Formats
 
-This document provides a comprehensive listing of all 568 file formats supported by the mimetype-detector library.
+This document provides a comprehensive listing of all 572 file formats supported by the mimetype-detector library.
 
 ## All Supported Formats (Alphabetical)
 
@@ -26,6 +26,7 @@ This document provides a comprehensive listing of all 568 file formats supported
 | Adobe Color Book | Adobe Color Book | `application/vnd.adobe.acb` | `.acb` | | Photoshop color book (`8BCB` magic) |
 | Adobe XMP Sidecar | Adobe XMP Sidecar | `application/x-xmp` | `.xmp` | | RDF/XML metadata (`<?xpacket` or `<x:xmpmeta>` markers) |
 | After Effects Project XML | After Effects Project XML | `application/vnd.adobe.aftereffects.project+xml` | `.aepx` | | XML root `<AfterEffectsProject>` |
+| ASAR | Electron ASAR Archive | `application/x-asar` | `.asar` | | Electron archive (Pickle header + `files` index) |
 | Audition Session | Audition Session | `application/vnd.adobe.audition.sesx+xml` | `.sesx` | | XML root `<sesx>` |
 | Substance Archive | Substance Archive | `application/vnd.allegorithmic.sbsar` | `.sbsar` | | ZIP-based with `*.sbsasm` entries (Adobe Substance 3D) |
 | Substance Smart Material | Substance Smart Material | `application/vnd.allegorithmic.spsm` | `.spsm` | | ZIP-based Substance Painter material |
@@ -47,7 +48,7 @@ This document provides a comprehensive listing of all 568 file formats supported
 | APNG | Animated Portable Network Graphics | `image/vnd.mozilla.apng` | `.apng` | | Animated PNG |
 | AppImage | AppImage | `application/x-appimage` | `.appimage` | | Linux application packaging format |
 | Apple Icon | Apple Icon Image | `image/x-icns` | `.icns` | | |
-| AR | Unix Archive | `application/x-archive` | `.a`, `.deb` | `application/x-unix-archive` | |
+| AR | Unix Archive | `application/x-archive` | `.a`, `.ar`, `.deb` | `application/x-unix-archive` | |
 | ARJ | ARJ Archive | `application/arj` | `.arj` | `application/x-arj` | Legacy DOS compression |
 | ASF/WMV | Microsoft Digital Video Recording | `video/x-ms-asf` | `.asf` | `video/asf`, `video/x-ms-wmv` | Advanced Systems Format |
 | ASTC | Adaptive Scalable Texture Compression | `image/x-astc` | `.astc` | | ARM Texture Compression |
@@ -67,7 +68,7 @@ This document provides a comprehensive listing of all 568 file formats supported
 | AutoCAD DXF Binary | Drawing Exchange Format Binary | `application/x-dxf` | `.dxf` | | Drawing Exchange Format (Binary) |
 | AVI | Audio Video Interleave | `video/x-msvideo` | `.avi` | `video/avi`, `video/msvideo` | Audio Video Interleave |
 | AVIF | AV1 Image File Format | `image/avif` | `.avif` | | AV1 Image File Format |
-| AVIF Sequence | AV1 Image File Format Sequence | `image/avif-sequence` | `.avifs` | | Animated AVIF images |
+| AVIF Sequence | AV1 Image File Format Sequence | `image/avif` | `.avif`, `.avifs` | | Animated AVIF images (`avis` brand) |
 | BitTorrent | BitTorrent Metadata | `application/x-bittorrent` | `.torrent` | | Torrent metadata |
 | Blender | Blender 3D | `application/x-blender` | `.blend` | | 3D modeling |
 | BMFont Binary | BMFont Binary | `application/x-angelcode-bmfont` | `.fnt` | | AngelCode bitmap font generator binary format |
@@ -182,8 +183,8 @@ This document provides a comprehensive listing of all 568 file formats supported
 | HDF5 | Hierarchical Data Format 5 | `application/x-hdf5` | `.hdf5`, `.h5` | | Hierarchical Data Format version 5 |
 | HEIC | High Efficiency Image Container | `image/heic` | `.heic` | | High Efficiency Image Container |
 | HEIC Sequence | High Efficiency Image Container Sequence | `image/heic-sequence` | `.heic`, `.heics` | | |
-| HEIF | High Efficiency Image Format | `image/heif` | `.heif` | | High Efficiency Image Format |
-| HEIF Sequence | High Efficiency Image Format Sequence | `image/heif-sequence` | `.heif`, `.heifs` | | |
+| HEIF | High Efficiency Image Format | `image/heif` | `.heic`, `.heif` | | High Efficiency Image Format |
+| HEIF Sequence | High Efficiency Image Format Sequence | `image/heif-sequence` | `.heic`, `.heifs`, `.heif` | | |
 | HTML | HyperText Markup Language | `text/html; charset=utf-8` | `.html`, `.htm` | | Case-insensitive tag detection |
 | HTML (UTF-16) | HyperText Markup Language (UTF-16 LE) | `text/html; charset=utf-16` | `.html` | | UTF-16 BE/LE variants |
 | HTML Help | HTML Help | `application/vnd.ms-htmlhelp` | `.chm` | | |
@@ -205,6 +206,7 @@ This document provides a comprehensive listing of all 568 file formats supported
 | Java Class | Java Class File | `application/x-java-applet; charset=binary` | `.class` | `application/x-java-applet` | |
 | Java Keystore | Java Keystore | `application/x-java-keystore` | `.jks` | | Java keystore |
 | JavaScript | JavaScript | `text/javascript` | `.js` | `application/javascript` | |
+| JMP | JMP Statistics Data File | `application/x-jmp-data` | `.jmp` | | JMP statistics data (LE/BE signature) |
 | JNG | JPEG Network Graphics | `image/x-jng` | `.jng` | | JPEG Network Graphics (JPEG with PNG-style chunks) |
 | JPEG | Joint Photographic Experts Group | `image/jpeg` | `.jpg`, `.jpeg`, `.jpe`, `.jif`, `.jfif`, `.jfi` | | |
 | JPEG 2000 | JPEG 2000 Image | `image/jp2` | `.jp2` | | |
@@ -224,9 +226,9 @@ This document provides a comprehensive listing of all 568 file formats supported
 | KMZ | KMZ | `application/vnd.google-earth.kmz` | `.kmz` | | Zipped KML |
 | Kodak DCR | Kodak DCR Raw Image | `image/x-kodak-dcr` | `.dcr` | | Kodak RAW format |
 | Kodak KDC | Kodak KDC Raw Image | `image/x-kodak-kdc` | `.kdc` | | Kodak RAW format |
-| LArc/LZS | PMarc Archive | `application/x-lzh-compressed` | `.lzs` | | Legacy Japanese compression (similar to LZH) |
+| LArc/LZS | LArc Archive | `application/x-lzh-compressed` | `.lzs` | | Legacy Japanese compression (similar to LZH) |
 | LaTeX | LaTeX Document | `text/x-tex` | `.tex` | | LaTeX document source |
-| LHA/LZH | PMarc Archive | `application/x-lzh-compressed` | `.lzh` | `application/x-lha` | Japanese compression |
+| LHA/LZH | LHA Archive | `application/x-lzh-compressed` | `.lzh` | | Japanese compression |
 | LLVM Bitcode | LLVM Bitcode | `application/x-llvm` | `.bc` | | LLVM compiler intermediate representation |
 | Lotus 1-2-3 v1 | Lotus 1-2-3 | `application/vnd.lotus-1-2-3` | `.wk1` | | Legacy spreadsheet (version 1) |
 | Lotus 1-2-3 v2/v9 | Lotus 1-2-3 | `application/vnd.lotus-1-2-3` | `.123` | | Legacy spreadsheet |
@@ -244,7 +246,7 @@ This document provides a comprehensive listing of all 568 file formats supported
 | M3U | M3U Playlist | `audio/x-mpegurl` | `.m3u`, `.m3u8` | `audio/mpegurl` | |
 | M4A | MPEG-4 Audio | `audio/x-m4a` | `.m4a` | | |
 | M4V | iTunes Video | `video/x-m4v` | `.m4v` | | iTunes Video |
-| macOS Alias | macOS Alias File | `application/x-apple-alias` | | | macOS Finder alias file |
+| macOS Alias | macOS Alias File | `application/x-apple-alias` | `.alias` | | macOS Finder alias file |
 | Mach-O | Mach-O | `application/x-mach-binary` | `.macho` | | macOS/iOS executable |
 | MagicaVoxel | MagicaVoxel | `model/x-vox` | `.vox` | | Voxel model format |
 | MARC | MARC | `application/marc` | `.mrc` | | Library records |
@@ -269,6 +271,7 @@ This document provides a comprehensive listing of all 568 file formats supported
 | Motion JPEG 2000 | Motion JPEG 2000 | `video/mj2` | `.mj2` | | |
 | Mozilla Archive | Mozilla Archive | `application/x-mozilla-archive` | `.mar` | | Firefox/Thunderbird update archive |
 | Mozilla XPInstall | Mozilla XPInstall Extension | `application/x-xpinstall` | `.xpi` | | Firefox/Thunderbird extension (ZIP-based with install.rdf or manifest.json) |
+| MP1 | MPEG Audio Layer I | `audio/mpeg` | `.mp1` | | MPEG-1/2 Audio Layer 1 |
 | MP2 | MPEG Audio Layer III | `audio/mpeg` | `.mp2` | | MPEG-1/2 Audio Layer 2 |
 | MP3 | MPEG Audio Layer III | `audio/mpeg` | `.mp3` | `audio/x-mpeg`, `audio/mp3` | MPEG Audio Layer 3 |
 | MP4 | Video Mp4 | `video/mp4` | `.mp4` | | MPEG-4 Part 14 |
@@ -409,6 +412,7 @@ This document provides a comprehensive listing of all 568 file formats supported
 | Sony SR2 | Sony SR2 | `image/x-sony-sr2` | `.sr2` | | Sony RAW format, older (TIFF-based) |
 | SoundFont 2 | SoundFont 2.0 | `audio/x-soundfont` | `.sf2` | | MIDI instrument sample format |
 | SpaceClaim Document | SpaceClaim Document | `model/x-scdoc` | `.scdoc` | | SpaceClaim CAD document file |
+| SPSS SAV | SPSS Data File | `application/x-spss-sav` | `.sav` | | SPSS data file (`$FL2`/`$FL3` signature) |
 | SQLite | SQLite Database | `application/vnd.sqlite3` | `.sqlite` | `application/x-sqlite3` | |
 | Squashfs | Squashfs | `application/x-squashfs` | `.squashfs` | | Compressed read-only filesystem for embedded systems |
 | StarCalc | StarCalc | `application/vnd.stardivision.calc` | `.sdc` | | StarOffice/StarDivision Calc (spreadsheet, ZIP-based) |

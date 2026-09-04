@@ -582,8 +582,15 @@ fn test_mimetype_kind_method() {
     assert!(flv.kind().is_video());
     assert!(!flv.kind().is_image());
 
-    // Audio types
-    let mp3 = detect(b"\xFF\xFB\x90");
+    // Audio types - MPEG-1 Layer III needs a valid header plus a consecutive
+    // frame (128 kbps / 44100 Hz => 417-byte frames).
+    let header = [0xFFu8, 0xFB, 0x90, 0x00];
+    let mut mp3_data = Vec::new();
+    mp3_data.extend_from_slice(&header);
+    mp3_data.resize(417, 0x00);
+    mp3_data.extend_from_slice(&header);
+    mp3_data.resize(417 * 2, 0x00);
+    let mp3 = detect(&mp3_data);
     assert!(mp3.kind().is_audio());
     assert!(!mp3.kind().is_video());
 

@@ -10,6 +10,28 @@ Used prefixes:
 
 ## Unreleased
 
+## 0.3.12 - 2026.09.04
+
+* Added: Electron ASAR archives (`.asar`, application/x-asar).
+* Added: SPSS SAV data files (`.sav`, application/x-spss-sav).
+* Added: JMP statistics data files (`.jmp`, application/x-jmp-data).
+* Added: MPEG-1 Audio Layer I (`.mp1`, audio/mpeg).
+* Fixed: LHA/LZH, LArc/LZS,P Marc/PMA archives now detected via their offset-2 method signature
+* Fixed: audio formats detectors — Monkey's Audio (`.ape`), Musepack SV7 (`MP+`), and AIFF-C (`AIFC`).
+* Fixed: MIE files now detected via the correct `0MIE` signature (big- and little-endian).
+* Fixed: TTF files with an unlisted first table tag (e.g. FontForge's `FFTM`) now detected.
+* Fixed: EOT fonts (including version 0x20001) now detected.
+* Fixed: ISO-BMFF files whose `ftyp` box declares a size larger than the available bytes now detected from the major brand.
+* Fixed: PostScript detected as application/postscript, and EPS as application/eps (previously text/plain / generic PostScript).
+* Fixed: DMG detected via the `koly` trailer at `file_size - 512`
+* Fixed: Visio VSDX/VSTX and 3MF files no longer misdetected as XPS.
+* Fixed: Firefox XPI extensions detected instead of application/java-archive.
+* Fixed: M4A files with a `M4A\0` major brand detected as audio/x-m4a instead of video/mp4.
+* Fixed: extension corrections — `ar` (application/x-archive), `.alias` (application/x-apple-alias), `mpg` (video/mpeg).
+* Fixed: AVIF sequences (`avis`) and HEIF still/sequence (`mif1`/`msf1`) report `.avif`/`.heic` to match file-type; previous extensions kept as aliases.
+* Updated: MP1/MP2/MP3 detection now shares a real MPEG audio frame parser and requires a consecutive matching frame, cutting false positives.
+* Updated: AIFF/AIFF-C detection moved into the `0x46` (`FORM`) first-byte prefix table.
+
 ## 0.3.11 - 2026.07.23
 
 * Added: OpenCTM (.ctm) - compressed triangle mesh 3D format, "OCTM" magic (`model/x-openctm`)
