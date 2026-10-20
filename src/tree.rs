@@ -126,7 +126,7 @@ build_prefix_vec! {
         0xb7 => [&WTV] as __PV_B7,  // Windows Recorded TV Show
         0xc5 => [&EPS] as __PV_C5,  // Encapsulated PostScript (binary with preview)
         0xc7 => [&CPIO] as __PV_C7,  // NEW: CPIO binary variant
-        0xca => [&CLASS] as __PV_CA,
+        0xca => [&MACHO, &CLASS] as __PV_CA,  // FAT_MAGIC (MACHO) before Java class — both share 0xCAFEBABE
         0xce => [&BROTLI] as __PV_CE,  // Brotli v3 framing format
         0xd0 => [&OLE] as __PV_D0,
         0xd4 => [&PCAP] as __PV_D4,  // NEW: PCAP little-endian
@@ -1579,10 +1579,19 @@ static AIFF: MimeType = MimeType::new(
 
 mimetype!(MIDI, AUDIO_MIDI, ".midi", b"MThd", name: "Musical Instrument Digital Interface", kind: AUDIO, aliases: [AUDIO_MID], ext_aliases: [".mid"]);
 
-mimetype!(OGG, APPLICATION_OGG, ".ogg", b"OggS", name: "Ogg Container Format", kind: AUDIO, aliases: [APPLICATION_X_OGG], children: [&OGG_AUDIO, &OGG_MEDIA, &OGG_VIDEO, &OGG_MULTIPLEXED, &SPX, &OGG_OPUS]);
+// The `OggS` signature only identifies the container. The codec identification
+// header starts at offset 28 of the first page, so the generic container
+// (`application/ogg`, `.ogx`) is only returned when no known codec is present.
+// Children are tried in order, so the more specific codec matchers come first.
+mimetype!(OGG, APPLICATION_OGG, ".ogx", b"OggS", name: "Ogg Container Format", kind: AUDIO, aliases: [APPLICATION_X_OGG], children: [&OGG_OPUS, &OGG_MEDIA, &OGG_VIDEO, &OGG_AUDIO, &SPX, &OGG_VORBIS]);
 
+// Ogg FLAC (`.oga`) — FLAC codec carried inside an Ogg container.
 static OGG_AUDIO: MimeType = MimeType::new(AUDIO_OGG, "Ogg Audio", ".oga", ogg_audio, &[])
-    .with_extension_aliases(&[".opus"])
+    .with_kind(MimeKind::AUDIO)
+    .with_parent(&OGG);
+
+// Ogg Vorbis (`.ogg`) — the most common Ogg audio codec.
+static OGG_VORBIS: MimeType = MimeType::new(AUDIO_OGG, "Ogg Vorbis", ".ogg", ogg_vorbis, &[])
     .with_kind(MimeKind::AUDIO)
     .with_parent(&OGG);
 
@@ -1593,16 +1602,6 @@ static OGG_VIDEO: MimeType = MimeType::new(VIDEO_OGG, "Ogg Video", ".ogv", ogg_v
 static OGG_MEDIA: MimeType = MimeType::new(VIDEO_OGG_MEDIA, "Ogg Media", ".ogm", ogg_media, &[])
     .with_kind(MimeKind::VIDEO)
     .with_parent(&OGG);
-
-static OGG_MULTIPLEXED: MimeType = MimeType::new(
-    APPLICATION_OGG_MULTIPLEXED,
-    "Ogg Multiplexed",
-    ".ogx",
-    ogg_multiplexed,
-    &[],
-)
-.with_kind(MimeKind::VIDEO)
-.with_parent(&OGG);
 
 mimetype!(APE, AUDIO_APE, ".ape", b"MAC ", name: "Monkey's Audio", kind: AUDIO);
 
@@ -1812,11 +1811,9 @@ static RV: MimeType = MimeType::new(
     VIDEO_X_PN_REALVIDEO,
     "RealVideo",
     ".rv",
-    |_input| {
-        // Parent REALMEDIA already verified .RMF signature
-        // RV uses same signature, rely on extension for distinction
-        false
-    },
+    // Parent REALMEDIA already verified the `.RMF` signature; `rv` matches the
+    // RealVideo stream's MDPR MIME tag inside the container (see `fn rv`).
+    rv,
     &[],
 )
 .with_kind(MimeKind::VIDEO);
@@ -1887,19 +1884,9 @@ static AWT: MimeType = MimeType::new(
 .with_parent(&ABW);
 
 // Ogg Speex - Audio codec for voice in Ogg container
-static SPX: MimeType = MimeType::new(
-    AUDIO_OGG,
-    "Ogg Audio",
-    ".spx",
-    |_input| {
-        // Parent OGG already verified OggS signature
-        // SPX uses Speex codec, rely on extension for distinction
-        false
-    },
-    &[],
-)
-.with_kind(MimeKind::AUDIO)
-.with_parent(&OGG);
+static SPX: MimeType = MimeType::new(AUDIO_SPEEX, "audio/x-speex", ".spx", spx, &[])
+    .with_kind(MimeKind::AUDIO)
+    .with_parent(&OGG);
 
 // PEM Certificate Signing Request
 mimetype!(CSR, APPLICATION_X_PEM_FILE, ".csr",
@@ -1951,7 +1938,15 @@ static MPEG2TS: MimeType = MimeType::new(
     "MPEG-2 TS",
     ".ts",
     |input| {
-        input.len() >= 189 && input[0] == 0x47 && input[188] == 0x47 // Sync pattern repeats every 188 bytes
+        if input.len() < 198 {
+            return false;
+        }
+        // Standard 188-byte MPEG‑2 TS packet: sync byte at 0 and 188
+        if input[0] == 0x47 && input[188] == 0x47 {
+            return true;
+        }
+        // BDAV MTS packet: 4‑byte TP_extra_header before the 188‑byte packet, sync at 4 and 196
+        input[4] == 0x47 && input[196] == 0x47
     },
     &[],
 )
@@ -2451,7 +2446,8 @@ static MSDOS_EXE: MimeType = MimeType::new(
         }
 
         // Get PE header offset from DOS header (at offset 0x3C)
-        let pe_offset = u32::from_le_bytes(input[0x3C..0x40].try_into().unwrap()) as usize;
+        let pe_offset =
+            u32::from_le_bytes([input[0x3C], input[0x3D], input[0x3E], input[0x3F]]) as usize;
 
         // If we can read the PE signature location
         if pe_offset + 4 <= input.len() && pe_offset < 0x10000 {
@@ -2523,7 +2519,24 @@ static ELF_DUMP: MimeType = MimeType::new(APPLICATION_X_COREDUMP, "Core Dump", "
     .with_kind(MimeKind::EXECUTABLE)
     .with_parent(&ELF);
 
-mimetype!(CLASS, APPLICATION_X_JAVA_APPLET_BINARY, ".class", b"\xca\xfe\xba\xbe", name: "Java Class File", kind: APPLICATION, aliases: [APPLICATION_X_JAVA_APPLET]);
+// Magic 0xCAFEBABE is shared with Mach-O fat binary.
+// Fat binaries have bytes 4–7 as a big-endian architecture count ≤ 30;
+// Java class files carry the major version there (≥ 45 for Java 1.1).
+static CLASS: MimeType = MimeType::new(
+    APPLICATION_X_JAVA_APPLET_BINARY,
+    "Java Class File",
+    ".class",
+    |input| {
+        if input.len() < 8 || !input.starts_with(b"\xca\xfe\xba\xbe") {
+            return false;
+        }
+        let word = u32::from_be_bytes([input[4], input[5], input[6], input[7]]);
+        word > 30
+    },
+    &[],
+)
+.with_kind(MimeKind::APPLICATION)
+.with_aliases(&[APPLICATION_X_JAVA_APPLET]);
 
 // Apache Arrow - Columnar data format for analytics.
 mimetype!(ARROW, APPLICATION_VND_APACHE_ARROW_FILE, ".arrow", b"ARROW1", name: "Apache Arrow", kind: DATABASE);
@@ -3222,12 +3235,31 @@ static JMP: MimeType = MimeType::new(
 // ADDITIONAL IMAGE FORMATS
 // ============================================================================
 
-/// Adobe Digital Negative (DNG) - TIFF-based RAW format
+/// Adobe Digital Negative (DNG) - TIFF-based RAW format with DNG version marker tag 0xC612
+// The key differentiator: plain TIFFs have generic "Adobe" maker notes, but DNG carries the
+// specific DNGVersion tag 0xC612 in the first IFD. DNG is TIFF-compatible, so we must first
+// confirm a TIFF header and then look for the version tag encoded for that byte order.
 static DNG: MimeType = MimeType::new(
     IMAGE_X_ADOBE_DNG,
     "Adobe DNG",
     ".dng",
-    |input| input.windows(5).any(|w| w == b"Adobe") || input.windows(3).any(|w| w == b"DNG"),
+    |input| {
+        // Must be a TIFF header at offset 0, which also tells us the byte order.
+        // The DNGVersion tag id (0xC612) is stored using the file's endianness:
+        //   little-endian "II*\0" -> bytes 0x12 0xC6
+        //   big-endian    "MM\0*" -> bytes 0xC6 0x12
+        let tag: &[u8] = if input.starts_with(b"II*\x00") {
+            b"\x12\xc6"
+        } else if input.starts_with(b"MM\x00*") {
+            b"\xc6\x12"
+        } else {
+            return false;
+        };
+
+        // Search the leading bytes for the tag id in the first IFD(s).
+        let search_len = input.len().min(784);
+        input[0..search_len].windows(2).any(|w| w == tag)
+    },
     &[],
 )
 .with_kind(MimeKind::IMAGE)
@@ -4911,17 +4943,47 @@ fn musepack(input: &[u8]) -> bool {
             || (input.starts_with(b"MP+") && matches!(input[3] & 0x0F, 4..=7)))
 }
 
-fn ogg_audio(input: &[u8]) -> bool {
-    if input.len() < 37 {
+fn rv(input: &[u8]) -> bool {
+    // Parent REALMEDIA already verified the `.RMF` chunk signature.
+    //
+    // .rv files have no magic bytes of their own: RealVideo is a *stream type*
+    // inside the big-endian RealMedia container (.RMF -> PROP -> MDPR -> DATA).
+    // The MDPR media-properties chunk carries the stream MIME tag as
+    // "<u32 length><ASCII mime>"; the video stream tag is `video/x-pn-realvideo`.
+    // The tag sits well inside READ_LIMIT for real files, so a substring check
+    // is sufficient without a full chunk walk.
+    const MIME_TAG: &[u8] = b"video/x-pn-realvideo";
+    if input.len() < 38 + MIME_TAG.len() {
+        return false;
+    }
+    input[38..].windows(MIME_TAG.len()).any(|w| w == MIME_TAG)
+}
+
+fn spx(input: &[u8]) -> bool {
+    if input.len() < 45 {
         return false;
     }
 
-    // Check for audio codecs at offset 28
-    let offset_28 = &input[28..];
-    offset_28.starts_with(b"\x7fFLAC")
-        || offset_28.starts_with(b"\x01vorbis")
-        || offset_28.starts_with(b"OpusHead")
-        || offset_28.starts_with(b"Speex   ")
+    // Check for Speex codec at offset 28 in Ogg container
+    input[28..].starts_with(b"Speex   ")
+}
+
+fn ogg_audio(input: &[u8]) -> bool {
+    if input.len() < 35 {
+        return false;
+    }
+
+    // `\x7fFLAC` codec identification header at offset 28.
+    input[28..].starts_with(b"\x7fFLAC")
+}
+
+fn ogg_vorbis(input: &[u8]) -> bool {
+    if input.len() < 35 {
+        return false;
+    }
+
+    // Vorbis identification header (`\x01vorbis`) at offset 28.
+    input[28..].starts_with(b"\x01vorbis")
 }
 
 fn ogg_video(input: &[u8]) -> bool {
@@ -4945,13 +5007,6 @@ fn ogg_media(input: &[u8]) -> bool {
     let offset_28 = &input[28..];
     offset_28.starts_with(b"\x01video\x00\x00\x00")
         || offset_28.starts_with(b"\x01audio\x00\x00\x00")
-}
-
-fn ogg_multiplexed(_input: &[u8]) -> bool {
-    // OGX (Ogg Multiplexed) is difficult to detect via signature alone
-    // It requires checking for multiple stream types, which is complex
-    // For now, this will not be auto-detected
-    false
 }
 
 fn heic(input: &[u8]) -> bool {
@@ -6288,8 +6343,9 @@ fn fla(input: &[u8]) -> bool {
 
 fn idml(input: &[u8]) -> bool {
     // InDesign Markup Language - ZIP-based format
+    // IDML packages contain a `designmap.xml` entry. ODG/OTG use a `mimetype` entry
     // Check for designmap.xml or mimetype file
-    zip_has(input, &[(b"designmap.xml", false), (b"mimetype", false)], 1)
+    zip_has(input, &[(b"designmap.xml", false)], 1)
 }
 
 fn sbsar(input: &[u8]) -> bool {
@@ -7833,6 +7889,16 @@ fn macho(input: &[u8]) -> bool {
         return false;
     }
 
+    // FAT_MAGIC is big-endian [0xca,0xfe,0xba,0xbe]; disambiguate from Java class
+    // by checking bytes 4-7 as the architecture count (≤ 30 = fat binary, > 30 = Java class).
+    if input.starts_with(&[0xca, 0xfe, 0xba, 0xbe]) {
+        return input.len() >= 8
+            && u32::from_be_bytes([input[4], input[5], input[6], input[7]]) <= 30;
+    }
+
+    // All other Mach-O magics are detected via their LE interpretation:
+    // 0xfeedface/0xcefaedfe (32-bit), 0xfeedfacf/0xcffaedfe (64-bit),
+    // 0xcafebabe (FAT_CIGAM — byte-swapped fat binary, bytes [0xbe,0xba,0xfe,0xca]).
     let magic = u32::from_le_bytes([input[0], input[1], input[2], input[3]]);
     matches!(
         magic,
@@ -8925,21 +8991,38 @@ fn toml(input: &[u8]) -> bool {
 
 fn openflight(input: &[u8]) -> bool {
     // OpenFlight files have specific binary structure
-    // Header record is 4 bytes of record type/length
-    // Common patterns include 'db' prefix in some versions
     if input.len() < 128 {
         return false;
     }
 
-    // Check for OpenFlight header patterns
-    // Record type 1 (header) with length indication
-    // First 2 bytes are record opcode (usually 0x00 0x01 for header)
-    // OpenFlight header opcode is typically 1
+    // Check for OpenFlight header patterns - opcode 1 with valid header structure
     let opcode = u16::from_be_bytes([input[0], input[1]]);
     if opcode == 1 {
-        // Validate record length is reasonable (usually >= 100 for header)
+        // Validate record length (must be at least 128, and in reasonable range)
         let length = u16::from_be_bytes([input[2], input[3]]);
-        return length >= 100;
+
+        // Check for the strong signature "db" at offset 4-5 (ASCII ID field)
+        // to eliminate QuickTime/MP4 collisions (moov, ftyp, mdat, etc. don't start with "db")
+        if &input[4..6] != b"db" {
+            return false;
+        }
+
+        // Validate format revision (bytes 12-15, i32 BE) against known valid values
+        let revision = i32::from_be_bytes([input[12], input[13], input[14], input[15]]);
+
+        // TODO: support unknonw revision too
+        // Valid OpenFlight format revision numbers as per specification (kept sorted for binary_search)
+        const VALID_REVISIONS: &[i32] = &[
+            11, 12, 14, 1420, 1510, 1540, 1550, 1560, 1570, 1580, 1600, 1610, 1620, 1630, 1640,
+            1650, 1655, 1660, 1670,
+        ];
+
+        if VALID_REVISIONS.binary_search(&revision).is_err() {
+            return false;
+        }
+
+        // Additional check for realistic header record size (> 128 and within reasonable bounds)
+        return (128..=1024).contains(&length);
     }
 
     false

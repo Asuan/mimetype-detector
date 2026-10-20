@@ -488,15 +488,13 @@ pub const APPLICATION_X_OGG: &str = "application/x-ogg";
 
 /// OGG Audio
 pub const AUDIO_OGG: &str = "audio/ogg";
+pub const AUDIO_SPEEX: &str = "audio/x-speex";
 
 /// OGG Video
 pub const VIDEO_OGG: &str = "video/ogg";
 
 /// OGG Media (video container)
-pub const VIDEO_OGG_MEDIA: &str = "video/ogg";
-
-/// OGG Multiplexed (audio+video+text)
-pub const APPLICATION_OGG_MULTIPLEXED: &str = "application/ogg";
+pub const VIDEO_OGG_MEDIA: &str = VIDEO_OGG;
 
 /// RIFF container format
 pub const APPLICATION_X_RIFF: &str = "application/x-riff";

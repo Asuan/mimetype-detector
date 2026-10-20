@@ -304,12 +304,12 @@ This document provides a comprehensive listing of all 572 file formats supported
 | ODP | OpenDocument Presentation | `application/vnd.oasis.opendocument.presentation` | `.odp` | `application/x-vnd.oasis.opendocument.presentation` | OpenDocument Presentation |
 | ODS | OpenDocument Spreadsheet | `application/vnd.oasis.opendocument.spreadsheet` | `.ods` | `application/x-vnd.oasis.opendocument.spreadsheet` | OpenDocument Spreadsheet |
 | ODT | OpenDocument Text | `application/vnd.oasis.opendocument.text` | `.odt` | `application/x-vnd.oasis.opendocument.text` | OpenDocument Text |
-| OGG | Ogg Container Format | `application/ogg` | `.ogg` | | Container format |
-| OGG Audio | Ogg Audio | `audio/ogg` | `.oga`, `.opus` | | |
+| OGG | Ogg Container Format | `application/ogg` | `.ogx` | | Container format |
+| OGG Audio | Ogg Audio | `audio/ogg` | `.oga` | | |
 | OGG Media | Ogg Media | `video/ogg` | `.ogm` | | Ogg Media (video with subtitles) |
-| OGG Multiplexed | Ogg Container Format | `application/ogg` | `.ogx` | | Ogg Multiplexed (audio+video+text) |
 | OGG Video | Ogg Media | `video/ogg` | `.ogv` | | |
-| Ogg Speex | Ogg Audio | `audio/ogg` | `.spx` | | Voice codec in Ogg container |
+| OGG Vorbis | Ogg Vorbis | `audio/ogg` | `.ogg` | | Vorbis audio in Ogg container |
+| Ogg Speex | Ogg Audio | `audio/x-speex` | `.spx` | | Voice codec in Ogg container |
 | OLE Storage | OLE Compound Document | `application/x-ole-storage` | | | Microsoft OLE (legacy Office) |
 | Office Theme | Office Theme | `application/vnd.ms-officetheme` | `.thmx` | | OOXML package with theme/ payload |
 | OneNote | OneNote | `application/onenote` | `.one` | | |

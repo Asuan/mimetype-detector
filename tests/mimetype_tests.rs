@@ -1017,6 +1017,45 @@ fn test_detect_tiff() {
 }
 
 #[test]
+fn test_detect_dng() {
+    // Adobe DNG is a TIFF carrying the DNGVersion tag (0xC612) in its first IFD.
+    let cases =vec![
+        b"\x49\x49\x2A\x00\x08\x00\x00\x00\x01\x00\x12\xC6\x01\x00\x04\x00\x00\x00\x00\x00\x04\x01\x00\x00\x00\x00".to_vec(),
+         b"\x4D\x4D\x00\x2A\x00\x00\x00\x08\x00\x01\xC6\x12\x00\x01\x00\x00\x00\x04\x01\x04\x00\x00\x00\x00\x00\x00".to_vec()];
+
+    for data in cases {
+        let mime_type = detect(&data);
+        assert_eq!(mime_type.mime(), IMAGE_X_ADOBE_DNG);
+        assert_eq!(mime_type.extension(), ".dng");
+        assert!(mime_type.is(IMAGE_X_ADOBE_DNG));
+        assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
+        assert!(mime_type.kind().is_image());
+        assert!(!mime_type.name().is_empty());
+    }
+}
+
+#[test]
+fn test_detect_bdav_mts() {
+    // 4-byte header + 188-byte TS packet + 4-byte padding + sync byte
+    let mut data = vec![0u8; 200];
+    data[0] = 0x00;
+    data[1] = 0x00;
+    data[2] = 0x00;
+    data[3] = 0x00;
+    data[4] = 0x47; // sync start of TS packet
+    data[191] = 0x47; // last sync of packet
+                      // padding bytes 192-195 left as zero
+    data[196] = 0x47; // sync of next packet
+
+    let mime = detect(&data);
+    assert_eq!(mime.mime(), VIDEO_MP2T);
+    assert_eq!(mime.extension(), ".ts");
+    assert!(mime.is(VIDEO_MP2T));
+    assert!(mime.kind().is_video());
+    assert!(!mime.name().is_empty());
+}
+
+#[test]
 fn test_detect_bmp() {
     let data = b"BM";
     let mime_type = detect(data);
@@ -1025,7 +1064,6 @@ fn test_detect_bmp() {
     assert!(mime_type.is(IMAGE_BMP));
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_image());
-    assert!(!mime_type.name().is_empty());
     assert!(!mime_type.name().is_empty());
 }
 
@@ -1557,7 +1595,7 @@ fn test_detect_ogg() {
     let data = b"OggS";
     let mime_type = detect(data);
     assert_eq!(mime_type.mime(), APPLICATION_OGG);
-    assert_eq!(mime_type.extension(), ".ogg");
+    assert_eq!(mime_type.extension(), ".ogx");
     assert!(mime_type.is(APPLICATION_OGG));
     assert!(mime_type.kind().is_audio());
     assert!(!mime_type.name().is_empty());
@@ -1587,6 +1625,146 @@ fn test_detect_ogg_video() {
     assert!(mime_type.is(VIDEO_OGG));
     assert!(mime_type.kind().is_video());
     assert!(!mime_type.name().is_empty());
+}
+
+/// Build a minimal Ogg page with `codec` placed at offset 28 (where the codec
+/// identification header lives and where `file-type` reads it), padded so every
+/// matcher has enough bytes to inspect.
+fn ogg_page_with_codec(codec: &[u8]) -> Vec<u8> {
+    let mut data = vec![0u8; 28];
+    data[0..4].copy_from_slice(b"OggS");
+    data.extend_from_slice(codec);
+    data.resize(64, 0);
+    data
+}
+
+#[test]
+fn test_ogg_codec_family_dispatch() {
+    // The codec identification header at offset 28 selects the concrete Ogg
+    // subtype, mirroring `file-type`'s dispatch in `source/index.js`.
+    struct OggCase {
+        name: &'static str,
+        codec: &'static [u8],
+        mime: &'static str,
+        ext: &'static str,
+        is_video: bool,
+    }
+
+    let cases = [
+        OggCase {
+            name: "Opus",
+            codec: b"OpusHead",
+            mime: AUDIO_OPUS,
+            ext: ".opus",
+            is_video: false,
+        },
+        OggCase {
+            name: "OGM video",
+            codec: b"\x01video\x00\x00\x00",
+            mime: VIDEO_OGG_MEDIA,
+            ext: ".ogm",
+            is_video: true,
+        },
+        OggCase {
+            name: "OGM audio",
+            codec: b"\x01audio\x00\x00\x00",
+            mime: VIDEO_OGG_MEDIA,
+            ext: ".ogm",
+            is_video: true,
+        },
+        OggCase {
+            name: "Theora",
+            codec: b"\x80theora",
+            mime: VIDEO_OGG,
+            ext: ".ogv",
+            is_video: true,
+        },
+        OggCase {
+            name: "FLAC",
+            codec: b"\x7fFLAC",
+            mime: AUDIO_OGG,
+            ext: ".oga",
+            is_video: false,
+        },
+        OggCase {
+            name: "Speex",
+            codec: b"Speex   ",
+            mime: AUDIO_SPEEX,
+            ext: ".spx",
+            is_video: false,
+        },
+        OggCase {
+            name: "Vorbis",
+            codec: b"\x01vorbis",
+            mime: AUDIO_OGG,
+            ext: ".ogg",
+            is_video: false,
+        },
+        OggCase {
+            // No recognisable codec header -> generic container.
+            name: "unknown codec",
+            codec: b"\x01XXXXXX",
+            mime: APPLICATION_OGG,
+            ext: ".ogx",
+            is_video: false,
+        },
+    ];
+
+    for case in cases {
+        let data = ogg_page_with_codec(case.codec);
+        let mime_type = detect(&data);
+        assert_eq!(mime_type.mime(), case.mime, "case: {}", case.name);
+        assert_eq!(mime_type.extension(), case.ext, "case: {}", case.name);
+        assert!(mime_type.is(case.mime), "case: {}", case.name);
+        // Audio subtypes always report `is_audio()` (the Ogg container itself is
+        // categorised as audio); the distinguishing flag for the video codecs is
+        // `is_video()`.
+        assert!(mime_type.kind().is_audio(), "case: {}", case.name);
+        assert_eq!(
+            mime_type.kind().is_video(),
+            case.is_video,
+            "case: {}: is_video",
+            case.name
+        );
+        assert!(!mime_type.name().is_empty(), "case: {}", case.name);
+    }
+}
+
+#[test]
+fn test_ogg_short_payload_falls_back_to_generic_container() {
+    // Bare signature: no codec region at all.
+    let bare = detect(b"OggS");
+    assert_eq!(bare.mime(), APPLICATION_OGG);
+    assert_eq!(bare.extension(), ".ogx");
+
+    // Byte at offset 28 but the Vorbis signature is truncated (6 of 7 bytes):
+    // a partial magic must not be mistaken for a real codec.
+    let mut truncated = vec![0u8; 28];
+    truncated[0..4].copy_from_slice(b"OggS");
+    truncated.extend_from_slice(b"\x01vorbi"); // 6 bytes -> total length 34
+    let mime_type = detect(&truncated);
+    assert_eq!(mime_type.mime(), APPLICATION_OGG);
+    assert_eq!(mime_type.extension(), ".ogx");
+}
+
+#[test]
+fn test_ogg_subtypes_report_ogg_parent() {
+    // Every concrete codec subtype hangs off the `application/ogg` container.
+    let codecs: [&[u8]; 5] = [
+        b"OpusHead",
+        b"\x01video\x00\x00\x00",
+        b"\x80theora",
+        b"\x7fFLAC",
+        b"\x01vorbis",
+    ];
+
+    for codec in codecs {
+        let data = ogg_page_with_codec(codec);
+        let parent = detect(&data)
+            .parent()
+            .expect("Ogg subtype should have a parent");
+        assert_eq!(parent.mime(), APPLICATION_OGG, "codec: {:?}", codec);
+    }
 }
 
 #[test]
@@ -2118,7 +2296,8 @@ fn test_detect_elf_dump() {
 
 #[test]
 fn test_detect_class() {
-    let data = b"\xca\xfe\xba\xbe";
+    // Magic + minor(0x0000) + major(0x0031 = 49, Java 5) — bytes 4-7 as u32 > 30
+    let data = b"\xca\xfe\xba\xbe\x00\x00\x00\x31";
     let mime_type = detect(data);
     assert_eq!(mime_type.mime(), APPLICATION_X_JAVA_APPLET_BINARY);
     assert_eq!(mime_type.extension(), ".class");
@@ -4807,7 +4986,7 @@ fn test_detect_lnk() {
 
 #[test]
 fn test_detect_macho() {
-    let data = b"\xfe\xed\xfa\xce"; // Mach-O magic
+    let data = b"\xfe\xed\xfa\xce"; // MH_CIGAM — 32-bit big-endian host
     let mime_type = detect(data);
     assert_eq!(mime_type.mime(), APPLICATION_X_MACH_BINARY);
     assert_eq!(mime_type.extension(), ".macho");
@@ -4815,6 +4994,14 @@ fn test_detect_macho() {
     assert!(!mime_type.is(APPLICATION_OCTET_STREAM));
     assert!(mime_type.kind().is_executable());
     assert!(!mime_type.name().is_empty());
+
+    // FAT_MAGIC [0xca,0xfe,0xba,0xbe] shares bytes with Java .class.
+    // Bytes 4-7 = 3 (arch count ≤ 30) → Mach-O fat binary, not Java class.
+    let fat = b"\xca\xfe\xba\xbe\x00\x00\x00\x03";
+    let fat_type = detect(fat);
+    assert_eq!(fat_type.mime(), APPLICATION_X_MACH_BINARY);
+    assert_ne!(fat_type.mime(), APPLICATION_X_JAVA_APPLET_BINARY);
+    assert!(fat_type.kind().is_executable());
 }
 
 #[test]
@@ -6233,13 +6420,60 @@ fn test_detect_wmv() {
 
 #[test]
 fn test_detect_rv() {
-    // RealVideo - RealMedia variant
-    let data = b".RMF\x00\x00\x00\x12";
-    let mime_type = detect(data);
-    // Without .rv extension, detects as generic RealMedia
-    assert_eq!(mime_type.mime(), APPLICATION_VND_RN_REALMEDIA);
-    assert_eq!(mime_type.extension(), ".rm");
+    // RealVideo is a stream type inside the RealMedia container; the container
+    // magic ".RMF" is shared with .rm/.ra/.rmvb, so the RV matcher looks for the
+    // MDPR media-properties chunk carrying the "video/x-pn-realvideo" tag.
+    let mut data = Vec::new();
+
+    // RealMedia file header chunk: ".RMF" + size 18 + version 0 + file version
+    // + number of headers (2 = PROP + MDPR)
+    data.extend_from_slice(b".RMF");
+    data.extend_from_slice(&18u32.to_be_bytes());
+    data.extend_from_slice(&0u16.to_be_bytes());
+    data.extend_from_slice(&0u32.to_be_bytes());
+    data.extend_from_slice(&2u32.to_be_bytes());
+    assert_eq!(data.len(), 18);
+
+    // PROP file-properties chunk: "PROP" + size 50 + version 0 + payload
+    data.extend_from_slice(b"PROP");
+    data.extend_from_slice(&50u32.to_be_bytes());
+    data.extend_from_slice(&0u16.to_be_bytes());
+    data.extend_from_slice(&[0u8; 40]);
+
+    // MDPR media-properties chunk: "MDPR" + size + version + stream number +
+    // bitrates/packet-size fields (zeros here, not used by the matcher)
+    data.extend_from_slice(b"MDPR");
+    data.extend_from_slice(&(10 + 9 * 4 + 16 + 4 + 20 + 4 + 34u32).to_be_bytes());
+    data.extend_from_slice(&0u16.to_be_bytes());
+    data.extend_from_slice(&0u16.to_be_bytes());
+    data.extend_from_slice(&[0u8; 7 * 4]);
+
+    // Description string (length-prefixed)
+    data.extend_from_slice(&16u32.to_be_bytes());
+    data.extend_from_slice(b"The Video Stream");
+
+    // Stream MIME tag (length-prefixed): identifies the RealVideo stream
+    data.extend_from_slice(&20u32.to_be_bytes());
+    data.extend_from_slice(b"video/x-pn-realvideo");
+
+    // Type-specific data (codec "RV40" payload), not used by the matcher
+    data.extend_from_slice(&34u32.to_be_bytes());
+    data.extend_from_slice(&[0u8; 34]);
+
+    let mime_type = detect(&data);
+    assert_eq!(mime_type.mime(), VIDEO_X_PN_REALVIDEO);
+    assert_eq!(mime_type.extension(), ".rv");
+    assert!(mime_type.is(VIDEO_X_PN_REALVIDEO));
+    assert!(!mime_type.is(APPLICATION_VND_RN_REALMEDIA));
+    assert!(mime_type.kind().is_video());
     assert!(!mime_type.name().is_empty());
+
+    // A bare ".RMF" file carries no MDPR video tag, so it falls back to the
+    // generic RealMedia container.
+    let bare = b".RMF\x00\x00\x00\x12";
+    let bare_type = detect(bare);
+    assert_eq!(bare_type.mime(), APPLICATION_VND_RN_REALMEDIA);
+    assert_eq!(bare_type.extension(), ".rm");
 }
 
 #[test]
@@ -6275,15 +6509,17 @@ fn test_detect_awt() {
 
 #[test]
 fn test_detect_spx() {
-    // Ogg Speex - Ogg container with Speex codec
-    // Since SPX uses OggS signature, without .spx extension it detects as generic OGG
-    let data = b"OggS\x00\x02\x00\x00\x00\x00\x00\x00\x00\x00";
+    // Test with proper Speex header - should detect as audio/x-speex
+    let mut speex_data = vec![0; 128];
+    speex_data[0..4].copy_from_slice(b"OggS");
+    let spex_header = b"Speex   \x00\x00\x00\x00";
+    speex_data[28..28 + spex_header.len()].copy_from_slice(spex_header);
 
-    let mime_type = detect(data);
-    // Without .spx extension, detects as parent OGG
-    assert_eq!(mime_type.mime(), APPLICATION_OGG);
-    assert_eq!(mime_type.extension(), ".ogg");
-    assert!(!mime_type.name().is_empty());
+    let mime_type = detect(&speex_data);
+    assert_eq!(mime_type.mime(), AUDIO_SPEEX);
+    assert_eq!(mime_type.extension(), ".spx");
+    assert!(mime_type.is(AUDIO_SPEEX));
+    assert!(mime_type.kind().is_audio());
 }
 
 #[test]
@@ -7647,16 +7883,54 @@ fn test_detect_openctm() {
 
 #[test]
 fn test_detect_openflight() {
-    // OpenFlight header: opcode 1, length 120
-    let data = b"\x00\x01\x00\x78";
-    let mut full_data = data.to_vec();
-    full_data.resize(128, 0); // Pad to minimum size
+    // Create a valid OpenFlight header with:
+    // - opcode 1 (bytes 0-1)
+    // - length 128 (bytes 2-3)
+    // - "db" ID field (bytes 4-5)
+    // - revision 1580 (bytes 12-15)
+
+    let mut full_data = vec![0u8; 128];
+
+    // Opcode 1
+    full_data[0] = 0x00;
+    full_data[1] = 0x01;
+
+    // Length 128
+    full_data[2] = 0x00;
+    full_data[3] = 0x80;
+
+    // ID field "db" (bytes 4-5)
+    full_data[4] = 0x64; // 'd'
+    full_data[5] = 0x62; // 'b'
+
+    // Format revision 1580 (bytes 12-15) in big endian
+    full_data[12] = 0x00;
+    full_data[13] = 0x00;
+    full_data[14] = 0x06;
+    full_data[15] = 0x2c;
+
     let mime_type = detect(&full_data);
     assert_eq!(mime_type.mime(), MODEL_VND_OPENFLIGHT);
     assert_eq!(mime_type.extension(), ".flt");
     assert!(mime_type.is(MODEL_VND_OPENFLIGHT));
     assert!(mime_type.kind().is_model());
     assert!(!mime_type.name().is_empty());
+
+    // B6: MOV (moov-only variant) should NOT be detected as OpenFlight
+    // The moov atom has a 12-byte header with opcode 1 and length 120 (like OpenFlight)
+    // But the real MOV file format has:
+    // - 4 bytes of atom size (0x00, 0x00, 0x00, 0x18 = 24 bytes in little-endian)
+    // - 4 bytes of atom type ("moov")
+    // - Then the data that starts with 0x00010078 (OpenFlight opcode + length)
+
+    let mut moov_data = vec![0x00, 0x00, 0x00, 0x18, b'm', b'o', b'o', b'v'];
+    moov_data.extend_from_slice(&[0x00, 0x01, 0x00, 0x78]); // This is the OpenFlight header
+    moov_data.extend_from_slice(&[0; 96]); // Padding to total 128 bytes
+
+    let moov_mime_type = detect(&moov_data);
+
+    // Should NOT be detected as OpenFlight (.flt)
+    assert_ne!(moov_mime_type.mime(), MODEL_VND_OPENFLIGHT);
 }
 
 #[test]
@@ -7776,4 +8050,26 @@ fn test_detect_spss_sav() {
     let mime_type_fl3 = detect(data_fl3);
     assert_eq!(mime_type_fl3.mime(), APPLICATION_X_SPSS_SAV);
     assert_eq!(mime_type_fl3.extension(), ".sav");
+}
+
+#[test]
+fn test_detect_openflight_moov_variant() {
+    // B6: MOV (moov-only variant) should NOT be detected as OpenFlight
+    // The moov atom has a 12-byte header with opcode 1 and length 120 (like OpenFlight)
+    // But the real MOV file format has:
+    // - 4 bytes of atom size (0x00, 0x00, 0x00, 0x18 = 24 bytes in little-endian)
+    // - 4 bytes of atom type ("moov")
+    // - Then the data that starts with 0x00010078 (OpenFlight opcode + length)
+
+    let mut moov_data = vec![0x00, 0x00, 0x00, 0x18, b'm', b'o', b'o', b'v'];
+    moov_data.extend_from_slice(&[0x00, 0x01, 0x00, 0x78]); // This is the OpenFlight header
+    moov_data.extend_from_slice(&[0; 96]); // Padding to total 128 bytes
+
+    let mime_type = detect(&moov_data);
+
+    // Should NOT be detected as OpenFlight (.flt)
+    assert_ne!(mime_type.mime(), MODEL_VND_OPENFLIGHT);
+
+    // Should be detected as a MOV/QuickTime file instead (or at least not OpenFlight)
+    // This test ensures we don't misidentify moov-only MOV files as OpenFlight
 }

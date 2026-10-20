@@ -10,6 +10,16 @@ Used prefixes:
 
 ## Unreleased
 
+## 0.3.13 - 2026.10.20
+
+* Fixed: Ogg container detection now inspects the codec identification header at offset 28 to pick the correct MIME type and extension — Ogg Vorbis (`.ogg`, `audio/ogg`), Ogg FLAC (`.oga`, `audio/ogg`), Opus (`.opus`, `audio/opus`), Theora (`.ogv`, `video/ogg`), OGM (`.ogm`, `video/ogg`), and the generic container (`.ogx`, `application/ogg`) as a fallback.
+* Fixed: Ogg Speex (.spx) detection now correctly identifies `audio/x‑speex` MIME type by inspecting Speex header at offset 28 within the Ogg container.
+* Fixed: BDAV MTS (.mts) detection for packets with TP_extra_header.
+* Fixed: Adobe Digital Negative (DNG) detection improved to check for the DNGVersion tag (0xC612) within the TIFF header, reducing false positives from generic TIFFs.
+* Fixed: OpenFlight (.flt) detection accuracy improved to check the full header signature ("db" ID field + format revision validation), eliminating false positives from QuickTime/MP4 containers.
+* Fixed: Mach‑O fat binary (`0xCAFEBABE`) no longer misdetected as Java `.class`; the CLASS matcher now checks bytes 4–7 as the architecture count (≤ 30 → fat binary, ≥ 45 → Java class).
+* Updated: RealVideo (`.rv`) detection now matches the RealVideo stream type inside the RealMedia container via the `MDPR` media‑properties chunk carrying the `video/x‑pn-realvideo`
+
 ## 0.3.12 - 2026.09.04
 
 * Added: Electron ASAR archives (`.asar`, application/x-asar).
