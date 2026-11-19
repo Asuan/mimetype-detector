@@ -10,6 +10,17 @@ Used prefixes:
 
 ## Unreleased
 
+## 0.3.14 - 2026.11.19
+
+* Added: PyTorch archives (`.pt`, `.pth`, `.bin`, `.ptl`, `.ckpt`, `application/x-pytorch`) via `data.pkl` in STORED ZIP; `application/x-torchscript` alias.
+* Added: TensorFlow Lite models (`.tflite`, `.lite`, `application/x-tflite`) with `TFL3` identifier.
+* Added: SafeTensors model files (`.safetensors`, `.sft`, `application/safetensors`) - 8-byte LE JSON header length followed by a UTF-8 JSON header.
+* Added: GGUF models (`.gguf`, `application/gguf`) with `GGUF` magic and version validation.
+* Updated: plain-text detection via `SinglePassMatcher` (SWAR + 64-bit bitsets); ~10x speedup.
+* Updated: shared `find_subslice` for literals; early rejection for delimited-text.
+* Updated: UTF-16 detection via prefix gates; removed `Vec<u16>` allocation; ~10x speedup.
+* Updated: converted `windows().any()` literal scans to SWAR `find_byte`/`find_subslice`; ~7x faster.
+
 ## 0.3.13 - 2026.10.20
 
 * Fixed: Ogg container detection now inspects the codec identification header at offset 28 to pick the correct MIME type and extension — Ogg Vorbis (`.ogg`, `audio/ogg`), Ogg FLAC (`.oga`, `audio/ogg`), Opus (`.opus`, `audio/opus`), Theora (`.ogv`, `video/ogg`), OGM (`.ogm`, `video/ogg`), and the generic container (`.ogx`, `application/ogg`) as a fallback.

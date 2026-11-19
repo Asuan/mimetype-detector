@@ -1,12 +1,11 @@
 [package]
 name = "mimetype-detector"
-version = "0.3.13"
+version = "0.3.14"
 edition = "2021"
 description = "Fast, accurate, and thread-safe MIME type detection for ~500 file formats with zero dependencies"
 license = "MIT OR Apache-2.0"
 authors = ["Siargei"]
 repository = "https://github.com/Asuan/mimetype-detector"
-homepage = "https://github.com/Asuan/mimetype-detector"
 documentation = "https://docs.rs/mimetype-detector"
 readme = "README.md"
 keywords = ["mime", "mimetype", "file-detection","file-type"]

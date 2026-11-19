@@ -1,6 +1,6 @@
 # Supported File Formats
 
-This document provides a comprehensive listing of all 572 file formats supported by the mimetype-detector library.
+This document provides a comprehensive listing of all 576 file formats supported by the mimetype-detector library.
 
 ## All Supported Formats (Alphabetical)
 
@@ -165,6 +165,7 @@ This document provides a comprehensive listing of all 572 file formats supported
 | Game Boy ROM | Game Boy ROM | `application/x-gameboy-rom` | `.gb` | | Nintendo Game Boy |
 | GeoJSON | Geo JSON | `application/geo+json` | `.geojson` | | Geographic data |
 | Gettext MO | Gettext Translation | `application/x-gettext-translation` | `.mo` | | Compiled translation file (little-endian) |
+| GGUF | GGML Universal File | `application/gguf` | `.gguf` | `application/x-gguf` | Model weights format (llama.cpp/GGML); magic `GGUF`, versions 1-3 |
 | GIF | Graphics Interchange Format | `image/gif` | `.gif` | | Graphics Interchange Format |
 | GIMP Brush | GIMP Brush | `image/x-gimp-gbr` | `.gbr` | | |
 | GIMP Pattern | GIMP Pattern | `image/x-gimp-pat` | `.pat` | | |
@@ -370,6 +371,7 @@ This document provides a comprehensive listing of all 572 file formats supported
 | PowerPoint 97-2003 | PowerPoint 97-2003 | `application/vnd.ms-powerpoint` | `.ppt` | | Legacy format (OLE-based) |
 | Project Plan | Microsoft Project | `application/vnd.ms-project` | `.mpp` | | Microsoft Project file |
 | Publisher | Publisher | `application/vnd.ms-publisher` | `.pub` | | |
+| PyTorch | PyTorch Model | `application/x-pytorch` | `.pt`, `.pth`, `.bin`, `.ptl`, `.ckpt` | `application/x-torchscript` | ZIP-based `torch.save` archive containing `data.pkl` |
 | Python | Python Source Code | `text/x-python` | `.py` | `text/x-script.python`, `application/x-python` | |
 | Python Bytecode | Python Bytecode | `application/x-python-bytecode` | `.pyc` | | Compiled Python modules |
 | Python Pickle | Python Pickle | `application/x-pickle` | `.pkl`, `.pickle` | | Serialization format (protocols 2-5) |
@@ -394,6 +396,7 @@ This document provides a comprehensive listing of all 572 file formats supported
 | RTF (UTF-16) | Rich Text Format (UTF-16 BE) | `text/rtf; charset=utf-16` | `.rtf` | | UTF-16 BE/LE variants |
 | Ruby | Ruby Source Code | `text/x-ruby` | `.rb` | `application/x-ruby` | |
 | RZIP | RZIP Archive | `application/x-rzip` | `.rz` | | Long-range compression format |
+| SafeTensors | SafeTensors Model | `application/safetensors` | `.safetensors`, `.sft` | `application/x-safetensors` | ML tensor storage; 8-byte LE JSON header length + UTF-8 JSON header |
 | Scream Tracker 3 | Scream Tracker 3 Module | `audio/x-s3m` | `.s3m` | `audio/s3m` | Module format |
 | SeqBox | SeqBox Container | `application/x-sbx` | `.sbx` | `application/x-seqbox` | Sequence Box container |
 | Shell Script | Shell Script | `text/x-shellscript` | `.sh` | `text/x-sh`, `application/x-shellscript`, `application/x-sh` | |
@@ -445,6 +448,7 @@ This document provides a comprehensive listing of all 572 file formats supported
 | TASTY | Binary Data | `application/octet-stream` | `.tasty` | | TASTY format |
 | Tcl | Tcl Script | `text/x-tcl` | `.tcl` | `application/x-tcl` | |
 | TCX | TCX | `application/vnd.garmin.tcx+xml` | `.tcx` | | Training Center XML |
+| TensorFlow Lite | TensorFlow Lite Model | `application/x-tflite` | `.tflite`, `.lite` | | FlatBuffer with `TFL3` file identifier at offset 4 |
 | TIFF | Tagged Image File Format | `image/tiff` | `.tiff`, `.tif` | | |
 | TMX | Tmx XML | `application/x-tmx+xml` | `.tmx` | | Tiled Map XML (game development) |
 | TNEF | Transport Neutral Encapsulation Format | `application/vnd.ms-tnef` | `.dat` | | Outlook winmail.dat attachments |

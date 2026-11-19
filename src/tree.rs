@@ -35,7 +35,7 @@ build_prefix_vec! {
     /// Covers 199 out of 264 ROOT children using 92 unique first bytes
     /// Static array with zero runtime overhead - no LazyLock, no mutex, no heap allocations
     static ROOT_PREFIX_VEC: [
-        0x00 => [&OPENFLIGHT, &JXS, &ICO, &SHX, &TGA, &WASM, &MRW, &WORKS_SPREADSHEET, &WORKS_XLR, &CUR, &MDB, &ACCDB, &QUARK, &AMIGA_HUNK] as __PV_00,
+        0x00 => [&SAFETENSORS, &OPENFLIGHT, &JXS, &ICO, &SHX, &TGA, &WASM, &MRW, &WORKS_SPREADSHEET, &WORKS_XLR, &CUR, &MDB, &ACCDB, &QUARK, &AMIGA_HUNK] as __PV_00,  // SafeTensors first (8-byte LE header length can mimic ICO/CUR)
         0x01 => [&SGI] as __PV_01,
         0x02 => [&ARSC, &CLARISWORKS] as __PV_02,  // Android Resource Storage Container, ClarisWorks
         0x03 => [&AXML, &DBASE] as __PV_03,  // Android Binary XML and dBASE
@@ -75,7 +75,7 @@ build_prefix_vec! {
         0x44 => [&ADF, &DDS, &DSF, &DRACO] as __PV_44,  // Amiga Disk File ('DOS'), DDS, DSF, Draco ('DRACO')
         0x45 => [&XM, &EVTX] as __PV_45,  // Extended Module, Windows Event Log XML
         0x46 => [&FLV, &DFF, &FVT, &SWF, &RAF, &AIFF, &EIGHTSVX, &MAYA_BINARY, &FLIF] as __PV_46,  // SWF ('FWS'), RAF ('FUJIFILM'), AIFF/AIFF-C ('FORM' + 'AIFF'/'AIFC' at offset 8), 8SVX ('FORM'), Maya Binary ('FOR4'/'FOR8'), FLIF
-        0x47 => [&GIF, &GRIB] as __PV_47,  // GIF, GRIB weather data
+        0x47 => [&GIF, &GGUF, &GRIB] as __PV_47,  // GIF, GGUF (GGML Universal File), GRIB weather data
         0x48 => [&OS2_HLP, &OS2_INF, &XCI] as __PV_48,  // OS/2 Help, OS/2 INF, Nintendo Switch ROM (XCI - 'HEAD')
         0x49 => [&IQM, &JXR, &LIT, &TIFF, &CHM, &INSTALL_SHIELD_CAB, &CRW, &IT, &RW2, &KODAK_KDC, &KODAK_DCR, &ORF, &STEP, &MP3] as __PV_49,  // IQM, TIFF includes CR2/NEF as children, ORF variants (IIRO/IIRS) are TIFF-based but need direct detection, Kodak RAW, STEP ('ISO-10303-21'), MP3 ('ID3'-tagged)
         0x4b => [&FBX, &VMDK] as __PV_4B,  // Autodesk FBX (Kaydara), VMDK ('KDMV')
@@ -217,6 +217,9 @@ pub static ROOT: MimeType = MimeType::new(
         // Retro gaming formats (simple ones in PREFIX_VEC)
         &ATARI_7800_ROM,       // Atari 7800 ROM - offset 1 check
         &COMMODORE_64_PROGRAM, // Commodore 64 PRG - load address check
+        // ML model formats whose first byte varies with the header length
+        &SAFETENSORS, // 8-byte LE header + JSON
+        &TFLITE,      // FlatBuffer root offset + `TFL3`
         // Text-based formats
         &UTF8, // Content validation (last)
     ],
@@ -586,7 +589,10 @@ children: [
     &AUTODESK_123D, &FUSION_360, &THREEDXML, &THREEMF_ZIP,
 
     // Other specialized formats
-    &XAP, &MXL, &FBZ
+    &XAP, &MXL, &FBZ,
+
+    // PyTorch archive - ZIP with `data.pkl` record
+    &PYTORCH,
 ]);
 
 mimetype!(RAR, APPLICATION_X_RAR_COMPRESSED, ".rar", b"Rar!\x1a\x07\x00" | b"Rar!\x1a\x07\x01\x00", name: "RAR Archive", kind: ARCHIVE, aliases: [APPLICATION_VND_RAR, APPLICATION_X_RAR]);
@@ -1269,7 +1275,7 @@ static NEF: MimeType = MimeType::new(
     |input| {
         // Don't check TIFF header here - parent already checked it
         // Look for Nikon signature in the file
-        input.len() >= 256 && input[0..256].windows(5).any(|w| w == b"NIKON")
+        input.len() >= 256 && find_subslice(&input[0..256], b"NIKON")
     },
     &[],
 )
@@ -1407,11 +1413,7 @@ fn pcx(input: &[u8]) -> bool {
 
     // Bytes 66-67: Bytes per line (little-endian u16, must be even and > 0)
     let bytes_per_line = u16::from_le_bytes([input[66], input[67]]);
-    if bytes_per_line == 0 || bytes_per_line % 2 != 0 {
-        return false;
-    }
-
-    true
+    !(bytes_per_line == 0 || bytes_per_line % 2 != 0)
 }
 
 // PICtor/PC Paint - DOS graphics format
@@ -3258,7 +3260,7 @@ static DNG: MimeType = MimeType::new(
 
         // Search the leading bytes for the tag id in the first IFD(s).
         let search_len = input.len().min(784);
-        input[0..search_len].windows(2).any(|w| w == tag)
+        find_subslice(&input[0..search_len], tag)
     },
     &[],
 )
@@ -3272,7 +3274,7 @@ static ARW: MimeType = MimeType::new(
     ".arw",
     |input| {
         let search_len = input.len().min(512);
-        input.len() >= 200 && input[0..search_len].windows(4).any(|w| w == b"SONY")
+        input.len() >= 200 && find_subslice(&input[0..search_len], b"SONY")
     },
     &[],
 )
@@ -3288,8 +3290,8 @@ static PEF: MimeType = MimeType::new(
         // Look for "PENTAX" or "AOC" maker note signature in available data
         let search_len = input.len().min(512);
         input.len() >= 200
-            && (input[0..search_len].windows(6).any(|w| w == b"PENTAX")
-                || input[0..search_len].windows(3).any(|w| w == b"AOC"))
+            && (find_subslice(&input[0..search_len], b"PENTAX")
+                || find_subslice(&input[0..search_len], b"AOC"))
     },
     &[],
 )
@@ -3303,7 +3305,7 @@ static SR2: MimeType = MimeType::new(
     ".sr2",
     |input| {
         let search_len = input.len().min(512);
-        input.len() >= 200 && input[0..search_len].windows(4).any(|w| w == b"SONY")
+        input.len() >= 200 && find_subslice(&input[0..search_len], b"SONY")
     },
     &[],
 )
@@ -3317,7 +3319,7 @@ static HASSELBLAD_3FR: MimeType = MimeType::new(
     ".3fr",
     |input| {
         let search_len = input.len().min(1024);
-        input.len() >= 200 && input[0..search_len].windows(10).any(|w| w == b"HASSELBLAD")
+        input.len() >= 200 && find_subslice(&input[0..search_len], b"HASSELBLAD")
     },
     &[],
 )
@@ -4386,6 +4388,42 @@ mimetype!(HDF5, APPLICATION_X_HDF5, ".hdf5", b"\x89HDF\r\n\x1a\n", name: "Hierar
 // GRIB weather data format (used by meteorology services)
 mimetype!(GRIB, APPLICATION_X_GRIB, ".grib", b"GRIB", name: "GRIB Weather Data", kind: APPLICATION);
 
+// GGUF (GGML Universal File) - model weights format used by llama.cpp and friends
+static GGUF: MimeType = MimeType::new(APPLICATION_GGUF, "GGML Universal File", ".gguf", gguf, &[])
+    .with_kind(MimeKind::APPLICATION)
+    .with_aliases(&[APPLICATION_X_GGUF]);
+
+// SafeTensors - Hugging Face's tensor storage format
+static SAFETENSORS: MimeType = MimeType::new(
+    APPLICATION_SAFETENSORS,
+    "SafeTensors Model",
+    ".safetensors",
+    safetensors,
+    &[],
+)
+.with_kind(MimeKind::APPLICATION)
+.with_aliases(&[APPLICATION_X_SAFETENSORS])
+.with_extension_aliases(&[".sft"]);
+
+// PyTorch archive (.pt/.pth/.bin) - STORED ZIP with `data.pkl` record
+static PYTORCH: MimeType =
+    MimeType::new(APPLICATION_X_PYTORCH, "PyTorch Model", ".pt", pytorch, &[])
+        .with_kind(MimeKind::APPLICATION)
+        .with_aliases(&[APPLICATION_X_TORCHSCRIPT])
+        .with_extension_aliases(&[".pth", ".bin", ".ptl", ".ckpt"])
+        .with_parent(&ZIP);
+
+// TensorFlow Lite (.tflite/.lite) - FlatBuffer with `TFL3` identifier
+static TFLITE: MimeType = MimeType::new(
+    APPLICATION_X_TFLITE,
+    "TensorFlow Lite Model",
+    ".tflite",
+    tflite,
+    &[],
+)
+.with_kind(MimeKind::APPLICATION)
+.with_extension_aliases(&[".lite"]);
+
 static BUFR: MimeType = MimeType::new(
     APPLICATION_X_BUFR,
     "BUFR Meteorological Data",
@@ -4727,18 +4765,15 @@ fn xmp(input: &[u8]) -> bool {
     // (`<?xpacket begin=...?>`) and contain an `<x:xmpmeta>` element.
     let limit = input.len().min(512);
     let head = &input[..limit];
-    head.windows(9).any(|w| w == b"<?xpacket") || head.windows(11).any(|w| w == b"<x:xmpmeta ")
+    find_subslice(head, b"<?xpacket") || find_subslice(head, b"<x:xmpmeta ")
 }
 
 fn owl2(input: &[u8]) -> bool {
-    xml(input) && (input.windows(4).any(|w| w == b"<owl") || input.windows(4).any(|w| w == b"<RDF"))
+    xml(input) && (find_subslice(input, b"<owl") || find_subslice(input, b"<RDF"))
 }
 
 fn xhtml(input: &[u8]) -> bool {
-    xml(input)
-        && input
-            .windows(26)
-            .any(|w| w == b"http://www.w3.org/1999/xht")
+    xml(input) && find_subslice(input, b"http://www.w3.org/1999/xht")
 }
 
 fn fb2(input: &[u8]) -> bool {
@@ -4754,15 +4789,11 @@ fn nuspec(input: &[u8]) -> bool {
     // NuGet manifest: <package> root scoped to the NuGet packaging schema to
     // avoid colliding with other XML formats that use a generic <package> tag.
     detect_xml_with_tag(input, b"<package")
-        && input
-            .windows(30)
-            .any(|w| w == b"schemas.microsoft.com/packagin")
+        && find_subslice(input, b"schemas.microsoft.com/packagin")
 }
 
 fn har(input: &[u8]) -> bool {
-    json(input)
-        && input.windows(5).any(|w| w == b"\"log\"")
-        && input.windows(9).any(|w| w == b"\"version\"")
+    json(input) && find_subslice(input, b"\"log\"") && find_subslice(input, b"\"version\"")
 }
 
 // ============================================================================
@@ -4956,7 +4987,7 @@ fn rv(input: &[u8]) -> bool {
     if input.len() < 38 + MIME_TAG.len() {
         return false;
     }
-    input[38..].windows(MIME_TAG.len()).any(|w| w == MIME_TAG)
+    find_subslice(&input[38..], MIME_TAG)
 }
 
 fn spx(input: &[u8]) -> bool {
@@ -5221,10 +5252,7 @@ fn mkv(input: &[u8]) -> bool {
 
 fn is_matroska_file_type(input: &[u8], file_type: &[u8]) -> bool {
     let max_search = input.len().min(4096);
-    if let Some(pos) = input[..max_search]
-        .windows(2)
-        .position(|w| w == b"\x42\x82")
-    {
+    if let Some(pos) = find_subslice_pos(&input[..max_search], b"\x42\x82") {
         let pos = pos + 2;
         if pos < input.len() {
             let n = vint_width(input[pos] as i32);
@@ -5542,10 +5570,10 @@ fn xls(input: &[u8]) -> bool {
         let end = (lin).min(4096);
         let search_range = &input[1152..end];
         // UTF-16LE encoded "Workbook": W\x00k\x00s\x00S\x00S\x00W\x00o\x00r\x00k\x00B\x00o\x00o\x00k
-        if search_range
-            .windows(22)
-            .any(|w| w == b"W\x00k\x00s\x00S\x00S\x00W\x00o\x00r\x00k\x00B\x00o\x00o\x00k")
-        {
+        if find_subslice(
+            search_range,
+            b"W\x00k\x00s\x00S\x00S\x00W\x00o\x00r\x00k\x00B\x00o\x00o\x00k",
+        ) {
             return true;
         }
     }
@@ -5599,9 +5627,10 @@ fn ppt(input: &[u8]) -> bool {
         let end = lin.min(4096);
         let search_range = &input[1152..end];
         // UTF-16LE encoded "PowerPoint Document": P\x00o\x00w\x00e\x00r\x00P\x00o\x00i\x00n\x00t\x00 D\x00o\x00c\x00u\x00m\x00e\x00n\x00t
-        search_range.windows(38).any(|w| {
-            w == b"P\x00o\x00w\x00e\x00r\x00P\x00o\x00i\x00n\x00t\x00 D\x00o\x00c\x00u\x00m\x00e\x00n\x00t"
-        })
+        find_subslice(
+            search_range,
+            b"P\x00o\x00w\x00e\x00r\x00P\x00o\x00i\x00n\x00t\x00 D\x00o\x00c\x00u\x00m\x00e\x00n\x00t",
+        )
     } else {
         false
     }
@@ -6291,10 +6320,12 @@ fn wma(input: &[u8]) -> bool {
     // Limit search to available data
     let search_end = header_size.min(input.len());
 
+    if search_end < MIN_ASF_HEADER_SIZE {
+        return false;
+    }
+
     // Search ONLY within the Header Object bounds (starting after the header structure)
-    input[MIN_ASF_HEADER_SIZE..search_end]
-        .windows(AUDIO_STREAM_GUID.len())
-        .any(|w| w == AUDIO_STREAM_GUID)
+    find_subslice(&input[MIN_ASF_HEADER_SIZE..search_end], AUDIO_STREAM_GUID)
 }
 
 fn wmv(input: &[u8]) -> bool {
@@ -6320,10 +6351,12 @@ fn wmv(input: &[u8]) -> bool {
     // Limit search to available data
     let search_end = header_size.min(input.len());
 
+    if search_end < MIN_ASF_HEADER_SIZE {
+        return false;
+    }
+
     // Search ONLY within the Header Object bounds (starting after the header structure)
-    input[MIN_ASF_HEADER_SIZE..search_end]
-        .windows(VIDEO_STREAM_GUID.len())
-        .any(|w| w == VIDEO_STREAM_GUID)
+    find_subslice(&input[MIN_ASF_HEADER_SIZE..search_end], VIDEO_STREAM_GUID)
 }
 
 fn air(input: &[u8]) -> bool {
@@ -6404,10 +6437,12 @@ fn dvr_ms(input: &[u8]) -> bool {
     // Limit search to available data
     let search_end = header_size.min(input.len());
 
+    if search_end < MIN_ASF_HEADER_SIZE {
+        return false;
+    }
+
     // Search for "DVR File Version" ONLY within the Header Object bounds
-    input[MIN_ASF_HEADER_SIZE..search_end]
-        .windows(16)
-        .any(|w| w == b"DVR File Version")
+    find_subslice(&input[MIN_ASF_HEADER_SIZE..search_end], b"DVR File Version")
 }
 
 fn abw(input: &[u8]) -> bool {
@@ -6508,63 +6543,59 @@ impl LangPattern {
 #[doc(hidden)]
 struct SinglePassMatcher<'a> {
     sample: &'a [u8],
-    patterns: &'a [LangPattern],
-    found: Vec<bool>,
+    patterns: &'a [LangPattern], // max 64 patterns due mask
 }
 
 impl<'a> SinglePassMatcher<'a> {
     fn new(sample: &'a [u8], patterns: &'a [LangPattern]) -> Self {
-        let found = vec![false; patterns.len()];
-        SinglePassMatcher {
-            sample,
-            patterns,
-            found,
-        }
+        // `scan` records matches in a `u64` bitset (`1u64 << idx`), so the
+        // pattern list must stay within 64 entries.
+        debug_assert!(
+            patterns.len() <= 64,
+            "SinglePassMatcher supports at most 64 patterns"
+        );
+        SinglePassMatcher { sample, patterns }
     }
 
-    /// Perform single-pass matching of all patterns and return score
-    fn scan(mut self) -> (Vec<bool>, u8) {
-        let mut i = 0;
-
-        'outer: while i < self.sample.len() {
-            // Check each pattern at current position
-            for (idx, pattern) in self.patterns.iter().enumerate() {
-                if !self.found[idx] && self.matches_at(i, pattern.bytes) {
-                    self.found[idx] = true;
-                    i += pattern.bytes.len();
-                    continue 'outer;
-                }
-            }
-
-            // No pattern matched, advance by 1
-            i += 1;
-        }
-
-        // Calculate total score
-        let score = self
-            .patterns
-            .iter()
-            .enumerate()
-            .map(|(idx, p)| if self.found[idx] { p.weight } else { 0 })
-            .sum();
-
-        (self.found, score)
-    }
-
-    /// Scan with early stop when threshold is exceeded
-    /// Returns true if threshold was exceeded (meaning antipatterns detected)
-    fn scan_early_stop(mut self, threshold: u8) -> bool {
+    /// Single-pass scan: walk the sample once, matching each pattern at most
+    /// once. On a match the cursor advances past the matched span, so patterns
+    /// whose only occurrence overlaps an earlier match are not double-counted.
+    /// Returns the matched-pattern bitset and the accumulated score.
+    fn scan(self) -> (u64, u8) {
+        let mut mask = 0u64;
         let mut score = 0u8;
         let mut i = 0;
 
         'outer: while i < self.sample.len() {
-            // Check each pattern at current position
             for (idx, pattern) in self.patterns.iter().enumerate() {
-                if !self.found[idx] && self.matches_at(i, pattern.bytes) {
-                    self.found[idx] = true;
+                let bit = 1u64 << idx;
+                if mask & bit == 0 && matches_at(self.sample, i, pattern.bytes) {
+                    mask |= bit;
+                    score = score.saturating_add(pattern.weight);
+                    i += pattern.bytes.len();
+                    continue 'outer;
+                }
+            }
+            i += 1;
+        }
+
+        (mask, score)
+    }
+
+    /// Scan with early stop when threshold is exceeded
+    /// Returns true if threshold was exceeded (meaning antipatterns detected)
+    fn scan_early_stop(self, threshold: u8) -> bool {
+        let mut mask = 0u64;
+        let mut score = 0u8;
+        let mut i = 0;
+
+        'outer: while i < self.sample.len() {
+            for (idx, pattern) in self.patterns.iter().enumerate() {
+                let bit = 1u64 << idx;
+                if mask & bit == 0 && matches_at(self.sample, i, pattern.bytes) {
+                    mask |= bit;
                     score = score.saturating_add(pattern.weight);
 
-                    // Early return if threshold exceeded
                     if score > threshold {
                         return true;
                     }
@@ -6573,19 +6604,22 @@ impl<'a> SinglePassMatcher<'a> {
                     continue 'outer;
                 }
             }
-
-            // No pattern matched, advance by 1
             i += 1;
         }
 
         false
     }
+}
 
-    #[inline]
-    fn matches_at(&self, pos: usize, pattern: &[u8]) -> bool {
-        pos + pattern.len() <= self.sample.len()
-            && &self.sample[pos..pos + pattern.len()] == pattern
-    }
+/// Returns true if `pattern` occurs in `sample` starting exactly at `pos`.
+#[inline]
+fn matches_at(sample: &[u8], pos: usize, pattern: &[u8]) -> bool {
+    pos + pattern.len() <= sample.len() && &sample[pos..pos + pattern.len()] == pattern
+}
+
+/// Test whether pattern `idx` matched in a `SinglePassMatcher::scan` bitset.
+fn matched(mask: u64, idx: usize) -> bool {
+    mask & (1u64 << idx) != 0
 }
 
 /// Check for common shebangs (checks if shebang line contains any of the patterns)
@@ -6617,19 +6651,24 @@ fn javascript(input: &[u8]) -> bool {
 
     let sample = &input[..input.len().min(1024)];
 
+    // JavaScript requires braces for code blocks. Cheap gate first, before any substring searches.
+    let has_braces = find_byte(sample, b'{').is_some() && find_byte(sample, b'}').is_some();
+    if !has_braces {
+        return false;
+    }
+
+    // TypeScript false positive: `interface` plus a type annotation.
+    if find_subslice(sample, b"interface ") && find_subslice(sample, b": ") {
+        return false;
+    }
+
     // Anti-patterns (indicates NOT JavaScript).
     const ANTI_JS: &[LangPattern] = &[
         LangPattern::simple(b"fn "), // Rust
     ];
 
-    // Check anti-patterns FIRST - early stop on first match
+    // Check anti-patterns - early stop on first match
     if SinglePassMatcher::new(sample, ANTI_JS).scan_early_stop(0) {
-        return false;
-    }
-
-    // JavaScript requires braces for code blocks
-    let has_braces = sample.contains(&b'{') && sample.contains(&b'}');
-    if !has_braces {
         return false;
     }
 
@@ -6646,27 +6685,12 @@ fn javascript(input: &[u8]) -> bool {
         LangPattern::new(b"return ", 1),
     ];
 
-    // Check for TypeScript false positive (interface with type annotation)
-    let mut has_interface_ts = false;
-    let mut has_colon_space = false;
-    for i in 0..sample.len() {
-        if i + 10 <= sample.len() && &sample[i..i + 10] == b"interface " {
-            has_interface_ts = true;
-        }
-        if i + 2 <= sample.len() && &sample[i..i + 2] == b": " {
-            has_colon_space = true;
-        }
-        if has_interface_ts && has_colon_space {
-            return false;
-        }
-    }
-
     let js_matcher = SinglePassMatcher::new(sample, JS_PATTERNS);
     let (found, score) = js_matcher.scan();
 
     // Has strong indicator (arrow, export, require) OR multiple weaker ones
-    let has_strong = found[0] || found[5] || found[6];
-    let has_function_return = found[3] && found[8];
+    let has_strong = matched(found, 0) || matched(found, 5) || matched(found, 6);
+    let has_function_return = matched(found, 3) && matched(found, 8);
 
     has_strong || has_function_return || score >= 2
 }
@@ -7039,6 +7063,44 @@ fn c_lang(input: &[u8]) -> bool {
 fn cpp(input: &[u8]) -> bool {
     let sample = &input[..input.len().min(1024)];
 
+    // Cheap reject: C++ source accepted below is code-like and contains at
+    // least one of these bytes.
+    let has_code_punctuation = sample.iter().any(|&b| {
+        matches!(
+            b,
+            b'#' | b':'
+                | b'<'
+                | b'('
+                | b'{'
+                | b';'
+                | b'='
+                | b'['
+                | b'\\'
+                | b'&'
+                | b'*'
+                | b'~'
+                | b'^'
+                | b'|'
+                | b'"'
+        )
+    });
+    if !has_code_punctuation {
+        // These positive patterns contain none of the bytes above, so they can
+        // still match a punctuation-free sample. Every other pattern cannot.
+        const KEYWORD_ONLY: &[&[u8]] = &[
+            b"iostream",
+            b"namespace ",
+            b"class ",
+            b"vector",
+            b"string",
+            b"cout",
+            b"cin",
+        ];
+        if !KEYWORD_ONLY.iter().any(|p| find_subslice(sample, p)) {
+            return false;
+        }
+    }
+
     // Anti-patterns (Python, C#, Java, Go, Rust false positives)
     let anti_patterns = [
         LangPattern::new(b"import ", 10),          // Python, Java
@@ -7066,8 +7128,8 @@ fn cpp(input: &[u8]) -> bool {
     }
 
     // Special check: extern "C" wrapped in #ifdef __cplusplus is a C header, not C++
-    let has_extern_c = sample.windows(10).any(|w| w == b"extern \"C\"");
-    let has_cplusplus_ifdef = sample.windows(18).any(|w| w == b"#ifdef __cplusplus");
+    let has_extern_c = find_subslice(sample, b"extern \"C\"");
+    let has_cplusplus_ifdef = find_subslice(sample, b"#ifdef __cplusplus");
     if has_extern_c && has_cplusplus_ifdef {
         return false; // This is a C header with C++ compatibility
     }
@@ -7095,15 +7157,15 @@ fn cpp(input: &[u8]) -> bool {
     let (found, score) = SinglePassMatcher::new(sample, &patterns).scan();
 
     // Strong indicators - any one is enough
-    let has_strong_indicator = found[0]  // iostream
-        || found[1]  // namespace
-        || found[2]  // std::
-        || found[3]  // template<
-        || found[4]; // extern "C"
+    let has_strong_indicator = matched(found, 0)  // iostream
+        || matched(found, 1)  // namespace
+        || matched(found, 2)  // std::
+        || matched(found, 3)  // template<
+        || matched(found, 4); // extern "C"
 
     // class with access specifiers is also strong
-    let has_class = found[8];
-    let has_access = found[5] || found[6] || found[7]; // public/private/protected
+    let has_class = matched(found, 8);
+    let has_access = matched(found, 5) || matched(found, 6) || matched(found, 7); // public/private/protected
     let has_class_with_access = has_class && has_access;
 
     if has_strong_indicator || has_class_with_access {
@@ -7352,27 +7414,28 @@ fn csharp(input: &[u8]) -> bool {
 fn vb(input: &[u8]) -> bool {
     let sample = &input[..input.len().min(1024)];
 
-    // Helper function for case-insensitive pattern matching
-    fn has_pattern_ci(data: &[u8], pattern: &[u8]) -> bool {
-        data.windows(pattern.len())
-            .any(|w| w.eq_ignore_ascii_case(pattern))
-    }
+    let mut lowered = [0u8; 1024];
+    let lowered = &mut lowered[..sample.len()];
+    lowered.copy_from_slice(sample);
+    lowered.make_ascii_lowercase();
+    let lowered = &*lowered;
+    let has = |pattern: &[u8]| find_subslice(lowered, pattern);
 
     // VB-specific patterns (case-insensitive)
-    let has_imports_system = has_pattern_ci(sample, b"Imports System");
-    let has_end_function = has_pattern_ci(sample, b"End Function");
-    let has_end_sub = has_pattern_ci(sample, b"End Sub");
-    let has_end_class = has_pattern_ci(sample, b"End Class");
-    let has_for_each = has_pattern_ci(sample, b"For Each");
-    let has_byval = has_pattern_ci(sample, b"ByVal");
-    let has_byref = has_pattern_ci(sample, b"ByRef");
-    let has_nothing = has_pattern_ci(sample, b"Nothing");
-    let has_module = has_pattern_ci(sample, b"Module");
-    let has_imports = has_pattern_ci(sample, b"Imports");
-    let has_dim = has_pattern_ci(sample, b"Dim ");
-    let has_sub = has_pattern_ci(sample, b"Sub ");
-    let has_function = has_pattern_ci(sample, b"Function");
-    let has_as = has_pattern_ci(sample, b" As ");
+    let has_imports_system = has(b"imports system");
+    let has_end_function = has(b"end function");
+    let has_end_sub = has(b"end sub");
+    let has_end_class = has(b"end class");
+    let has_for_each = has(b"for each");
+    let has_byval = has(b"byval");
+    let has_byref = has(b"byref");
+    let has_nothing = has(b"nothing");
+    let has_module = has(b"module");
+    let has_imports = has(b"imports");
+    let has_dim = has(b"dim ");
+    let has_sub = has(b"sub ");
+    let has_function = has(b"function");
+    let has_as = has(b" as ");
 
     // Calculate VB score
     let vb_score = (has_dim as u8)
@@ -7488,7 +7551,7 @@ fn python(input: &[u8]) -> bool {
     };
 
     // def or class with Python indentation pattern is Python-specific
-    let has_def_or_class = found[0] || found[1];
+    let has_def_or_class = matched(found, 0) || matched(found, 1);
     if has_def_or_class && has_python_indentation {
         return true;
     }
@@ -7504,6 +7567,11 @@ fn ruby(input: &[u8]) -> bool {
 
     let sample = &input[..input.len().min(1024)];
 
+    // Ruby requires 'end' keyword for blocks. Cheap gate before the more expensive anti-pattern pass.
+    if !find_subslice(sample, b"end") {
+        return false;
+    }
+
     // Anti-patterns (Python false positives)
     let anti_patterns = [
         LangPattern::new(b"import ", 5),
@@ -7512,14 +7580,8 @@ fn ruby(input: &[u8]) -> bool {
         LangPattern::new(b"self.", 5),
     ];
 
-    // Check antipatterns FIRST
+    // Check antipatterns
     if SinglePassMatcher::new(sample, &anti_patterns).scan_early_stop(4) {
-        return false;
-    }
-
-    // Ruby requires 'end' keyword for blocks
-    let has_end = sample.windows(3).any(|w| w == b"end");
-    if !has_end {
         return false;
     }
 
@@ -7545,8 +7607,8 @@ fn ruby(input: &[u8]) -> bool {
     let (found, score) = SinglePassMatcher::new(sample, &patterns).scan();
 
     // Ruby requires "end" keyword when using class/def (unlike Python)
-    let has_def_or_class = found[5] || found[6]; // def or class
-    let has_end = found[7] || found[8] || found[10]; // end\n, end\r, end
+    let has_def_or_class = matched(found, 5) || matched(found, 6); // def or class
+    let has_end = matched(found, 7) || matched(found, 8) || matched(found, 10); // end\n, end\r, end
 
     // Check for "end" at the very end of sample (without trailing space/newline)
     let has_end_at_eof = sample.ends_with(b"end");
@@ -7566,19 +7628,20 @@ fn perl(input: &[u8]) -> bool {
 
     let sample = &input[..input.len().min(1024)];
 
+    // Perl requires semicolons for statements. Cheap gate before the
+    // anti-pattern pass.
+    if find_byte(sample, b';').is_none() {
+        return false;
+    }
+
     // Anti-patterns (Rust false positives).
     let anti_patterns = [
         LangPattern::new(b"fn ", 10),   // Rust
         LangPattern::new(b"impl ", 10), // Rust
     ];
 
-    // Check antipatterns FIRST
+    // Check antipatterns
     if SinglePassMatcher::new(sample, &anti_patterns).scan_early_stop(9) {
-        return false;
-    }
-
-    // Perl requires semicolons for statements
-    if !sample.contains(&b';') {
         return false;
     }
 
@@ -7614,6 +7677,12 @@ fn lua(input: &[u8]) -> bool {
 
     let sample = &input[..input.len().min(1024)];
 
+    // Lua requires 'end' keyword for blocks. Cheap gate before the more
+    // expensive anti-pattern pass.
+    if !find_subslice(sample, b"end") {
+        return false;
+    }
+
     // Anti-patterns (Python, Perl, Shell false positives)
     let anti_patterns = [
         LangPattern::new(b"import ", 10),       // Python
@@ -7625,14 +7694,8 @@ fn lua(input: &[u8]) -> bool {
         LangPattern::new(b"export ", 5),        // Shell
     ];
 
-    // Check antipatterns FIRST
+    // Check antipatterns
     if SinglePassMatcher::new(sample, &anti_patterns).scan_early_stop(9) {
-        return false;
-    }
-
-    // Lua requires 'end' keyword for blocks
-    let has_end = sample.windows(3).any(|w| w == b"end");
-    if !has_end {
         return false;
     }
 
@@ -7687,9 +7750,9 @@ fn json(input: &[u8]) -> bool {
 
 fn geojson(input: &[u8]) -> bool {
     json(input)
-        && input.windows(6).any(|w| w == b"\"type\"")
-        && input.windows(19).any(|w| w == b"\"FeatureCollection\"")
-        && input.windows(10).any(|w| w == b"\"features\"")
+        && find_subslice(input, b"\"type\"")
+        && find_subslice(input, b"\"FeatureCollection\"")
+        && find_subslice(input, b"\"features\"")
 }
 
 fn ndjson(input: &[u8]) -> bool {
@@ -7722,7 +7785,12 @@ fn ndjson(input: &[u8]) -> bool {
 /// Generic function to detect delimited text formats (CSV, TSV, etc.)
 #[inline]
 fn detect_delimited_format(input: &[u8], separator: u8) -> bool {
-    // Split on both \n and \r to handle all line ending styles (Unix, Windows, old Mac)
+    // Fast reject: without the separator no row can match.
+    if find_byte(input, separator).is_none() {
+        return false;
+    }
+
+    // Split on both \n and \r to handle all line ending styles (Unix, Windows, old Mac).
     let lines = input.split(|&b| b == b'\n' || b == b'\r').take(5);
     detect_csv_generic(lines, |line| count_csv_separators_quoted(line, separator))
 }
@@ -7755,7 +7823,7 @@ fn srt(input: &[u8]) -> bool {
         // Check second line for timestamp pattern
         if let Some(timestamp_line) = lines.next() {
             // Look for SRT timestamp pattern: 00:00:00,000 --> 00:00:00,000
-            timestamp_line.windows(5).any(|w| w == b" --> ")
+            find_subslice(timestamp_line, b" --> ")
         } else {
             false
         }
@@ -7793,28 +7861,22 @@ fn icalendar(input: &[u8]) -> bool {
 fn vcalendar(input: &[u8]) -> bool {
     // vCalendar 1.0 also starts with BEGIN:VCALENDAR but has VERSION:1.0
     // Check for both the BEGIN and VERSION:1.0 to distinguish from iCalendar 2.0
-    case_insensitive_starts_with(input, b"BEGIN:VCALENDAR")
-        && input.windows(11).any(|w| w == b"VERSION:1.0")
+    case_insensitive_starts_with(input, b"BEGIN:VCALENDAR") && find_subslice(input, b"VERSION:1.0")
 }
 
 fn svg(input: &[u8]) -> bool {
     let trimmed = input.trim_ascii_start();
     // Look for SVG namespace in XML
-    trimmed.windows(4).any(|w| w == b"<svg")
-        || trimmed
-            .windows(26)
-            .any(|w| w == b"http://www.w3.org/2000/svg")
+    find_subslice(trimmed, b"<svg") || find_subslice(trimmed, b"http://www.w3.org/2000/svg")
 }
 
 fn xsd(input: &[u8]) -> bool {
     let trimmed = input.trim_ascii_start();
     // Look for XML Schema namespace or schema root element
-    trimmed
-        .windows(7)
-        .any(|w| w == b"<schema" || w == b"<xs:sch" || w == b"<xsd:sc")
-        || trimmed
-            .windows(33)
-            .any(|w| w == b"http://www.w3.org/2001/XMLSchema")
+    find_subslice(trimmed, b"<schema")
+        || find_subslice(trimmed, b"<xs:sch")
+        || find_subslice(trimmed, b"<xsd:sc")
+        || find_subslice(trimmed, b"http://www.w3.org/2001/XMLSchema")
 }
 
 // ============================================================================
@@ -7832,9 +7894,9 @@ fn shp(input: &[u8]) -> bool {
 
 fn gltf(input: &[u8]) -> bool {
     json(input)
-        && input.windows(8).any(|w| w == b"\"scenes\"")
-        && input.windows(7).any(|w| w == b"\"nodes\"")
-        && input.windows(7).any(|w| w == b"\"asset\"")
+        && find_subslice(input, b"\"scenes\"")
+        && find_subslice(input, b"\"nodes\"")
+        && find_subslice(input, b"\"asset\"")
 }
 
 // ============================================================================
@@ -7910,162 +7972,440 @@ fn macho(input: &[u8]) -> bool {
 // UTF-16 FORMAT DETECTION FUNCTIONS
 // ============================================================================
 
-/// Helper function to skip UTF-16 BOM and convert to string
+/// Decodes one UTF-16 code unit from a 2-byte pair with the given endianness.
+fn utf16_unit(pair: [u8; 2], big_endian: bool) -> u16 {
+    if big_endian {
+        u16::from_be_bytes(pair)
+    } else {
+        u16::from_le_bytes(pair)
+    }
+}
+
+/// Strips a UTF-16 BOM (if present) and decodes the content to a `String`.
 fn utf16_to_text(input: &[u8], big_endian: bool) -> Option<String> {
-    // UTF-16 BOM constants
+    let content = utf16_content(input, big_endian);
+
+    // Content must have even length for UTF-16.
+    if content.len() < 2 || content.len() % 2 != 0 {
+        return None;
+    }
+
+    let units = content
+        .chunks_exact(2)
+        .map(|chunk| utf16_unit([chunk[0], chunk[1]], big_endian));
+
+    // Decode straight into the output string (no intermediate `Vec<u16>`).
+    let mut text = String::with_capacity(content.len() / 2);
+    for unit in char::decode_utf16(units) {
+        text.push(unit.ok()?);
+    }
+    Some(text)
+}
+
+/// Strips a matching UTF-16 BOM, if present.
+#[inline]
+fn utf16_content(input: &[u8], big_endian: bool) -> &[u8] {
     const UTF16_BE_BOM: &[u8] = &[0xFE, 0xFF];
     const UTF16_LE_BOM: &[u8] = &[0xFF, 0xFE];
 
-    // Skip BOM if present
-    let content = if (big_endian && input.starts_with(UTF16_BE_BOM))
+    if (big_endian && input.starts_with(UTF16_BE_BOM))
         || (!big_endian && input.starts_with(UTF16_LE_BOM))
     {
         &input[2..]
     } else {
         input
-    };
+    }
+}
 
-    utf16_to_string(content, big_endian)
+/// Returns the first non-whitespace character and its code-unit offset after
+/// the BOM. Mirrors `str::trim_start` semantics without allocating.
+fn utf16_first_non_ws(input: &[u8], big_endian: bool) -> Option<(char, usize)> {
+    // Match `utf16_to_text`, which rejects odd-length input.
+    if input.len() < 2 || input.len() % 2 != 0 {
+        return None;
+    }
+
+    let content = utf16_content(input, big_endian);
+    let units = content
+        .chunks_exact(2)
+        .map(|chunk| utf16_unit([chunk[0], chunk[1]], big_endian));
+
+    let mut unit_index = 0;
+    for unit in char::decode_utf16(units) {
+        let c = unit.ok()?;
+        if !c.is_whitespace() {
+            return Some((c, unit_index));
+        }
+        unit_index += if (c as u32) > 0xFFFF { 2 } else { 1 };
+    }
+    None
+}
+
+/// Decodes at most `max_chars` characters starting at `skip_units`
+/// (after an optional BOM).
+///
+/// A surrogate pair is always decoded as a whole. An unpaired surrogate inside
+/// the decoded prefix is rejected, matching the full decoder's behaviour.
+fn utf16_prefix_to_string(
+    input: &[u8],
+    big_endian: bool,
+    skip_units: usize,
+    max_chars: usize,
+) -> Option<String> {
+    if input.len() < 2 || input.len() % 2 != 0 {
+        return None;
+    }
+
+    let content = utf16_content(input, big_endian);
+    let start = skip_units * 2;
+    if start >= content.len() {
+        return Some(String::new());
+    }
+
+    // `decode_utf16` yields whole surrogate pairs and an `Err` for any unpaired
+    // surrogate, so `take(max_chars)` never splits a pair and `.ok()?` rejects a
+    // malformed prefix — matching the full decoder's behaviour.
+    let units = content[start..]
+        .chunks_exact(2)
+        .map(|chunk| utf16_unit([chunk[0], chunk[1]], big_endian));
+
+    let mut text = String::with_capacity(max_chars.min((content.len() - start) / 2));
+    for unit in char::decode_utf16(units).take(max_chars) {
+        text.push(unit.ok()?);
+    }
+
+    Some(text)
+}
+
+/// Returns the first UTF-16 code unit after an optional BOM.
+#[inline]
+fn utf16_first_unit(input: &[u8], big_endian: bool) -> Option<u16> {
+    if input.len() % 2 != 0 {
+        return None;
+    }
+    let chunk = utf16_content(input, big_endian).get(..2)?;
+    Some(utf16_unit([chunk[0], chunk[1]], big_endian))
+}
+
+/// Conservative gate: does the ASCII `needle` occur as UTF-16 code units?
+///
+/// This is only used to avoid decoding samples that cannot possibly contain a
+/// marker; it is not a replacement for the content detectors.
+fn utf16_contains_ascii(input: &[u8], big_endian: bool, needle: &[u8]) -> bool {
+    let n = needle.len();
+    if n == 0 {
+        return true;
+    }
+    if input.len() / 2 < n {
+        return false;
+    }
+
+    let first = needle[0];
+    // In little-endian the ASCII byte is the low half of the unit (even byte
+    // offset); in big-endian it is the high half (odd byte offset).
+    let byte_parity = usize::from(big_endian);
+    let mut pos = 0;
+
+    while pos < input.len() {
+        let Some(rel) = find_byte(&input[pos..], first) else {
+            return false;
+        };
+        let at = pos + rel;
+        if at % 2 == byte_parity {
+            let start = at - byte_parity;
+            if start + n * 2 <= input.len() {
+                let mut found = true;
+                for (index, &byte) in needle.iter().enumerate() {
+                    let offset = start + index * 2;
+                    let unit = utf16_unit([input[offset], input[offset + 1]], big_endian);
+                    if unit != byte as u16 {
+                        found = false;
+                        break;
+                    }
+                }
+                if found {
+                    return true;
+                }
+            }
+        }
+        pos = at + 1;
+    }
+    false
+}
+
+/// Runs a detector that trims leading whitespace on a bounded prefix.
+///
+/// `max_chars` only needs to cover what the detector actually inspects after
+/// the first non-whitespace character.
+fn detect_utf16_after_trim<F>(
+    input: &[u8],
+    big_endian: bool,
+    max_chars: usize,
+    detect_content: F,
+) -> bool
+where
+    F: Fn(&str) -> bool,
+{
+    let Some((_, skip_units)) = utf16_first_non_ws(input, big_endian) else {
+        return false;
+    };
+    utf16_prefix_to_string(input, big_endian, skip_units, max_chars)
+        .is_some_and(|text| detect_content(&text))
+}
+
+/// Conservative gate: first non-whitespace character is `expected`.
+fn utf16_first_non_ws_is(input: &[u8], big_endian: bool, expected: char) -> bool {
+    matches!(
+        utf16_first_non_ws(input, big_endian),
+        Some((c, _)) if c == expected
+    )
+}
+
+/// Conservative gate: first non-whitespace character matches
+/// `expected` case-insensitively.
+fn utf16_first_non_ws_is_ascii_ci(input: &[u8], big_endian: bool, expected: u8) -> bool {
+    matches!(
+        utf16_first_non_ws(input, big_endian),
+        Some((c, _)) if c.is_ascii() && (c as u8).eq_ignore_ascii_case(&expected)
+    )
 }
 
 /// HTML detection for UTF-16 Big Endian
 fn html_utf16_be(input: &[u8]) -> bool {
-    detect_utf16_format(input, true, detect_html_content)
+    if !utf16_first_non_ws_is(input, true, '<') {
+        return false;
+    }
+    detect_utf16_after_trim(input, true, 64, detect_html_content)
 }
 
 /// HTML detection for UTF-16 Little Endian
 fn html_utf16_le(input: &[u8]) -> bool {
-    detect_utf16_format(input, false, detect_html_content)
+    if !utf16_first_non_ws_is(input, false, '<') {
+        return false;
+    }
+    detect_utf16_after_trim(input, false, 64, detect_html_content)
 }
 
 /// XML detection for UTF-16 Big Endian
 fn xml_utf16_be(input: &[u8]) -> bool {
-    detect_utf16_format(input, true, detect_xml_content)
+    if !utf16_first_non_ws_is(input, true, '<') {
+        return false;
+    }
+    detect_utf16_after_trim(input, true, 16, detect_xml_content)
 }
 
 /// XML detection for UTF-16 Little Endian
 fn xml_utf16_le(input: &[u8]) -> bool {
-    detect_utf16_format(input, false, detect_xml_content)
+    if !utf16_first_non_ws_is(input, false, '<') {
+        return false;
+    }
+    detect_utf16_after_trim(input, false, 16, detect_xml_content)
 }
 
 /// SVG detection for UTF-16 Big Endian
 fn svg_utf16_be(input: &[u8]) -> bool {
+    if !utf16_contains_ascii(input, true, b"<svg")
+        && !utf16_contains_ascii(input, true, b"http://www.w3.org/2000/svg")
+    {
+        return false;
+    }
     detect_utf16_format(input, true, detect_svg_content)
 }
 
 /// SVG detection for UTF-16 Little Endian
 fn svg_utf16_le(input: &[u8]) -> bool {
+    if !utf16_contains_ascii(input, false, b"<svg")
+        && !utf16_contains_ascii(input, false, b"http://www.w3.org/2000/svg")
+    {
+        return false;
+    }
     detect_utf16_format(input, false, detect_svg_content)
 }
 
 /// XSD detection for UTF-16 Big Endian
 fn xsd_utf16_be(input: &[u8]) -> bool {
+    if !utf16_contains_ascii(input, true, b"<schema")
+        && !utf16_contains_ascii(input, true, b"<xs:schema")
+        && !utf16_contains_ascii(input, true, b"<xsd:schema")
+        && !utf16_contains_ascii(input, true, b"http://www.w3.org/2001/XMLSchema")
+    {
+        return false;
+    }
     detect_utf16_format(input, true, detect_xsd_content)
 }
 
 /// XSD detection for UTF-16 Little Endian
 fn xsd_utf16_le(input: &[u8]) -> bool {
+    if !utf16_contains_ascii(input, false, b"<schema")
+        && !utf16_contains_ascii(input, false, b"<xs:schema")
+        && !utf16_contains_ascii(input, false, b"<xsd:schema")
+        && !utf16_contains_ascii(input, false, b"http://www.w3.org/2001/XMLSchema")
+    {
+        return false;
+    }
     detect_utf16_format(input, false, detect_xsd_content)
 }
 
 /// JSON detection for UTF-16 Big Endian
 fn json_utf16_be(input: &[u8]) -> bool {
-    detect_utf16_format(input, true, detect_json_content)
+    if !utf16_first_non_ws_is(input, true, '{') && !utf16_first_non_ws_is(input, true, '[') {
+        return false;
+    }
+    // `is_valid_json` inspects at most the first 1024 bytes; every UTF-16 code
+    // unit yields at least one UTF-8 byte.
+    detect_utf16_after_trim(input, true, 1024, detect_json_content)
 }
 
 /// JSON detection for UTF-16 Little Endian
 fn json_utf16_le(input: &[u8]) -> bool {
-    detect_utf16_format(input, false, detect_json_content)
+    if !utf16_first_non_ws_is(input, false, '{') && !utf16_first_non_ws_is(input, false, '[') {
+        return false;
+    }
+    detect_utf16_after_trim(input, false, 1024, detect_json_content)
 }
 
 /// CSV detection for UTF-16 Big Endian
 fn csv_utf16_be(input: &[u8]) -> bool {
+    if !utf16_contains_ascii(input, true, b",") {
+        return false;
+    }
     detect_utf16_format(input, true, detect_csv_content)
 }
 
 /// CSV detection for UTF-16 Little Endian
 fn csv_utf16_le(input: &[u8]) -> bool {
+    if !utf16_contains_ascii(input, false, b",") {
+        return false;
+    }
     detect_utf16_format(input, false, detect_csv_content)
 }
 
 /// TSV detection for UTF-16 Big Endian
 fn tsv_utf16_be(input: &[u8]) -> bool {
+    if !utf16_contains_ascii(input, true, b"\t") {
+        return false;
+    }
     detect_utf16_format(input, true, detect_tsv_content)
 }
 
 /// TSV detection for UTF-16 Little Endian
 fn tsv_utf16_le(input: &[u8]) -> bool {
+    if !utf16_contains_ascii(input, false, b"\t") {
+        return false;
+    }
     detect_utf16_format(input, false, detect_tsv_content)
 }
 
 /// PSV detection for UTF-16 Big Endian
 fn psv_utf16_be(input: &[u8]) -> bool {
+    if !utf16_contains_ascii(input, true, b"|") {
+        return false;
+    }
     detect_utf16_format(input, true, detect_psv_content)
 }
 
 /// PSV detection for UTF-16 Little Endian
 fn psv_utf16_le(input: &[u8]) -> bool {
+    if !utf16_contains_ascii(input, false, b"|") {
+        return false;
+    }
     detect_utf16_format(input, false, detect_psv_content)
 }
 
 /// SSV detection for UTF-16 Big Endian
 fn ssv_utf16_be(input: &[u8]) -> bool {
+    if !utf16_contains_ascii(input, true, b";") {
+        return false;
+    }
     detect_utf16_format(input, true, detect_ssv_content)
 }
 
 /// SSV detection for UTF-16 Little Endian
 fn ssv_utf16_le(input: &[u8]) -> bool {
+    if !utf16_contains_ascii(input, false, b";") {
+        return false;
+    }
     detect_utf16_format(input, false, detect_ssv_content)
 }
 
 /// SRT subtitle detection for UTF-16 Big Endian
 fn srt_utf16_be(input: &[u8]) -> bool {
-    detect_utf16_format(input, true, detect_srt_content)
+    if !utf16_first_non_ws_is(input, true, '1') {
+        return false;
+    }
+    detect_utf16_after_trim(input, true, 1024, detect_srt_content)
 }
 
 /// SRT subtitle detection for UTF-16 Little Endian
 fn srt_utf16_le(input: &[u8]) -> bool {
-    detect_utf16_format(input, false, detect_srt_content)
+    if !utf16_first_non_ws_is(input, false, '1') {
+        return false;
+    }
+    detect_utf16_after_trim(input, false, 1024, detect_srt_content)
 }
 
 /// VTT subtitle detection for UTF-16 Big Endian
 fn vtt_utf16_be(input: &[u8]) -> bool {
-    detect_utf16_format(input, true, detect_vtt_content)
+    if !utf16_first_non_ws_is_ascii_ci(input, true, b'W') {
+        return false;
+    }
+    detect_utf16_after_trim(input, true, 16, detect_vtt_content)
 }
 
 /// VTT subtitle detection for UTF-16 Little Endian
 fn vtt_utf16_le(input: &[u8]) -> bool {
-    detect_utf16_format(input, false, detect_vtt_content)
+    if !utf16_first_non_ws_is_ascii_ci(input, false, b'W') {
+        return false;
+    }
+    detect_utf16_after_trim(input, false, 16, detect_vtt_content)
 }
 
 /// vCard detection for UTF-16 Big Endian
 fn vcard_utf16_be(input: &[u8]) -> bool {
-    detect_utf16_format(input, true, detect_vcard_content)
+    if !utf16_first_non_ws_is_ascii_ci(input, true, b'B') {
+        return false;
+    }
+    detect_utf16_after_trim(input, true, 16, detect_vcard_content)
 }
 
 /// vCard detection for UTF-16 Little Endian
 fn vcard_utf16_le(input: &[u8]) -> bool {
-    detect_utf16_format(input, false, detect_vcard_content)
+    if !utf16_first_non_ws_is_ascii_ci(input, false, b'B') {
+        return false;
+    }
+    detect_utf16_after_trim(input, false, 16, detect_vcard_content)
 }
 
 /// iCalendar detection for UTF-16 Big Endian
 fn icalendar_utf16_be(input: &[u8]) -> bool {
-    detect_utf16_format(input, true, detect_icalendar_content)
+    if !utf16_first_non_ws_is_ascii_ci(input, true, b'B') {
+        return false;
+    }
+    detect_utf16_after_trim(input, true, 24, detect_icalendar_content)
 }
 
 /// iCalendar detection for UTF-16 Little Endian
 fn icalendar_utf16_le(input: &[u8]) -> bool {
-    detect_utf16_format(input, false, detect_icalendar_content)
+    if !utf16_first_non_ws_is_ascii_ci(input, false, b'B') {
+        return false;
+    }
+    detect_utf16_after_trim(input, false, 24, detect_icalendar_content)
 }
 
 /// RTF detection for UTF-16 Big Endian
 fn rtf_utf16_be(input: &[u8]) -> bool {
-    detect_utf16_format(input, true, detect_rtf_content)
+    if utf16_first_unit(input, true) != Some(u16::from(b'{')) {
+        return false;
+    }
+    utf16_prefix_to_string(input, true, 0, 8).is_some_and(|text| detect_rtf_content(&text))
 }
 
 /// RTF detection for UTF-16 Little Endian
 fn rtf_utf16_le(input: &[u8]) -> bool {
-    detect_utf16_format(input, false, detect_rtf_content)
+    if utf16_first_unit(input, false) != Some(u16::from(b'{')) {
+        return false;
+    }
+    utf16_prefix_to_string(input, false, 0, 8).is_some_and(|text| detect_rtf_content(&text))
 }
 
 /// HTML detection for UTF-8 with BOM
@@ -8293,33 +8633,13 @@ fn detect_rtf_content(text: &str) -> bool {
     text.starts_with("{\\rtf")
 }
 
-/// Convert UTF-16 bytes to UTF-8 string for content detection
-fn utf16_to_string(input: &[u8], big_endian: bool) -> Option<String> {
-    // Input must have even length for UTF-16
-    if input.len() < 2 || input.len() % 2 != 0 {
-        return None;
-    }
-
-    let chars: Vec<u16> = input
-        .chunks_exact(2)
-        .map(|chunk| {
-            if big_endian {
-                u16::from_be_bytes([chunk[0], chunk[1]])
-            } else {
-                u16::from_le_bytes([chunk[0], chunk[1]])
-            }
-        })
-        .collect();
-
-    String::from_utf16(&chars).ok()
-}
-
+// Convert UTF-16 bytes to UTF-8 string for content detection
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
 
-/// Count separators in a line while respecting quoted fields (RFC 4180)
-/// This function skips separators that appear inside quoted fields
+// Count separators in a line while respecting quoted fields (RFC 4180)
+// This function skips separators that appear inside quoted fields
 #[inline]
 fn count_csv_separators_quoted(line: &[u8], separator: u8) -> usize {
     let mut count = 0;
@@ -8351,7 +8671,6 @@ fn count_csv_separators_quoted(line: &[u8], separator: u8) -> usize {
 
 /// Case-insensitive starts_with that works for both str and [u8] types
 /// Uses a trait to handle different input types uniformly
-#[inline]
 fn case_insensitive_starts_with<H>(input: H, needle: H) -> bool
 where
     H: AsRef<[u8]>,
@@ -8365,7 +8684,6 @@ where
 /// Generic CSV detection helper that works with any line iterator
 /// T: Iterator over lines (either &[u8] or &str)
 /// F: Function to count separator in a line
-#[inline]
 fn detect_csv_generic<T, F>(lines: T, count_separator: F) -> bool
 where
     T: Iterator,
@@ -8414,14 +8732,83 @@ where
     match_ratio >= 0.8
 }
 
+/// Portable SWAR search for one byte. `from_le_bytes` normalizes byte order,
+/// so `trailing_zeros()/8` is the index of the first matching byte on all targets.
+#[inline]
+fn find_byte(hay: &[u8], needle: u8) -> Option<usize> {
+    const LO: u64 = 0x0101_0101_0101_0101;
+    const HI: u64 = 0x8080_8080_8080_8080;
+
+    let pat = LO.wrapping_mul(needle as u64);
+    let mut base = 0usize;
+    let mut chunks = hay.chunks_exact(8);
+
+    for c in &mut chunks {
+        let w = u64::from_le_bytes(c.try_into().unwrap());
+        let x = w ^ pat;
+        let m = x.wrapping_sub(LO) & !x & HI;
+        if m != 0 {
+            return Some(base + m.trailing_zeros() as usize / 8);
+        }
+        base += 8;
+    }
+
+    chunks
+        .remainder()
+        .iter()
+        .position(|&b| b == needle)
+        .map(|i| base + i)
+}
+
+/// Find the first occurrence of `needle` in `hay`, returning its byte offset.
+#[inline]
+fn find_subslice_pos(hay: &[u8], needle: &[u8]) -> Option<usize> {
+    let n = needle.len();
+    if n == 0 {
+        return Some(0);
+    }
+    if hay.len() < n {
+        return None;
+    }
+
+    let first = needle[0];
+    let last = hay.len() - n;
+    let mut i = 0;
+
+    loop {
+        {
+            let off = find_byte(&hay[i..=last], first)?;
+            let at = i + off;
+            if &hay[at..at + n] == needle {
+                return Some(at);
+            }
+            i = at + 1;
+            if i > last {
+                return None;
+            }
+        }
+    }
+}
+
+/// Check if `hay` contains `needle`.
+fn find_subslice(hay: &[u8], needle: &[u8]) -> bool {
+    find_subslice_pos(hay, needle).is_some()
+}
+
 /// Check if input contains the given byte pattern
 /// More efficient than from_utf8_lossy().contains() for ASCII-only searches
+///
+/// Short slices (magic headers, head-of-file probes) are cheaper with the plain
+/// window loop; the SWAR finder pays off on larger container buffers.
 #[inline]
 fn contains_bytes(input: &[u8], pattern: &[u8]) -> bool {
-    if input.len() < pattern.len() {
-        return false;
+    if pattern.is_empty() {
+        return true;
     }
-    input.windows(pattern.len()).any(|w| w == pattern)
+    if input.len() <= 32 {
+        return input.windows(pattern.len()).any(|w| w == pattern);
+    }
+    find_subslice(input, pattern)
 }
 
 /// Check if ZIP archive contains any files matching the given entries
@@ -8504,9 +8891,7 @@ impl<'a> ZipIterator<'a> {
             self.pos
         } else {
             // Fall back to scanning for the next signature
-            let pk_pos = self.data[self.pos..]
-                .windows(4)
-                .position(|w| w == pk_signature)?;
+            let pk_pos = find_subslice_pos(&self.data[self.pos..], pk_signature)?;
             self.pos + pk_pos
         };
 
@@ -8690,7 +9075,6 @@ fn aaf(input: &[u8]) -> bool {
 
 /// Generic UTF-16 format detection helper
 /// Consolidates the pattern used by all UTF-16 BE/LE detection functions
-#[inline]
 fn detect_utf16_format<F>(input: &[u8], big_endian: bool, detect_content: F) -> bool
 where
     F: Fn(&str) -> bool,
@@ -8703,7 +9087,6 @@ where
 
 /// Generic UTF-8 BOM format detection helper
 /// Consolidates the pattern used by all UTF-8 BOM detection functions
-#[inline]
 fn detect_utf8_bom_format<F>(input: &[u8], detect_content: F) -> bool
 where
     F: Fn(&str) -> bool,
@@ -8721,9 +9104,8 @@ where
 
 /// Generic XML-based format detection helper
 /// Consolidates the pattern: check if XML, then search for specific tag
-#[inline]
 fn detect_xml_with_tag(input: &[u8], tag: &[u8]) -> bool {
-    xml(input) && input.windows(tag.len()).any(|w| w == tag)
+    xml(input) && find_subslice(input, tag)
 }
 
 /// Generic OpenDocument format detection helper
@@ -8747,7 +9129,6 @@ fn detect_opendocument_format(input: &[u8], mimetype: &[u8]) -> bool {
 
 /// RIFF child format matcher: checks for form type at offset 8
 /// All RIFF children inherit the RIFF header check from parent
-#[inline]
 fn riff_child(input: &[u8], form_type: &[u8]) -> bool {
     input.len() >= 8 + form_type.len() && &input[8..8 + form_type.len()] == form_type
 }
@@ -8888,6 +9269,86 @@ fn bufr(input: &[u8]) -> bool {
     input.len() > 7 && input.starts_with(b"BUFR") && (input[7] == 0x03 || input[7] == 0x04)
 }
 
+fn gguf(input: &[u8]) -> bool {
+    // GGUF (GGML Universal File): fixed 24-byte header.
+    // magic(4) + version(4) + tensor_count(8) + metadata_kv_count(8)
+    // Defined versions are 1-3. Version 3 allows big-endian files, and the format
+    // carries no endianness flag, so accept the version in either byte order.
+    const HEADER_LEN: usize = 24;
+
+    if input.len() < HEADER_LEN || !input.starts_with(b"GGUF") {
+        return false;
+    }
+
+    let version_bytes = [input[4], input[5], input[6], input[7]];
+    let version_le = u32::from_le_bytes(version_bytes);
+    let version_be = u32::from_be_bytes(version_bytes);
+
+    (1..=3).contains(&version_le) || (1..=3).contains(&version_be)
+}
+
+fn tflite(input: &[u8]) -> bool {
+    // FlatBuffer: uint32 LE root offset, then `TFL3` identifier at offset 4
+    if input.len() < 8 || &input[4..8] != b"TFL3" {
+        return false;
+    }
+
+    // Validate root offset: aligned to 4 bytes and within bounds
+    let root = u32::from_le_bytes([input[0], input[1], input[2], input[3]]) as usize;
+    root >= 8 && root % 4 == 0 && root + 4 <= input.len()
+}
+
+fn pytorch(input: &[u8]) -> bool {
+    // PyTorch (>= 1.6) = STORED ZIP with `data.pkl` record
+    if !input.starts_with(b"PK\x03\x04") {
+        return false;
+    }
+
+    const DATA_PKL: &[u8] = b"data.pkl";
+    let mut iter = ZipIterator::new(input);
+
+    // Bounded scan (64 entries) - `data.pkl` appears early
+    for _ in 0..64 {
+        match iter.next() {
+            Some(name) => {
+                if name.ends_with(DATA_PKL) {
+                    return true;
+                }
+            }
+            None => break,
+        }
+    }
+
+    false
+}
+
+fn safetensors(input: &[u8]) -> bool {
+    // FlatBuffer: 8-byte LE JSON header length, then UTF-8 JSON object
+    const MAX_HEADER_LEN: u64 = 1 << 30;
+
+    if input.len() < 9 {
+        return false;
+    }
+
+    let header_len = u64::from_le_bytes([
+        input[0], input[1], input[2], input[3], input[4], input[5], input[6], input[7],
+    ]);
+
+    if !(2..=MAX_HEADER_LEN).contains(&header_len) || input[8] != b'{' {
+        return false;
+    }
+
+    // Validate JSON header and check for tensor entries
+    let full_end = 8 + header_len as usize;
+    let available = &input[8..input.len().min(full_end)];
+
+    if full_end <= input.len() && available.trim_ascii_end().last() != Some(&b'}') {
+        return false;
+    }
+
+    find_subslice(available, b"\"dtype\"") || find_subslice(available, b"\"__metadata__\"")
+}
+
 fn netcdf4(input: &[u8]) -> bool {
     // NetCDF-4 files are HDF5 files, so they must start with HDF5 magic
     // NetCDF-4 may have "NCDF" or "_NCProperties" in the file
@@ -8896,9 +9357,8 @@ fn netcdf4(input: &[u8]) -> bool {
     if search_len <= 12 {
         return false;
     }
-    input[8..search_len]
-        .windows(4)
-        .any(|w| w == b"NCDF" || w == b"_NC_")
+    let head = &input[8..search_len];
+    find_subslice(head, b"NCDF") || find_subslice(head, b"_NC_")
 }
 
 fn framemaker(input: &[u8]) -> bool {
@@ -8915,7 +9375,7 @@ fn framemaker(input: &[u8]) -> bool {
 
     // To avoid plain text false positives, check for null byte in first 512 bytes
     let limit = input.len().min(512);
-    input[..limit].contains(&0x00)
+    find_byte(&input[..limit], 0).is_some()
 }
 
 fn toml(input: &[u8]) -> bool {
@@ -9010,7 +9470,7 @@ fn openflight(input: &[u8]) -> bool {
         // Validate format revision (bytes 12-15, i32 BE) against known valid values
         let revision = i32::from_be_bytes([input[12], input[13], input[14], input[15]]);
 
-        // TODO: support unknonw revision too
+        // TODO: support unknown revisions too
         // Valid OpenFlight format revision numbers as per specification (kept sorted for binary_search)
         const VALID_REVISIONS: &[i32] = &[
             11, 12, 14, 1420, 1510, 1540, 1550, 1560, 1570, 1580, 1600, 1610, 1620, 1630, 1640,
@@ -9149,5 +9609,180 @@ mod tree_tests {
             SFNT_TABLE_TAGS.is_sorted(),
             "SFNT_TABLE_TAGS must be sorted ascending and deduplicated"
         );
+    }
+
+    #[test]
+    fn find_byte_locates_first_match() {
+        use super::find_byte;
+
+        assert_eq!(find_byte(b"abcdefgh", b'c'), Some(2));
+        assert_eq!(find_byte(b"abcdefghabcdefgh", b'a'), Some(0));
+        assert_eq!(find_byte(b"abcdefghijklmnop", b'k'), Some(10));
+        assert_eq!(find_byte(b"abcdefgh", b'z'), None);
+        assert_eq!(find_byte(b"abc", b'c'), Some(2));
+        assert_eq!(find_byte(b"", b'z'), None);
+    }
+
+    #[test]
+    fn find_subslice_matches_across_chunk_boundaries() {
+        use super::{find_subslice, find_subslice_pos};
+
+        assert!(find_subslice(b"abcdefghijklmnop", b"hijk"));
+        assert!(find_subslice(b"abc", b"abc"));
+        assert!(!find_subslice(b"abc", b"abcd"));
+        assert!(!find_subslice(b"abcdefghijklmnop", b"zz"));
+        assert!(!find_subslice(b"aa", b"ab"));
+        assert_eq!(find_subslice_pos(b"xxPK\x03\x04yy", b"PK\x03\x04"), Some(2));
+        assert_eq!(find_subslice_pos(b"abcdefgh", b"efg"), Some(4));
+        assert_eq!(find_subslice_pos(b"abcdefgh", b"zz"), None);
+        assert_eq!(find_subslice_pos(b"abc", b""), Some(0));
+    }
+
+    fn utf16_bytes(text: &str, big_endian: bool) -> Vec<u8> {
+        let mut out = if big_endian {
+            vec![0xFE, 0xFF]
+        } else {
+            vec![0xFF, 0xFE]
+        };
+        for unit in text.encode_utf16() {
+            if big_endian {
+                out.extend_from_slice(&unit.to_be_bytes());
+            } else {
+                out.extend_from_slice(&unit.to_le_bytes());
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn utf16_first_non_ws_skips_bom_and_whitespace() {
+        use super::utf16_first_non_ws;
+
+        assert_eq!(
+            utf16_first_non_ws(&utf16_bytes(" \r\n\tHi", false), false),
+            Some(('H', 4))
+        );
+        assert_eq!(
+            utf16_first_non_ws(&utf16_bytes("  Hi", true), true),
+            Some(('H', 2))
+        );
+        assert_eq!(utf16_first_non_ws(&utf16_bytes("   ", false), false), None);
+        assert_eq!(utf16_first_non_ws(&[0xFF], false), None);
+    }
+
+    #[test]
+    fn utf16_prefix_decodes_surrogate_pairs_whole() {
+        use super::utf16_prefix_to_string;
+
+        let data = utf16_bytes("😀abc", false);
+        assert_eq!(
+            utf16_prefix_to_string(&data, false, 0, 1).as_deref(),
+            Some("😀")
+        );
+        assert_eq!(
+            utf16_prefix_to_string(&data, false, 0, 2).as_deref(),
+            Some("😀a")
+        );
+        assert_eq!(
+            utf16_prefix_to_string(&data, false, 2, 3).as_deref(),
+            Some("abc")
+        );
+
+        // A lone high surrogate is rejected, matching the full decoder.
+        let lone = [0xFF, 0xFE, 0x00, 0xD8];
+        assert_eq!(utf16_prefix_to_string(&lone, false, 0, 4), None);
+    }
+
+    #[test]
+    fn utf16_contains_ascii_is_endian_aware() {
+        use super::utf16_contains_ascii;
+
+        let le = utf16_bytes("<svg", false);
+        let be = utf16_bytes("<svg", true);
+        assert!(utf16_contains_ascii(&le, false, b"<svg"));
+        assert!(utf16_contains_ascii(&be, true, b"<svg"));
+        assert!(!utf16_contains_ascii(&le, false, b"<html"));
+        assert!(!utf16_contains_ascii(&be, true, b"<html"));
+        assert!(!utf16_contains_ascii(&be, false, b"<svg"));
+        assert!(!utf16_contains_ascii(&le, true, b"<svg"));
+    }
+
+    #[test]
+    fn language_gates_keep_representative_samples() {
+        use super::{cpp, javascript, lua, perl, ruby, vb};
+
+        assert!(cpp(
+            b"#include <iostream>\nint main() { std::cout << \"hi\"; }\n"
+        ));
+        assert!(lua(b"local function add(a, b)\n  return a + b\nend\n"));
+        assert!(ruby(
+            b"class Greeter\n  def greet\n    puts \"hi\"\n  end\nend"
+        ));
+        assert!(perl(
+            b"use strict;\nuse warnings;\nmy $x = 1;\nprint \"$x\\n\";"
+        ));
+        assert!(javascript(
+            b"const f = (x) => { return x; };\nconsole.log(f(1));"
+        ));
+        assert!(vb(
+            b"Imports System\nModule Program\n    Sub Main()\n    End Sub\nEnd Module"
+        ));
+    }
+
+    #[test]
+    fn language_gates_reject_plain_prose() {
+        use super::{cpp, javascript, lua, perl, ruby, vb};
+
+        let prose = b"The quick brown fox jumps over the lazy dog and keeps on running \
+            through the empty field until it reaches the other side of the meadow";
+
+        assert!(!cpp(prose));
+        assert!(!javascript(prose));
+        assert!(!lua(prose));
+        assert!(!perl(prose));
+        assert!(!ruby(prose));
+        assert!(!vb(prose));
+    }
+
+    #[test]
+    fn cpp_accepts_punctuation_free_strong_indicators() {
+        use super::cpp;
+
+        // These strong indicators contain none of the fast-reject punctuation
+        // bytes, so they must still reach the pattern scan.
+        assert!(cpp(b"namespace foo\n"));
+        assert!(cpp(b"iostream"));
+    }
+
+    #[test]
+    fn delimited_rows_longer_than_512_bytes_are_counted_fully() {
+        use super::csv_format;
+
+        // Header has 9 separators; each data row also has 9, but only one falls
+        // inside the first 512 bytes. Truncating the rows would make their
+        // counts disagree with the header.
+        let filler = vec![b'x'; 600];
+        let mut data = Vec::new();
+        data.extend_from_slice(b"a,b,c,d,e,f,g,h,i,j\n");
+        for row in 0..2 {
+            if row > 0 {
+                data.push(b'\n');
+            }
+            data.extend_from_slice(&filler);
+            for _ in 0..9 {
+                data.extend_from_slice(b",y");
+            }
+        }
+
+        assert!(csv_format(&data));
+    }
+
+    #[test]
+    fn contains_bytes_treats_empty_pattern_as_present() {
+        use super::contains_bytes;
+
+        assert!(contains_bytes(b"", b""));
+        assert!(contains_bytes(b"short", b""));
+        assert!(contains_bytes(&[b'a'; 64], b""));
     }
 }

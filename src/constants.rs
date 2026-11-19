@@ -1621,6 +1621,27 @@ pub const APPLICATION_VND_APACHE_PARQUET: &str = "application/vnd.apache.parquet
 /// Apache Parquet (alias)
 pub const APPLICATION_X_PARQUET: &str = "application/x-parquet";
 
+/// GGUF (GGML Universal File) model format
+pub const APPLICATION_GGUF: &str = "application/gguf";
+
+/// GGUF (alias)
+pub const APPLICATION_X_GGUF: &str = "application/x-gguf";
+
+/// SafeTensors model format
+pub const APPLICATION_SAFETENSORS: &str = "application/safetensors";
+
+/// SafeTensors (alias)
+pub const APPLICATION_X_SAFETENSORS: &str = "application/x-safetensors";
+
+/// PyTorch archive (.pt/.pth/.bin) - ZIP with `data.pkl` record
+pub const APPLICATION_X_PYTORCH: &str = "application/x-pytorch";
+
+/// TorchScript model (`torch.jit.save`) - PyTorch alias
+pub const APPLICATION_X_TORCHSCRIPT: &str = "application/x-torchscript";
+
+/// TensorFlow Lite model (.tflite/.lite) - FlatBuffer with `TFL3` identifier
+pub const APPLICATION_X_TFLITE: &str = "application/x-tflite";
+
 /// Flexible and Interoperable Data Transfer (Garmin FIT)
 pub const APPLICATION_X_FIT: &str = "application/x-fit";
 

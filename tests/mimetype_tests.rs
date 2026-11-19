@@ -8053,6 +8053,207 @@ fn test_detect_spss_sav() {
 }
 
 #[test]
+fn test_detect_gguf() {
+    // GGUF header: magic, version (u32), tensor_count (u64), metadata_kv_count (u64).
+    fn header(version: [u8; 4], tensor_count: [u8; 8], metadata_kv_count: [u8; 8]) -> Vec<u8> {
+        let mut data = b"GGUF".to_vec();
+        data.extend_from_slice(&version);
+        data.extend_from_slice(&tensor_count);
+        data.extend_from_slice(&metadata_kv_count);
+        data
+    }
+
+    struct GgufCase {
+        name: &'static str,
+        data: Vec<u8>,
+        is_gguf: bool,
+    }
+
+    let cases = [
+        GgufCase {
+            name: "little-endian v3 header",
+            data: header(
+                3u32.to_le_bytes(),
+                292u64.to_le_bytes(),
+                24u64.to_le_bytes(),
+            ),
+            is_gguf: true,
+        },
+        GgufCase {
+            // Version 3 permits big-endian storage with no endianness flag.
+            name: "big-endian v3 header",
+            data: header(3u32.to_be_bytes(), 0u64.to_be_bytes(), 0u64.to_be_bytes()),
+            is_gguf: true,
+        },
+        GgufCase {
+            name: "unsupported version",
+            data: header(99u32.to_le_bytes(), 0u64.to_le_bytes(), 0u64.to_le_bytes()),
+            is_gguf: false,
+        },
+        GgufCase {
+            name: "truncated header",
+            data: b"GGUF\x03\x00\x00\x00".to_vec(),
+            is_gguf: false,
+        },
+    ];
+
+    for case in cases {
+        let mime_type = detect(&case.data);
+        assert_eq!(
+            mime_type.is(APPLICATION_GGUF),
+            case.is_gguf,
+            "{}",
+            case.name
+        );
+
+        if case.is_gguf {
+            assert_eq!(mime_type.mime(), APPLICATION_GGUF, "{}", case.name);
+            assert_eq!(mime_type.extension(), ".gguf", "{}", case.name);
+            assert!(mime_type.is(APPLICATION_X_GGUF), "{}", case.name);
+            assert!(mime_type.kind().is_application(), "{}", case.name);
+            assert_eq!(mime_type.name(), "GGML Universal File", "{}", case.name);
+        }
+    }
+}
+
+#[test]
+fn test_detect_safetensors() {
+    // SafeTensors: 8-byte LE header length followed by a UTF-8 JSON object.
+    fn header(header_len: u64, header: &[u8]) -> Vec<u8> {
+        let mut data = header_len.to_le_bytes().to_vec();
+        data.extend_from_slice(header);
+        data
+    }
+
+    fn json(json_header: &[u8]) -> Vec<u8> {
+        header(json_header.len() as u64, json_header)
+    }
+
+    struct SafeTensorsCase {
+        name: &'static str,
+        data: Vec<u8>,
+        is_safetensors: bool,
+    }
+
+    let padded = {
+        let mut header = br#"{"weight":{"dtype":"F32","shape":[1],"data_offsets":[0,4]}}"#.to_vec();
+        // Spec allows padding the JSON header with spaces to the declared length.
+        header.extend_from_slice(b"   \n");
+        header
+    };
+
+    let cases = [
+        SafeTensorsCase {
+            name: "tensor entries",
+            data: json(br#"{"weight":{"dtype":"F32","shape":[2,3],"data_offsets":[0,24]}}"#),
+            is_safetensors: true,
+        },
+        SafeTensorsCase {
+            name: "metadata only",
+            data: json(br#"{"__metadata__":{"format":"pt"}}"#),
+            is_safetensors: true,
+        },
+        SafeTensorsCase {
+            name: "padded header",
+            data: json(&padded),
+            is_safetensors: true,
+        },
+        SafeTensorsCase {
+            // Large headers exceed the read limit; detection must work from the prefix.
+            name: "large header",
+            data: header(64_000, br#"{"weight":{"dtype":"BF16","shape":[4096,"#),
+            is_safetensors: true,
+        },
+        SafeTensorsCase {
+            // A 65536-byte header starts with 00 00 01 00, which is also the ICO magic.
+            name: "ICO length collision",
+            data: header(65_536, br#"{"weight":{"dtype":"F16","shape":[1],"#),
+            is_safetensors: true,
+        },
+    ];
+
+    for case in cases {
+        let mime_type = detect(&case.data);
+        assert_eq!(
+            mime_type.is(APPLICATION_SAFETENSORS),
+            case.is_safetensors,
+            "{}",
+            case.name
+        );
+
+        if case.is_safetensors {
+            assert_eq!(mime_type.mime(), APPLICATION_SAFETENSORS, "{}", case.name);
+            assert_eq!(mime_type.extension(), ".safetensors", "{}", case.name);
+            assert!(mime_type.is(APPLICATION_X_SAFETENSORS), "{}", case.name);
+            assert!(mime_type.kind().is_application(), "{}", case.name);
+            assert_eq!(mime_type.name(), "SafeTensors Model", "{}", case.name);
+        }
+    }
+}
+
+#[test]
+fn test_detect_pytorch() {
+    // Build STORED ZIP with `data.pkl` entry (folder-prefixed or root)
+    fn zip_with_data_pkl(name: &[u8], body: &[u8]) -> Vec<u8> {
+        let mut out = Vec::new();
+        // ZIP local file header
+        out.extend_from_slice(b"PK\x03\x04");
+        out.extend_from_slice(&20u16.to_le_bytes()); // version
+        out.extend_from_slice(&0u16.to_le_bytes()); // flags
+        out.extend_from_slice(&0u16.to_le_bytes()); // method=0
+        out.extend_from_slice(&0u16.to_le_bytes()); // mod time
+        out.extend_from_slice(&0u16.to_le_bytes()); // mod date
+        out.extend_from_slice(&0u32.to_le_bytes()); // crc32
+        out.extend_from_slice(&(body.len() as u32).to_le_bytes()); // comp size
+        out.extend_from_slice(&(body.len() as u32).to_le_bytes()); // uncomp size
+        out.extend_from_slice(&(name.len() as u16).to_le_bytes()); // name length
+        out.extend_from_slice(&0u16.to_le_bytes()); // extra length
+        out.extend_from_slice(name);
+        out.extend_from_slice(body);
+        out
+    }
+
+    // A torch archive with a folder-prefixed `data.pkl` record.
+    let folder_prefixed = zip_with_data_pkl(b"model/data.pkl", b"\x80\x02\x95some-pickle");
+    let mime = detect(&folder_prefixed);
+    assert_eq!(
+        mime.mime(),
+        APPLICATION_X_PYTORCH,
+        "folder-prefixed data.pkl"
+    );
+    assert_eq!(mime.extension(), ".pt", "folder-prefixed data.pkl");
+    assert!(mime.is(APPLICATION_X_TORCHSCRIPT), "alias");
+    assert!(mime.kind().is_application());
+    assert_eq!(mime.name(), "PyTorch Model");
+
+    // A root-level `data.pkl` record is also accepted.
+    let root = zip_with_data_pkl(b"data.pkl", b"\x80\x02\x95some-pickle");
+    assert_eq!(detect(&root).mime(), APPLICATION_X_PYTORCH, "root data.pkl");
+
+    // Extension aliases are registered and match the same data.
+    for alias in [".pt", ".pth", ".bin", ".ptl", ".ckpt"] {
+        assert!(
+            mimetype_detector::match_extension(&root, alias),
+            "extension alias {alias}"
+        );
+    }
+
+    // A plain ZIP with no `data.pkl` record must NOT be detected as PyTorch.
+    let plain_zip = zip_with_data_pkl(b"hello.txt", b"plain text content");
+    let plain_mime = detect(&plain_zip);
+    assert!(!plain_mime.is(APPLICATION_X_PYTORCH), "plain zip");
+    assert_eq!(
+        plain_mime.mime(),
+        APPLICATION_ZIP,
+        "falls back to generic ZIP"
+    );
+
+    // Non-ZIP input must NOT be detected as PyTorch.
+    assert!(!detect(b"NOT A ZIP FILE AT ALL").is(APPLICATION_X_PYTORCH));
+    assert!(!detect(&[]).is(APPLICATION_X_PYTORCH));
+}
+
+#[test]
 fn test_detect_openflight_moov_variant() {
     // B6: MOV (moov-only variant) should NOT be detected as OpenFlight
     // The moov atom has a 12-byte header with opcode 1 and length 120 (like OpenFlight)
@@ -8072,4 +8273,41 @@ fn test_detect_openflight_moov_variant() {
 
     // Should be detected as a MOV/QuickTime file instead (or at least not OpenFlight)
     // This test ensures we don't misidentify moov-only MOV files as OpenFlight
+}
+
+#[test]
+fn test_detect_tflite() {
+    // FlatBuffer: uint32 LE root offset, then `TFL3` identifier at offset 4
+    fn model(root_offset: u32, identifier: &[u8; 4]) -> Vec<u8> {
+        let mut data = root_offset.to_le_bytes().to_vec();
+        data.extend_from_slice(identifier);
+        data.extend_from_slice(&[0u8; 32]);
+        data
+    }
+
+    for root_offset in [8, 12, 16, 24] {
+        let data = model(root_offset, b"TFL3");
+        let mime = detect(&data);
+        assert_eq!(
+            mime.mime(),
+            APPLICATION_X_TFLITE,
+            "root offset {root_offset}"
+        );
+        assert_eq!(mime.extension(), ".tflite");
+        assert!(mime.kind().is_application());
+        assert_eq!(mime.name(), "TensorFlow Lite Model");
+    }
+
+    // Wrong file identifier.
+    assert!(!detect(&model(16, b"TFL2")).is(APPLICATION_X_TFLITE));
+    assert!(!detect(&model(16, b"XXXX")).is(APPLICATION_X_TFLITE));
+
+    // Misaligned or out-of-bounds root-table offset.
+    assert!(!detect(&model(0, b"TFL3")).is(APPLICATION_X_TFLITE));
+    assert!(!detect(&model(2, b"TFL3")).is(APPLICATION_X_TFLITE));
+    assert!(!detect(&model(4096, b"TFL3")).is(APPLICATION_X_TFLITE));
+
+    // Too short to hold the identifier.
+    assert!(!detect(b"\x10\x00\x00\x00TFL").is(APPLICATION_X_TFLITE));
+    assert!(!detect(b"").is(APPLICATION_X_TFLITE));
 }
